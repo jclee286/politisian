@@ -1,0 +1,8 @@
+# Compiled binary
+politician/abci_app/politician_abci
+
+# Log files
+*.log
+
+# CometBFT data and config directory
+.cometbft/ 
