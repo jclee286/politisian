@@ -5,4 +5,5 @@ politician/abci_app/politician_abci
 *.log
 
 # CometBFT data and config directory
-.cometbft/ 
+.cometbft/ /politician/politician/api/api
+/politician/politician/abci_app/politician_abci
