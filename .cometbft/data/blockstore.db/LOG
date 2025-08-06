@@ -1,0 +1,16 @@
+=============== Aug 6, 2025 (KST) ===============
+12:52:09.603739 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+12:52:09.622073 db@open opening
+12:52:09.622601 version@stat F·[] S·0B[] Sc·[]
+12:52:09.625168 db@janitor F·2 G·0
+12:52:09.625275 db@open done T·3.1298ms
+=============== Aug 6, 2025 (KST) ===============
+12:59:27.486534 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+12:59:27.486756 version@stat F·[] S·0B[] Sc·[]
+12:59:27.486829 db@open opening
+12:59:27.486886 journal@recovery F·1
+12:59:27.487196 journal@recovery recovering @1
+12:59:27.624672 memdb@flush created L0@2 N·1020 S·146KiB "BH:..77e,v231":"blo..ore,v6"
+12:59:27.624935 version@stat F·[1] S·146KiB[146KiB] Sc·[0.25]
+12:59:27.837346 db@janitor F·3 G·0
+12:59:27.837427 db@open done T·350.562995ms
