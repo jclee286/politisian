@@ -125,7 +125,7 @@
                 .then(data => {
                     console.log('대시보드 데이터 수신:', data);
                     welcomeMessage.textContent = `${data.nickname || '사용자'}님, 환영합니다!`;
-                    walletAddressElem.textContent = data.walletAddress;
+                    walletAddressElem.textContent = data.wallet;
                     balanceElem.textContent = `${data.balance} P-COIN`;
 
                     if (data.politicians && data.politicians.length > 0) {

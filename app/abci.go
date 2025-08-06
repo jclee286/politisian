@@ -68,6 +68,7 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 	for i, tx := range req.Txs {
 		var txData TxData
 		if err := json.Unmarshal(tx, &txData); err != nil {
+			log.Printf("[ABCI] FinalizeBlock: 트랜잭션 #%d 처리 중 오류 (JSON 파싱 실패): %v", i, err)
 			respTxs[i] = &types.ExecTxResult{Code: 1, Log: "failed to unmarshal tx"}
 			continue
 		}
@@ -112,6 +113,7 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 	}
 	app.appHash = []byte(strconv.Itoa(len(app.accounts)))
 	app.lastBlockHeight = req.Height
+	log.Printf("[ABCI] FinalizeBlock: 블록 높이 %d 처리 완료", req.Height)
 	return &types.ResponseFinalizeBlock{
 		TxResults: respTxs,
 		AppHash:   app.appHash,
@@ -120,6 +122,7 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 
 func (app *PoliticianApp) Commit(_ context.Context, _ *types.RequestCommit) (*types.ResponseCommit, error) {
 	if err := app.saveState(); err != nil {
+		log.Printf("[ABCI] Commit: 상태 저장 실패! %v", err)
 		log.Printf("심각한 오류: 상태 저장 실패: %v", err)
 	}
 	return &types.ResponseCommit{RetainHeight: 0}, nil
