@@ -1,9 +1,12 @@
-# Compiled binary
-politician/abci_app/politician_abci
+# CometBFT and application state
+.cometbft/
+app_state.json
+politician_server
+server.log
 
-# Log files
-*.log
+# Backup files
+*.bak
 
-# CometBFT data and config directory
-.cometbft/ /politician/politician/api/api
-/politician/politician/abci_app/politician_abci
+# OS generated files
+.DS_Store
+Thumbs.db

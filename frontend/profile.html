@@ -5,97 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>프로필 설정 - 정치인 공화국</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            background-color: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 500px;
-            text-align: center;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        p {
-            color: #666;
-            margin-bottom: 30px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: bold;
-        }
-        input[type="text"], select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        input[readonly] {
-            background-color: #e9ecef;
-            cursor: not-allowed;
-        }
-        input[type="radio"] {
-            margin-right: 10px;
-        }
-        .gender-group label {
-            display: inline-block;
-            margin-right: 20px;
-        }
-        button {
-            background-color: #28a745;
-            color: white;
-            padding: 15px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-        .status-message {
-            margin-top: 20px;
-            font-weight: bold;
-        }
-        .success {
-            color: green;
-        }
-        .error {
-            color: red;
-        }
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
+        h1 { color: #333; margin-bottom: 10px; }
+        p { color: #666; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; margin-bottom: 5px; color: #333; font-weight: bold; }
+        input[type="text"], select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        input[readonly] { background-color: #e9ecef; cursor: not-allowed; }
+        input[type="radio"] { margin-right: 10px; }
+        .gender-group label { display: inline-block; margin-right: 20px; }
+        button { background-color: #28a745; color: white; padding: 15px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        button:hover { background-color: #218838; }
+        .status-message { margin-top: 20px; font-weight: bold; word-wrap: break-word; }
+        .success { color: green; }
+        .error { color: red; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>프로필 설정</h1>
         <p>처음 오셨군요! 앞으로 활동하시려면 프로필을 설정해주세요.</p>
-
         <form id="profileForm">
             <div class="form-group">
                 <label for="walletAddress">나의 지갑 주소</label>
                 <input type="text" id="walletAddress" name="walletAddress" readonly value="불러오는 중...">
             </div>
-
             <div class="form-group">
                 <label for="country">국가</label>
                 <select id="country" name="country">
@@ -105,51 +40,33 @@
                     <option value="CN">중국</option>
                 </select>
             </div>
-
             <div class="form-group gender-group">
                 <label>성별</label>
                 <label><input type="radio" name="gender" value="male" checked> 남성</label>
                 <label><input type="radio" name="gender" value="female"> 여성</label>
             </div>
-
             <div class="form-group">
                 <label for="birthYear">출생 연도</label>
-                <select id="birthYear" name="birthYear">
-                    <!-- 스크립트로 채울 예정 -->
-                </select>
+                <select id="birthYear" name="birthYear"></select>
             </div>
-
             <hr style="margin: 30px 0;">
-
             <div class="form-group">
                 <label>지지할 정치인 3명을 선택해주세요.</label>
-                <select id="politician1" name="politician1">
-                    <option value="A">정치인 A</option>
-                    <option value="B">정치인 B</option>
-                </select>
+                <select id="politician1" name="politician1"></select>
             </div>
             <div class="form-group">
-                <select id="politician2" name="politician2">
-                    <option value="A">정치인 A</option>
-                    <option value="B">정치인 B</option>
-                </select>
+                <select id="politician2" name="politician2"></select>
             </div>
             <div class="form-group">
-                <select id="politician3" name="politician3">
-                    <option value="A">정치인 A</option>
-                    <option value="B">정치인 B</option>
-                </select>
+                <select id="politician3" name="politician3"></select>
             </div>
-            
             <button type="submit">설정 완료</button>
         </form>
         <div id="statusMessage" class="status-message"></div>
     </div>
 
     <script>
-        // === 페이지 로드 시 실행될 로직 ===
         document.addEventListener('DOMContentLoaded', function() {
-            // 출생 연도 드롭다운 채우기
             const birthYearSelect = document.getElementById('birthYear');
             const currentYear = new Date().getFullYear();
             for (let year = currentYear; year >= 1940; year--) {
@@ -159,11 +76,11 @@
                 birthYearSelect.appendChild(option);
             }
 
-            // 서버에 내 프로필 정보 (지갑 주소 등) 요청
             fetch('/api/me/profile-info')
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('서버에서 프로필 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.');
+                        if (response.status === 401) window.location.href = '/login.html';
+                        throw new Error('서버에서 프로필 정보를 불러오는데 실패했습니다.');
                     }
                     return response.json();
                 })
@@ -171,16 +88,41 @@
                     document.getElementById('walletAddress').value = data.Wallet || '주소 없음';
                 })
                 .catch(error => {
-                    console.error('Error fetching profile info:', error);
-                    document.getElementById('walletAddress').value = '오류 발생';
                     document.getElementById('statusMessage').textContent = error.message;
                     document.getElementById('statusMessage').className = 'status-message error';
                 });
+
+            fetch('/api/politicians')
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) window.location.href = '/login.html';
+                        throw new Error('서버에서 정치인 목록을 불러오는데 실패했습니다.');
+                    }
+                    return response.json();
+                })
+                .then(politicians => {
+                    const politicianSelectors = [
+                        document.getElementById('politician1'),
+                        document.getElementById('politician2'),
+                        document.getElementById('politician3')
+                    ];
+                    politicianSelectors.forEach(select => {
+                        select.innerHTML = '';
+                        for (const name in politicians) {
+                            const option = document.createElement('option');
+                            option.value = name;
+                            option.textContent = name;
+                            select.appendChild(option);
+                        }
+                    });
+                })
+                .catch(error => {
+                    document.getElementById('statusMessage').textContent = error.message;
+                });
         });
 
-        // === 폼 제출 시 실행될 로직 ===
         document.getElementById('profileForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // 기본 폼 제출 동작 방지
+            event.preventDefault();
             
             const form = event.target;
             const statusMessage = document.getElementById('statusMessage');
@@ -188,6 +130,7 @@
             statusMessage.className = 'status-message';
 
             const formData = {
+                wallet: document.getElementById('walletAddress').value,
                 country: form.country.value,
                 gender: form.gender.value,
                 birthYear: parseInt(form.birthYear.value, 10),
@@ -198,33 +141,37 @@
                 ]
             };
 
+            // ### '진실을 비추는 거울' 수정 지점 ###
             fetch('/api/profile/save', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             })
             .then(response => {
                 if (!response.ok) {
-                    return response.text().then(text => { throw new Error(text) });
+                    // 서버가 보내주는 텍스트 에러 메시지를 그대로 사용합니다.
+                    return response.text().then(text => { 
+                        // 서버가 텍스트를 보내지 않았을 경우를 대비한 기본 메시지
+                        throw new Error(text || '알 수 없는 서버 오류가 발생했습니다.') 
+                    });
                 }
                 return response.text();
             })
-
             .then(data => {
                 statusMessage.textContent = "프로필이 성공적으로 블록체인에 저장되었습니다!";
                 statusMessage.className = 'status-message success';
-                form.querySelector('button').disabled = true; // 중복 제출 방지
-                // TODO: 잠시 후 실제 메인 페이지로 리디렉션
-                // window.location.href = '/main.html';
+                form.querySelector('button').disabled = true;
+                
+                setTimeout(() => {
+                    window.location.href = '/index.html';
+                }, 2000);
             })
             .catch(error => {
-                console.error('Error saving profile:', error);
+                // error.message는 위에서 throw한 서버의 실제 오류 메시지가 됩니다.
                 statusMessage.textContent = '저장 실패: ' + error.message;
                 statusMessage.className = 'status-message error';
             });
         });
     </script>
 </body>
-</html> 
+</html>

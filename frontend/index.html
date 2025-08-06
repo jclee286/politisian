@@ -3,43 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정치인 공화국</title>
+    <title>나의 공화국 - 대시보드</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f2f5; margin: 0; }
-        .container { text-align: center; background-color: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        .google-btn {
-            display: inline-flex;
-            align-items: center;
-            padding: 12px 24px;
-            border-radius: 5px;
-            background-color: #4285F4;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
         }
-        .google-btn:hover { background-color: #357ae8; }
-        .google-btn img { margin-right: 12px; width: 20px; height: 20px; }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            color: #333;
+        }
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            color: #333;
+            border-bottom: 2px solid #28a745;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .wallet-address {
+            font-family: monospace;
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            word-break: break-all;
+        }
+        .balance {
+            font-size: 2em;
+            font-weight: bold;
+            color: #28a745;
+            text-align: right;
+        }
+        .politician-list {
+            list-style: none;
+            padding: 0;
+        }
+        .politician-list li {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .loading {
+            color: #888;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>정치인 공화국</h1>
-        <p>블록체인으로 만드는 투명한 정치 시스템</p>
-        <button id="google-login-btn" class="google-btn">
-            <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo">
-            <span>Google로 시작하기</span>
-        </button>
+
+    <div class="header">
+        <h1>나의 공화국</h1>
+        <p id="welcome-message">사용자님, 환영합니다!</p>
+        <button id="login-button" style="display: none;">로그인</button>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="card">
+            <h2>나의 지갑 정보</h2>
+            <p><strong>지갑 주소:</strong></p>
+            <div id="wallet-address" class="wallet-address loading">
+                불러오는 중...
+            </div>
+        </div>
+        <div class="card">
+            <h2>보유 코인</h2>
+            <div id="balance" class="balance loading">
+                -
+            </div>
+        </div>
+        <div class="card">
+            <h2>내가 지지하는 정치인</h2>
+            <ul id="politicians-list" class="politician-list">
+                <li class="loading">목록을 불러오는 중...</li>
+            </ul>
+        </div>
     </div>
 
     <script>
-        // TODO: Google 로그인 버튼 클릭 시 백엔드 API 호출 로직 추가
-        document.getElementById('google-login-btn').addEventListener('click', () => {
-            // 3단계: Google Cloud 설정 후, 이곳에 OAuth 인증 URL로 리디렉션하는 코드가 들어갑니다.
-            window.location.href = '/api/auth/google/login';
+        document.addEventListener('DOMContentLoaded', function() {
+            const welcomeMessage = document.getElementById('welcome-message');
+            const walletAddressElem = document.getElementById('wallet-address');
+            const balanceElem = document.getElementById('balance');
+            const politiciansListElem = document.getElementById('politicians-list');
+            const loginButton = document.getElementById('login-button');
+
+            console.log('대시보드 페이지 로드, API에서 데이터 가져오는 중...');
+
+            loginButton.addEventListener('click', () => {
+                window.location.href = '/'; // 로그인 페이지로 이동
+            });
+
+            fetch('/api/me/dashboard')
+                .then(response => {
+                    if (response.status === 401) {
+                         // 인증되지 않은 경우, 로그인 버튼을 보여주고 에러 메시지를 표시
+                        loginButton.style.display = 'block';
+                        throw new Error('인증이 필요합니다. 다시 로그인해주세요.');
+                    }
+                    if (!response.ok) {
+                        throw new Error('대시보드 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('대시보드 데이터 수신:', data);
+                    welcomeMessage.textContent = `${data.nickname || '사용자'}님, 환영합니다!`;
+                    walletAddressElem.textContent = data.walletAddress;
+                    balanceElem.textContent = `${data.balance} P-COIN`;
+
+                    if (data.politicians && data.politicians.length > 0) {
+                        politiciansListElem.innerHTML = ''; // '불러오는 중...' 메시지 삭제
+                        data.politicians.forEach(p => {
+                            const li = document.createElement('li');
+                            li.textContent = p;
+                            politiciansListElem.appendChild(li);
+                        });
+                    } else {
+                        politiciansListElem.innerHTML = '<li>지지하는 정치인이 없습니다.</li>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching dashboard data:', error);
+                    // 에러 발생 시, 사용자에게 안내 메시지 표시
+                    welcomeMessage.textContent = '정보를 불러올 수 없습니다. 로그인이 필요할 수 있습니다.';
+                    walletAddressElem.textContent = '오류';
+                    balanceElem.textContent = '-';
+                    politiciansListElem.innerHTML = `<li>${error.message}</li>`;
+                    // 401 에러가 아니더라도 로그인 버튼을 보여줘서 재시도 유도
+                    loginButton.style.display = 'block';
+                });
         });
     </script>
 </body>
