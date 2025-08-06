@@ -130,14 +130,14 @@
             statusMessage.className = 'status-message';
 
             const formData = {
-                wallet: document.getElementById('walletAddress').value,
-                country: form.country.value,
-                gender: form.gender.value,
-                birthYear: parseInt(form.birthYear.value, 10),
+                walletAddress: document.getElementById('walletAddress').value,
+                country: document.getElementById('country').value,
+                gender: document.querySelector('input[name="gender"]:checked').value,
+                birthYear: parseInt(document.getElementById('birthYear').value, 10),
                 politicians: [
-                    form.politician1.value,
-                    form.politician2.value,
-                    form.politician3.value
+                    document.getElementById('politician1').value,
+                    document.getElementById('politician2').value,
+                    document.getElementById('politician3').value
                 ]
             };
 
