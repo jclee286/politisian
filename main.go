@@ -17,6 +17,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
+	"github.com/cometbft/cometbft/types"
 
 	"politician/app"
 	"politician/server"
@@ -44,12 +45,32 @@ func main() {
 
 	logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
 	pv := privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile())
+	pubKey, err := pv.GetPubKey()
+	if err != nil {
+		log.Fatalf("Failed to get public key: %v", err)
+	}
+	
+	genesisProvider := func() (*types.GenesisDoc, error) {
+		genDoc, err := types.GenesisDocFromFile(config.GenesisFile())
+		if err != nil {
+			return nil, fmt.Errorf("failed to read genesis file: %w", err)
+		}
+		if len(genDoc.Validators) == 0 {
+			genDoc.Validators = []types.GenesisValidator{{
+				Address: pubKey.Address(),
+				PubKey:  pubKey,
+				Power:   10,
+				Name:    "genesis-validator",
+			}}
+		}
+		return genDoc, nil
+	}
 
 	cometNode, err := node.NewNode(config,
 		pv,
 		nodeKey,
 		proxy.NewLocalClientCreator(abciApp),
-		node.DefaultGenesisDocProviderFunc(config),
+		genesisProvider,
 		cfg.DefaultDBProvider,
 		node.DefaultMetricsProvider(config.Instrumentation),
 		logger,
