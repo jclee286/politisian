@@ -131,33 +131,25 @@
             </div>
         </div>
         <div class="card">
-            <h2>보유 코인</h2>
-            <div id="balance" class="balance loading">
-                -
+            <h2>친구 초대 및 보상</h2>
+            <p>친구에게 아래 링크를 공유하고, 친구가 가입하면 보상 크레딧을 받습니다.</p>
+            <div class="referral-container" style="margin-bottom: 20px;">
+                <input type="text" id="referral-link" class="wallet-address" readonly>
+                <button id="copy-button" class="copy-button">복사</button>
             </div>
+            <p id="copy-status" style="height: 1em; color: green;"></p>
+            
+            <hr style="margin: 20px 0;">
+
+            <p>사용 가능한 추천 크레딧: <strong id="referral-credits" style="font-size: 1.2em;">0</strong> 개</p>
+            <button id="claim-reward-button" class="button" disabled>크레딧 사용 (지지 정치인 추가 & 100 코인 받기)</button>
+            <p id="claim-status" style="height: 1em; color: green;"></p>
         </div>
         <div class="card">
             <h2>내가 지지하는 정치인</h2>
             <ul id="politicians-list" class="politician-list">
                 <li class="loading">목록을 불러오는 중...</li>
             </ul>
-        </div>
-        <div class="card">
-            <h2>나의 추천인 링크</h2>
-            <p>친구에게 이 링크를 공유하고 보상을 받으세요!</p>
-            <div class="referral-container">
-                <input type="text" id="referral-link" class="wallet-address" readonly>
-                <button id="copy-button" class="copy-button">복사</button>
-            </div>
-            <p id="copy-status" style="height: 1em; color: green;"></p>
-        </div>
-
-        <div class="card">
-            <h2>추천 보상</h2>
-            <p>친구를 초대하고 받은 크레딧으로 추가 보상을 받으세요!</p>
-            <p>사용 가능한 추천 크레딧: <strong id="referral-credits" style="font-size: 1.2em;">0</strong> 개</p>
-            <button id="claim-reward-button" class="button" disabled>크레딧 사용 (100 코인 받기)</button>
-            <p id="claim-status" style="height: 1em; color: green;"></p>
         </div>
     </div>
 
@@ -193,7 +185,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             const welcomeMessage = document.getElementById('welcome-message');
             const walletAddressElem = document.getElementById('wallet-address');
-            const balanceElem = document.getElementById('balance');
             const politiciansListElem = document.getElementById('politicians-list');
             const loginButton = document.getElementById('login-button');
             const referralLinkInput = document.getElementById('referral-link');
@@ -228,7 +219,6 @@
                     console.log('대시보드 데이터 수신:', data);
                     welcomeMessage.textContent = `${data.nickname || '사용자'}님, 환영합니다!`;
                     walletAddressElem.textContent = data.wallet;
-                    balanceElem.textContent = `${data.balance} P-COIN`;
                     referralLinkInput.value = `${window.location.origin}/login.html?ref=${data.wallet}`;
                     
                     referralCreditsSpan.textContent = data.referral_credits || 0;
@@ -240,7 +230,7 @@
                         politiciansListElem.innerHTML = ''; // '불러오는 중...' 메시지 삭제
                         data.politicians.forEach(p => {
                             const li = document.createElement('li');
-                            li.textContent = p;
+                            li.innerHTML = `${p} <span style="float: right; color: #28a745; font-weight: normal;">100 P-COIN</span>`;
                             politiciansListElem.appendChild(li);
                         });
                     } else {
@@ -252,7 +242,6 @@
                     // 에러 발생 시, 사용자에게 안내 메시지 표시
                     welcomeMessage.textContent = '정보를 불러올 수 없습니다. 로그인이 필요할 수 있습니다.';
                     walletAddressElem.textContent = '오류';
-                    balanceElem.textContent = '-';
                     politiciansListElem.innerHTML = `<li>${error.message}</li>`;
                     // 401 에러가 아니더라도 로그인 버튼을 보여줘서 재시도 유도
                     loginButton.style.display = 'block';
