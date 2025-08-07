@@ -4,6 +4,9 @@ app_state.json
 politician_server
 server.log
 
+# Log files
+*.log
+
 # Backup files
 *.bak
 

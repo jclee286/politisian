@@ -16,9 +16,11 @@ func StartServer(node *node.Node) {
 	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
 	googleClientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
 	if googleClientID == "" || googleClientSecret == "" {
-		log.Fatal("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set")
+		log.Println("WARNING: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not set. Authentication may not work.")
+		// Continue without fatal
+	} else {
+		InitOauth(googleClientID, googleClientSecret)
 	}
-	InitOauth(googleClientID, googleClientSecret)
 
 	blockchainClient = local.New(node)
 
@@ -32,9 +34,37 @@ func StartServer(node *node.Node) {
 	http.Handle("/api/politicians", authMiddleware(http.HandlerFunc(handleGetPoliticians)))
 	http.Handle("/api/me/dashboard", authMiddleware(http.HandlerFunc(handleDashboard)))
 
-	// Frontend 파일 서빙
-	fs := http.FileServer(http.Dir("./frontend"))
-	http.Handle("/", fs)
+	// Frontend 파일 서빙 with strict authentication for root and dashboard
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Allow login and auth routes without authentication
+		if r.URL.Path == "/login.html" || r.URL.Path == "/api/auth/google" || r.URL.Path == "/api/auth/google/callback" {
+			fs := http.FileServer(http.Dir("./frontend"))
+			fs.ServeHTTP(w, r)
+			return
+		}
+
+		// Check session token
+		sessionCookie, err := r.Cookie("session_token")
+		if err != nil || sessionCookie.Value == "" || sessionStore[sessionCookie.Value] == "" {
+			http.Redirect(w, r, "/login.html", http.StatusSeeOther)
+			return
+		}
+
+		// If authenticated, serve the file
+		fs := http.FileServer(http.Dir("./frontend"))
+		fs.ServeHTTP(w, r)
+	})
+
+	// Explicitly protect /index.html with the same logic
+	http.HandleFunc("/index.html", func(w http.ResponseWriter, r *http.Request) {
+		sessionCookie, err := r.Cookie("session_token")
+		if err != nil || sessionCookie.Value == "" || sessionStore[sessionCookie.Value] == "" {
+			http.Redirect(w, r, "/login.html", http.StatusSeeOther)
+			return
+		}
+		fs := http.FileServer(http.Dir("./frontend"))
+		fs.ServeHTTP(w, r)
+	})
 
 	log.Println("HTTP server listening on :8080")
 	err := http.ListenAndServe(":8080", nil)

@@ -33,8 +33,8 @@ type Account struct {
 // Politician은 정치인의 이름과 남은 토큰 발행량을 저장합니다.
 type Politician struct {
 	Name         string `json:"name"`
-	TokensMinted int64  `json:"tokensMinted"`
-	MaxTokens    int64  `json:"maxTokens"`
+	TokensMinted int64  `json:"tokens_minted"`
+	MaxTokens    int64  `json:"max_tokens"`
 }
 
 // saveState는 현재 애플리케이션 상태를 stateFilePath에 JSON 형식으로 저장합니다.

@@ -128,8 +128,32 @@ func (app *PoliticianApp) Commit(_ context.Context, _ *types.RequestCommit) (*ty
 	return &types.ResponseCommit{RetainHeight: 0}, nil
 }
 
-func (app *PoliticianApp) InitChain(context.Context, *types.RequestInitChain) (*types.ResponseInitChain, error) {
-	return &types.ResponseInitChain{}, nil
+func (app *PoliticianApp) InitChain(_ context.Context, req *types.RequestInitChain) (*types.ResponseInitChain, error) {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
+	log.Println("[ABCI] InitChain: 체인 초기화 시작")
+
+	if len(req.AppStateBytes) > 0 {
+		var initialState struct {
+			Politicians map[string]Politician `json:"politicians"`
+		}
+		if err := json.Unmarshal(req.AppStateBytes, &initialState); err != nil {
+			log.Printf("[ABCI] InitChain: app_state 파싱 실패: %v", err)
+			return nil, err
+		}
+
+		if len(initialState.Politicians) > 0 {
+			app.politicians = initialState.Politicians
+			log.Printf("[ABCI] InitChain: 제네시스에서 %d명의 정치인 정보를 로드했습니다: %v", len(app.politicians), initialState.Politicians)
+		}
+	} else {
+		log.Println("[ABCI] InitChain: AppStateBytes가 비어있어, 별도의 상태 초기화 없이 진행합니다.")
+	}
+
+	return &types.ResponseInitChain{
+		Validators: req.Validators,
+	}, nil
 }
 
 func (app *PoliticianApp) CheckTx(_ context.Context, _ *types.RequestCheckTx) (*types.ResponseCheckTx, error) {

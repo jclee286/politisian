@@ -10,3 +10,16 @@ type TxData struct {
 	BirthYear   int      `json:"birthYear"`
 	Politicians []string `json:"politicians"`
 }
+
+type ProfileInfoResponse struct {
+	WalletAddress string `json:"walletAddress"`
+}
+
+type ProfileSaveRequest struct {
+	Nickname    string   `json:"nickname"`
+	Wallet      string   `json:"wallet"`
+	Country     string   `json:"country"`
+	Gender      string   `json:"gender"`
+	BirthYear   int      `json:"birthYear"`
+	Politicians []string `json:"politicians"`
+}

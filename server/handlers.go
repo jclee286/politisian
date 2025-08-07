@@ -17,45 +17,38 @@ func handleGetProfileInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	privKey := ed25519.GenPrivKey()
-	walletAddress := privKey.PubKey().Address().String()
+	pubKey := ed25519.GenPrivKey().PubKey()
+	walletAddress := pubKey.Address().String()
 
-	responseData := map[string]string{
-		"Wallet": walletAddress,
-		"Email":  email,
+	response := ProfileInfoResponse{
+		WalletAddress: walletAddress,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(responseData)
+	json.NewEncoder(w).Encode(response)
 }
 
 func handleProfileSave(w http.ResponseWriter, r *http.Request) {
 	email, ok := r.Context().Value(userEmailKey).(string)
-	if !ok || email == "" {
-		http.Error(w, "인증된 사용자 정보를 찾을 수 없습니다.", http.StatusUnauthorized)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	var profileData struct {
-		Wallet      string   `json:"wallet"`
-		Country     string   `json:"country"`
-		Gender      string   `json:"gender"`
-		BirthYear   int      `json:"birthYear"`
-		Politicians []string `json:"politicians"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&profileData); err != nil {
-		http.Error(w, "잘못된 요청 데이터입니다.", http.StatusBadRequest)
+	var reqBody ProfileSaveRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		http.Error(w, "잘못된 요청 형식입니다.", http.StatusBadRequest)
 		return
 	}
 
 	txData := TxData{
 		Email:       email,
-		Wallet:      profileData.Wallet,
-		Nickname:    "NewUser",
-		Country:     profileData.Country,
-		Gender:      profileData.Gender,
-		BirthYear:   profileData.BirthYear,
-		Politicians: profileData.Politicians,
+		Nickname:    reqBody.Nickname,
+		Wallet:      reqBody.Wallet,
+		Country:     reqBody.Country,
+		Gender:      reqBody.Gender,
+		BirthYear:   reqBody.BirthYear,
+		Politicians: reqBody.Politicians,
 	}
 
 	txBytes, err := json.Marshal(txData)
@@ -64,21 +57,22 @@ func handleProfileSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := blockchainClient.BroadcastTxCommit(context.Background(), txBytes)
+	res, err := blockchainClient.BroadcastTxCommit(r.Context(), txBytes)
 	if err != nil {
-		errorMsg := fmt.Sprintf("블록체인 통신 실패 (RPC 오류): %v", err)
-		http.Error(w, errorMsg, http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("블록체인 통신 실패 (RPC 오류): %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	if res.CheckTx.Code != types.CodeTypeOK {
-        errorMsg := fmt.Sprintf("블록체인 트랜잭션 확인 실패: %s (코드: %d)", res.CheckTx.Log, res.CheckTx.Code)
+		errorMsg := fmt.Sprintf("블록체인 트랜잭션 확인 실패: %s (코드: %d)", res.CheckTx.Log, res.CheckTx.Code)
 		http.Error(w, errorMsg, http.StatusInternalServerError)
 		return
 	}
 
-	if res.TxResult.Code != types.CodeTypeOK {
-        errorMsg := fmt.Sprintf("블록체인 트랜잭션 실행 실패: %s (코드: %d)", res.TxResult.Log, res.TxResult.Code)
+	// Use TxResult for CometBFT v0.38+
+	txResult := res.TxResult
+	if txResult.Code != types.CodeTypeOK {
+		errorMsg := fmt.Sprintf("블록체인 트랜잭션 실행 실패: %s (코드: %d)", txResult.Log, txResult.Code)
 		http.Error(w, errorMsg, http.StatusInternalServerError)
 		return
 	}
@@ -120,7 +114,7 @@ func handleGetPoliticians(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "정치인 목록 조회에 실패했습니다.", http.StatusInternalServerError)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(res.Response.Value)
 }
