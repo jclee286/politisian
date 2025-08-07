@@ -18,6 +18,34 @@ echo "Re-creating essential directories..."
 mkdir -p .cometbft/config
 mkdir -p .cometbft/data
 
+echo "Creating genesis file..."
+cat <<'EOG' > .cometbft/config/genesis.json
+{
+  "genesis_time": "2024-01-01T00:00:00.000000000Z",
+  "chain_id": "politician-chain-1",
+  "initial_height": "0",
+  "consensus_params": {
+    "block": {
+      "max_bytes": "22020096",
+      "max_gas": "-1"
+    },
+    "evidence": {
+      "max_age_num_blocks": "100000",
+      "max_age_duration": "172800000000000",
+      "max_bytes": "1048576"
+    },
+    "validator": {
+      "pub_key_types": [
+        "ed25519"
+      ]
+    },
+    "version": {}
+  },
+  "validators": [],
+  "app_hash": ""
+}
+EOG
+
 echo "Initialization complete."
 # --- End of Initialization ---
 
