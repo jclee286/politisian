@@ -16,6 +16,7 @@ const (
 type AppState struct {
 	Accounts        map[string]types.Account    `json:"accounts"`
 	Politicians     map[string]types.Politician `json:"politicians"`
+	Proposals       map[string]types.Proposal   `json:"proposals"`
 	AppHash         []byte                      `json:"appHash"`
 	LastBlockHeight int64                       `json:"lastBlockHeight"`
 }
@@ -27,6 +28,7 @@ func (app *PoliticianApp) saveState() error {
 	state := AppState{
 		Accounts:        app.accounts,
 		Politicians:     app.politicians,
+		Proposals:       app.proposals,
 		AppHash:         app.appHash,
 		LastBlockHeight: app.lastBlockHeight,
 	}
@@ -51,6 +53,7 @@ func (app *PoliticianApp) loadState() error {
 	defer app.mtx.Unlock()
 	app.accounts = state.Accounts
 	app.politicians = state.Politicians
+	app.proposals = state.Proposals
 	app.appHash = state.AppHash
 	app.lastBlockHeight = state.LastBlockHeight
 

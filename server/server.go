@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/rpc/client/local"
@@ -37,6 +38,19 @@ func StartServer(node *node.Node) {
 	http.Handle("/api/politicians", authMiddleware(http.HandlerFunc(handleGetPoliticians)))
 	http.Handle("/api/me/dashboard", authMiddleware(http.HandlerFunc(handleDashboard)))
 	http.Handle("/api/rewards/claim", authMiddleware(http.HandlerFunc(handleClaimReward)))
+
+	// 거버넌스 관련 API 라우트 (인증 필요)
+	http.Handle("/api/politicians/propose", authMiddleware(http.HandlerFunc(handleProposePolitician)))
+	http.Handle("/api/proposals", authMiddleware(http.HandlerFunc(handleGetProposals)))
+	http.HandleFunc("/api/proposals/", func(w http.ResponseWriter, r *http.Request) {
+		// /api/proposals/{id}/vote 형태의 경로를 처리
+		if strings.HasSuffix(r.URL.Path, "/vote") {
+			authMiddleware(http.HandlerFunc(handleVoteOnProposal)).ServeHTTP(w, r)
+			return
+		}
+		// 다른 /api/proposals/ 경로는 404 처리
+		http.NotFound(w, r)
+	})
 
 	// 그 외 모든 정적 파일 요청은 인증 미들웨어를 거침
 	http.Handle("/", authFileServerMiddleware())

@@ -14,6 +14,7 @@ type PoliticianApp struct {
 	accounts        map[string]ptypes.Account
 	wallets         map[string]string // wallet_address -> email
 	politicians     map[string]ptypes.Politician
+	proposals       map[string]ptypes.Proposal // proposal_id -> proposal
 	appHash         []byte
 	lastBlockHeight int64
 }
@@ -25,6 +26,7 @@ func NewPoliticianApp() *PoliticianApp {
 		accounts:        make(map[string]ptypes.Account),
 		wallets:         make(map[string]string),
 		politicians:     make(map[string]ptypes.Politician),
+		proposals:       make(map[string]ptypes.Proposal),
 		appHash:         []byte{},
 		lastBlockHeight: 0,
 	}
@@ -34,9 +36,9 @@ func NewPoliticianApp() *PoliticianApp {
 		log.Printf("저장된 상태를 찾을 수 없음 (초기 상태로 시작): %v", err)
 		// 초기 정치인 설정
 		initialPoliticians := map[string]ptypes.Politician{
-			"이순신": {Name: "이순신", TokensMinted: 0, MaxTokens: 10000000},
-			"김구":  {Name: "김구", TokensMinted: 0, MaxTokens: 10000000},
-			"세종대왕": {Name: "세종대왕", TokensMinted: 0, MaxTokens: 10000000},
+			"이순신": {Name: "이순신", Region: "전라좌도", Party: "조선", TokensMinted: 0, MaxTokens: 10000000},
+			"김구":  {Name: "김구", Region: "황해도", Party: "대한민국 임시정부", TokensMinted: 0, MaxTokens: 10000000},
+			"세종대왕": {Name: "세종대왕", Region: "한성", Party: "조선", TokensMinted: 0, MaxTokens: 10000000},
 		}
 		app.politicians = initialPoliticians
 	}

@@ -172,3 +172,95 @@ func handleGetPoliticians(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(res.Response.Value)
 }
+
+func handleProposePolitician(w http.ResponseWriter, r *http.Request) {
+	email, ok := r.Context().Value(userEmailKey).(string)
+	if !ok {
+		http.Error(w, "인증된 사용자 정보를 찾을 수 없습니다.", http.StatusUnauthorized)
+		return
+	}
+
+	var reqBody ptypes.ProposePoliticianRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		http.Error(w, "잘못된 요청 형식입니다.", http.StatusBadRequest)
+		return
+	}
+
+	txData := ptypes.TxData{
+		Action:         "propose_politician",
+		Email:          email,
+		PoliticianName: reqBody.Name,
+		Region:         reqBody.Region,
+		Party:          reqBody.Party,
+	}
+
+	txBytes, err := json.Marshal(txData)
+	if err != nil {
+		http.Error(w, "트랜잭션 생성 실패", http.StatusInternalServerError)
+		return
+	}
+
+	if err := broadcastAndCheckTx(r.Context(), txBytes); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("정치인 발의가 성공적으로 블록체인에 기록되었습니다."))
+}
+
+func handleGetProposals(w http.ResponseWriter, r *http.Request) {
+	res, err := blockchainClient.ABCIQuery(context.Background(), "/proposals", nil)
+	if err != nil {
+		http.Error(w, "블록체인에서 제안 목록을 가져오는데 실패했습니다.", http.StatusInternalServerError)
+		return
+	}
+
+	if res.Response.Code != 0 {
+		http.Error(w, "제안 목록 조회에 실패했습니다.", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(res.Response.Value)
+}
+
+func handleVoteOnProposal(w http.ResponseWriter, r *http.Request) {
+	email, ok := r.Context().Value(userEmailKey).(string)
+	if !ok {
+		http.Error(w, "인증된 사용자 정보를 찾을 수 없습니다.", http.StatusUnauthorized)
+		return
+	}
+
+	// URL 경로에서 제안 ID를 추출해야 합니다. 예: /api/proposals/{id}/vote
+	// 이 부분은 라우터(예: gorilla/mux)를 사용하면 더 깔끔하게 처리할 수 있습니다.
+	// 우선 표준 라이브러리로 처리합니다.
+	proposalID := r.URL.Path[len("/api/proposals/") : len(r.URL.Path)-len("/vote")]
+
+	var reqBody ptypes.VoteRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		http.Error(w, "잘못된 요청 형식입니다.", http.StatusBadRequest)
+		return
+	}
+
+	txData := ptypes.TxData{
+		Action:     "vote_on_proposal",
+		Email:      email,
+		ProposalID: proposalID,
+		Vote:       reqBody.Vote,
+	}
+
+	txBytes, err := json.Marshal(txData)
+	if err != nil {
+		http.Error(w, "트랜잭션 생성 실패", http.StatusInternalServerError)
+		return
+	}
+
+	if err := broadcastAndCheckTx(r.Context(), txBytes); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("투표가 성공적으로 블록체인에 기록되었습니다."))
+}

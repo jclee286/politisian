@@ -8,6 +8,7 @@ import (
 
 	"github.com/cometbft/cometbft/abci/types"
 	ptypes "politician/pkg/types"
+	"github.com/google/uuid"
 )
 
 func (app *PoliticianApp) Info(_ context.Context, info *types.RequestInfo) (*types.ResponseInfo, error) {
@@ -46,6 +47,12 @@ func (app *PoliticianApp) Query(_ context.Context, req *types.RequestQuery) (*ty
 			return &types.ResponseQuery{Code: 4, Log: "failed to marshal politicians list"}, nil
 		}
 		return &types.ResponseQuery{Code: 0, Value: res}, nil
+	case "/proposals":
+		res, err := json.Marshal(app.proposals)
+		if err != nil {
+			return &types.ResponseQuery{Code: 5, Log: "failed to marshal proposals"}, nil
+		}
+		return &types.ResponseQuery{Code: 0, Value: res}, nil
 	default:
 		return &types.ResponseQuery{Code: 2, Log: "unknown query path"}, nil
 	}
@@ -68,6 +75,10 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 			respTxs[i] = app.handleCreateProfile(txData)
 		case "claim_reward":
 			respTxs[i] = app.handleClaimReward(txData)
+		case "propose_politician":
+			respTxs[i] = app.handleProposePolitician(txData)
+		case "vote_on_proposal":
+			respTxs[i] = app.handleVoteOnProposal(txData)
 		default:
 			log.Printf("[ABCI] FinalizeBlock: 알 수 없는 액션('%s') 입니다.", txData.Action)
 			respTxs[i] = &types.ExecTxResult{Code: 10, Log: "unknown action"}
@@ -157,6 +168,77 @@ func (app *PoliticianApp) handleClaimReward(txData ptypes.TxData) *types.ExecTxR
 	log.Printf("[ABCI] FinalizeBlock: 계정(%s)에 보상 100 코인 지급 완료. 남은 크레딧: %d, 현재 잔액: %d", txData.Email, account.ReferralCredits, account.Balance)
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
+
+func (app *PoliticianApp) handleProposePolitician(txData ptypes.TxData) *types.ExecTxResult {
+	// 이미 공식 등록된 정치인인지 확인
+	if _, exists := app.politicians[txData.PoliticianName]; exists {
+		return &types.ExecTxResult{Code: 20, Log: "politician already exists"}
+	}
+	// 이미 발의된 제안인지 확인 (이름으로 체크)
+	for _, proposal := range app.proposals {
+		if proposal.Politician.Name == txData.PoliticianName {
+			return &types.ExecTxResult{Code: 21, Log: "proposal for this politician already exists"}
+		}
+	}
+
+	proposalID := uuid.New().String()
+	newProposal := ptypes.Proposal{
+		ID: proposalID,
+		Politician: ptypes.Politician{
+			Name:   txData.PoliticianName,
+			Region: txData.Region,
+			Party:  txData.Party,
+			// MaxTokens는 최종 승인 시 설정
+		},
+		Proposer: txData.Email,
+		Votes:    make(map[string]bool),
+		YesVotes: 0,
+		NoVotes:  0,
+	}
+
+	app.proposals[proposalID] = newProposal
+	log.Printf("새로운 정치인 발의: %s (제안자: %s)", txData.PoliticianName, txData.Email)
+	return &types.ExecTxResult{Code: types.CodeTypeOK}
+}
+
+func (app *PoliticianApp) handleVoteOnProposal(txData ptypes.TxData) *types.ExecTxResult {
+	proposal, exists := app.proposals[txData.ProposalID]
+	if !exists {
+		return &types.ExecTxResult{Code: 30, Log: "proposal not found"}
+	}
+
+	// 중복 투표 방지
+	if _, alreadyVoted := proposal.Votes[txData.Email]; alreadyVoted {
+		return &types.ExecTxResult{Code: 31, Log: "user has already voted on this proposal"}
+	}
+
+	proposal.Votes[txData.Email] = txData.Vote
+	if txData.Vote {
+		proposal.YesVotes++
+	} else {
+		proposal.NoVotes++
+	}
+
+	log.Printf("투표 기록: 제안ID(%s), 투표자(%s), 찬성(%v)", txData.ProposalID, txData.Email, txData.Vote)
+
+	// 찬성 50표 이상이면 공식 등록
+	if proposal.YesVotes >= 50 {
+		log.Printf("찬성 50표 달성! 정치인 '%s'을 공식 등록합니다.", proposal.Politician.Name)
+		
+		newPolitician := proposal.Politician
+		newPolitician.MaxTokens = 10000000 // 1천만개 발행 한도 설정
+		
+		app.politicians[newPolitician.Name] = newPolitician
+		delete(app.proposals, txData.ProposalID)
+		
+		log.Printf("정치인 '%s' 등록 완료.", newPolitician.Name)
+	} else {
+		app.proposals[txData.ProposalID] = proposal
+	}
+
+	return &types.ExecTxResult{Code: types.CodeTypeOK}
+}
+
 
 func (app *PoliticianApp) Commit(_ context.Context, _ *types.RequestCommit) (*types.ResponseCommit, error) {
 	if err := app.saveState(); err != nil {
