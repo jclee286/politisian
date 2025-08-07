@@ -22,7 +22,8 @@ export GOOGLE_CLIENT_SECRET="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"
 
 # Build the project
 echo "Building the server..."
-TMPDIR=/root/politician/build_temp go build -o politician_server .
+mkdir -p ./build_temp
+TMPDIR=./build_temp go build -o politician_server .
 if [ $? -ne 0 ]; then
     echo "Build failed! Please check the errors above."
     exit 1
