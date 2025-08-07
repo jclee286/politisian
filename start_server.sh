@@ -13,6 +13,11 @@ echo "Deleting old blockchain data and application state..."
 rm -rf .cometbft
 rm -f app_state.json
 
+# 2. Re-create essential directories
+echo "Re-creating essential directories..."
+mkdir -p .cometbft/config
+mkdir -p .cometbft/data
+
 echo "Initialization complete."
 # --- End of Initialization ---
 
@@ -32,13 +37,13 @@ echo "Build successful."
 
 # Initialize CometBFT using the newly built binary
 # This creates all necessary files (genesis.json, config.toml, node_key.json, priv_validator_key.json)
-echo "Initializing CometBFT..."
-./politician_server init
-if [ $? -ne 0 ]; then
-    echo "CometBFT initialization failed!"
-    exit 1
-fi
-echo "CometBFT initialized."
+# echo "Initializing CometBFT..."
+# ./politician_server init
+# if [ $? -ne 0 ]; then
+#     echo "CometBFT initialization failed!"
+#     exit 1
+# fi
+# echo "CometBFT initialized."
 
 # Run the server in the background with log redirection
 echo "Starting the server in the background..."
