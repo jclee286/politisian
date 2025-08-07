@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+
+	"politician/pkg/types"
 )
 
 const (
@@ -12,30 +14,10 @@ const (
 
 // AppState는 애플리케이션의 전체 상태를 나타냅니다.
 type AppState struct {
-	Accounts        map[string]Account    `json:"accounts"`
-	Politicians     map[string]Politician `json:"politicians"`
-	AppHash         []byte                `json:"appHash"`
-	LastBlockHeight int64                 `json:"lastBlockHeight"`
-}
-
-// Account는 사용자의 모든 프로필 정보를 저장합니다.
-type Account struct {
-	Email       string   `json:"email"`
-	Nickname    string   `json:"nickname"`
-	Wallet      string   `json:"wallet"`
-	Country     string   `json:"country"`
-	Gender      string   `json:"gender"`
-	BirthYear   int      `json:"birthYear"`
-	Politicians []string `json:"politicians"`
-	Balance     int64    `json:"balance"`
-	Referrer    string   `json:"referrer,omitempty"` // 추천인 지갑 주소
-}
-
-// Politician은 정치인의 이름과 남은 토큰 발행량을 저장합니다.
-type Politician struct {
-	Name         string `json:"name"`
-	TokensMinted int64  `json:"tokens_minted"`
-	MaxTokens    int64  `json:"max_tokens"`
+	Accounts        map[string]types.Account    `json:"accounts"`
+	Politicians     map[string]types.Politician `json:"politicians"`
+	AppHash         []byte                      `json:"appHash"`
+	LastBlockHeight int64                       `json:"lastBlockHeight"`
 }
 
 // saveState는 현재 애플리케이션 상태를 stateFilePath에 JSON 형식으로 저장합니다.

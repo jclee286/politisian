@@ -85,7 +85,7 @@
                     return response.json();
                 })
                 .then(data => {
-                    document.getElementById('walletAddress').value = data.walletAddress || '주소 없음';
+                    document.getElementById('walletAddress').value = data.wallet || '주소 없음';
                 })
                 .catch(error => {
                     document.getElementById('statusMessage').textContent = error.message;

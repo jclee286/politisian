@@ -7,10 +7,8 @@ import (
 	"strconv"
 
 	"github.com/cometbft/cometbft/abci/types"
-	"politician/server" // Import the server package
+	ptypes "politician/pkg/types"
 )
-
-// TxData 구조체를 server 패키지의 정의로 대체하므로 여기서는 삭제합니다.
 
 func (app *PoliticianApp) Info(_ context.Context, info *types.RequestInfo) (*types.ResponseInfo, error) {
 	app.mtx.Lock()
@@ -31,16 +29,17 @@ func (app *PoliticianApp) Query(_ context.Context, req *types.RequestQuery) (*ty
 			return &types.ResponseQuery{Code: 0, Log: "exists"}, nil
 		}
 		return &types.ResponseQuery{Code: 1, Log: "does not exist"}, nil
-	case "/account/profile":
+	case "/account/profile-by-email":
 		email := string(req.Data)
-		if account, ok := app.accounts[email]; ok {
-			res, err := json.Marshal(account)
-			if err != nil {
-				return &types.ResponseQuery{Code: 3, Log: "failed to marshal account data"}, nil
-			}
-			return &types.ResponseQuery{Code: 0, Value: res}, nil
+		account, ok := app.accounts[email]
+		if !ok {
+			return &types.ResponseQuery{Code: 3, Log: "account not found"}, nil
 		}
-		return &types.ResponseQuery{Code: 1, Log: "account not found"}, nil
+		res, err := json.Marshal(account)
+		if err != nil {
+			return &types.ResponseQuery{Code: 4, Log: "failed to marshal account"}, nil
+		}
+		return &types.ResponseQuery{Code: 0, Value: res}, nil
 	case "/politicians/list":
 		res, err := json.Marshal(app.politicians)
 		if err != nil {
@@ -57,51 +56,96 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 	defer app.mtx.Unlock()
 	respTxs := make([]*types.ExecTxResult, len(req.Txs))
 	for i, tx := range req.Txs {
-		var txData server.TxData
+		var txData ptypes.TxData
 		if err := json.Unmarshal(tx, &txData); err != nil {
 			log.Printf("[ABCI] FinalizeBlock: 트랜잭션 #%d 처리 중 오류 (JSON 파싱 실패): %v", i, err)
 			respTxs[i] = &types.ExecTxResult{Code: 1, Log: "failed to unmarshal tx"}
 			continue
 		}
-		if _, ok := app.accounts[txData.Email]; ok {
-			respTxs[i] = &types.ExecTxResult{Code: 2, Log: "email already exists"}
-			continue
-		}
-		var totalReward int64 = 0
-		var rewardError bool = false
-		for _, politicianName := range txData.Politicians {
-			politician, ok := app.politicians[politicianName]
+
+		switch txData.Action {
+		case "create_profile":
+			if _, ok := app.accounts[txData.Email]; ok {
+				respTxs[i] = &types.ExecTxResult{Code: 2, Log: "email already exists"}
+				continue
+			}
+			var totalReward int64 = 0
+			var rewardError bool = false
+			for _, politicianName := range txData.Politicians {
+				politician, ok := app.politicians[politicianName]
+				if !ok {
+					respTxs[i] = &types.ExecTxResult{Code: 3, Log: "selected politician does not exist"}
+					rewardError = true
+					break
+				}
+				if politician.TokensMinted+100 > politician.MaxTokens {
+					respTxs[i] = &types.ExecTxResult{Code: 4, Log: "token minting limit exceeded"}
+					rewardError = true
+					break
+				}
+				politician.TokensMinted += 100
+				app.politicians[politicianName] = politician
+				totalReward += 100
+			}
+			if rewardError {
+				continue
+			}
+			newAccount := ptypes.Account{
+				Email:       txData.Email,
+				Nickname:    txData.Nickname,
+				Wallet:      txData.Wallet,
+				Country:     txData.Country,
+				Gender:      txData.Gender,
+				BirthYear:   txData.BirthYear,
+				Politicians: txData.Politicians,
+				Balance:     totalReward,
+				Referrer:    txData.Referrer,
+			}
+			if txData.Referrer != "" {
+				var referrerAccount ptypes.Account
+				var referrerEmail string
+				found := false
+				for email, acc := range app.accounts {
+					if acc.Wallet == txData.Referrer {
+						referrerAccount = acc
+						referrerEmail = email
+						found = true
+						break
+					}
+				}
+				if found {
+					referrerAccount.ReferralCredits++
+					app.accounts[referrerEmail] = referrerAccount
+				}
+			}
+			app.accounts[txData.Email] = newAccount
+			log.Printf("새 계정 생성: %s (추천인: %s)", txData.Email, txData.Referrer)
+			respTxs[i] = &types.ExecTxResult{Code: types.CodeTypeOK}
+
+		case "claim_reward":
+			log.Printf("[ABCI] FinalizeBlock: 'claim_reward' 액션 수신. 이메일: %s", txData.Email)
+			account, ok := app.accounts[txData.Email]
 			if !ok {
-				respTxs[i] = &types.ExecTxResult{Code: 3, Log: "selected politician does not exist"}
-				rewardError = true
-				break
+				respTxs[i] = &types.ExecTxResult{Code: 11, Log: "account not found"}
+				continue
 			}
-			if politician.TokensMinted+100 > politician.MaxTokens {
-				respTxs[i] = &types.ExecTxResult{Code: 4, Log: "token minting limit exceeded"}
-				rewardError = true
-				break
+
+			if account.ReferralCredits <= 0 {
+				respTxs[i] = &types.ExecTxResult{Code: 12, Log: "no referral credits to claim"}
+				continue
 			}
-			politician.TokensMinted += 100
-			app.politicians[politicianName] = politician
-			totalReward += 100
+
+			account.ReferralCredits--
+			account.Balance += 100
+			app.accounts[txData.Email] = account
+
+			log.Printf("[ABCI] FinalizeBlock: 계정(%s)에 보상 100 코인 지급 완료. 남은 크레딧: %d, 현재 잔액: %d", txData.Email, account.ReferralCredits, account.Balance)
+			respTxs[i] = &types.ExecTxResult{Code: types.CodeTypeOK}
+
+		default:
+			log.Printf("[ABCI] FinalizeBlock: 알 수 없는 액션('%s') 입니다.", txData.Action)
+			respTxs[i] = &types.ExecTxResult{Code: 10, Log: "unknown action"}
 		}
-		if rewardError {
-			continue
-		}
-		newAccount := Account{
-			Email:       txData.Email,
-			Nickname:    txData.Nickname,
-			Wallet:      txData.Wallet,
-			Country:     txData.Country,
-			Gender:      txData.Gender,
-			BirthYear:   txData.BirthYear,
-			Politicians: txData.Politicians,
-			Balance:     totalReward,
-			Referrer:    txData.Referrer, // Add this line
-		}
-		app.accounts[txData.Email] = newAccount
-		log.Printf("새 계정 생성: %s (추천인: %s)", txData.Email, txData.Referrer)
-		respTxs[i] = &types.ExecTxResult{Code: types.CodeTypeOK}
 	}
 	app.appHash = []byte(strconv.Itoa(len(app.accounts)))
 	app.lastBlockHeight = req.Height
@@ -128,7 +172,7 @@ func (app *PoliticianApp) InitChain(_ context.Context, req *types.RequestInitCha
 
 	if len(req.AppStateBytes) > 0 {
 		var initialState struct {
-			Politicians map[string]Politician `json:"politicians"`
+			Politicians map[string]ptypes.Politician `json:"politicians"`
 		}
 		if err := json.Unmarshal(req.AppStateBytes, &initialState); err != nil {
 			log.Printf("[ABCI] InitChain: app_state 파싱 실패: %v", err)

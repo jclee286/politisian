@@ -33,6 +33,7 @@ func StartServer(node *node.Node) {
 	http.Handle("/api/profile/save", authMiddleware(http.HandlerFunc(handleProfileSave)))
 	http.Handle("/api/politicians", authMiddleware(http.HandlerFunc(handleGetPoliticians)))
 	http.Handle("/api/me/dashboard", authMiddleware(http.HandlerFunc(handleDashboard)))
+	http.Handle("/api/rewards/claim", authMiddleware(http.HandlerFunc(handleClaimReward)))
 
 	// Frontend 파일 서빙 with strict authentication for root and dashboard
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

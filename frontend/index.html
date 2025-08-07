@@ -124,6 +124,21 @@
             </div>
             <p id="copy-status" style="height: 1em; color: green;"></p>
         </div>
+
+        <div class="card">
+            <h2>추천 보상</h2>
+            <p>친구를 초대하고 받은 크레딧으로 추가 보상을 받으세요!</p>
+            <p>사용 가능한 추천 크레딧: <strong id="referral-credits" style="font-size: 1.2em;">0</strong> 개</p>
+            <button id="claim-reward-button" class="button" disabled>크레딧 사용 (100 코인 받기)</button>
+            <p id="claim-status" style="height: 1em; color: green;"></p>
+        </div>
+
+        <div class="card">
+            <h2>나의 지지 정치인</h2>
+            <ul id="politicians-list" class="politician-list">
+                <li class="loading">목록을 불러오는 중...</li>
+            </ul>
+        </div>
     </div>
 
     <script>
@@ -136,6 +151,9 @@
             const referralLinkInput = document.getElementById('referral-link');
             const copyButton = document.getElementById('copy-button');
             const copyStatus = document.getElementById('copy-status');
+            const referralCreditsSpan = document.getElementById('referral-credits');
+            const claimRewardButton = document.getElementById('claim-reward-button');
+            const claimStatus = document.getElementById('claim-status');
 
             console.log('대시보드 페이지 로드, API에서 데이터 가져오는 중...');
 
@@ -161,6 +179,11 @@
                     walletAddressElem.textContent = data.wallet;
                     balanceElem.textContent = `${data.balance} P-COIN`;
                     referralLinkInput.value = `${window.location.origin}/login.html?ref=${data.wallet}`;
+                    
+                    referralCreditsSpan.textContent = data.referral_credits || 0;
+                    if (data.referral_credits > 0) {
+                        claimRewardButton.disabled = false;
+                    }
 
                     if (data.politicians && data.politicians.length > 0) {
                         politiciansListElem.innerHTML = ''; // '불러오는 중...' 메시지 삭제
@@ -191,6 +214,32 @@
                 setTimeout(() => {
                     copyStatus.textContent = '';
                 }, 2000);
+            });
+
+            claimRewardButton.addEventListener('click', function() {
+                claimStatus.textContent = '보상 요청 중...';
+                claimRewardButton.disabled = true;
+
+                fetch('/api/rewards/claim', {
+                    method: 'POST',
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error(text) });
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    claimStatus.textContent = '보상이 지급되었습니다! 페이지를 새로고침합니다.';
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                })
+                .catch(error => {
+                    console.error('보상 요청 실패:', error);
+                    claimStatus.textContent = `오류: ${error.message}`;
+                    claimRewardButton.disabled = false;
+                });
             });
         });
     </script>
