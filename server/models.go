@@ -9,6 +9,7 @@ type TxData struct {
 	Gender      string   `json:"gender"`
 	BirthYear   int      `json:"birthYear"`
 	Politicians []string `json:"politicians"`
+	Referrer    string   `json:"referrer,omitempty"`
 }
 
 type ProfileInfoResponse struct {
@@ -22,4 +23,5 @@ type ProfileSaveRequest struct {
 	Gender      string   `json:"gender"`
 	BirthYear   int      `json:"birthYear"`
 	Politicians []string `json:"politicians"`
+	Referrer    string   `json:"referrer,omitempty"`
 }

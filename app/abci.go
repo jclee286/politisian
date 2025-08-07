@@ -7,19 +7,10 @@ import (
 	"strconv"
 
 	"github.com/cometbft/cometbft/abci/types"
+	"politician/server" // Import the server package
 )
 
-// TxData는 블록체인으로 전송될 트랜잭션의 데이터 구조입니다.
-// 이 구조체는 FinalizeBlock에서만 사용되므로 abci.go에 두는 것이 적합합니다.
-type TxData struct {
-	Email       string   `json:"email"`
-	Nickname    string   `json:"nickname"`
-	Wallet      string   `json:"wallet"`
-	Country     string   `json:"country"`
-	Gender      string   `json:"gender"`
-	BirthYear   int      `json:"birthYear"`
-	Politicians []string `json:"politicians"`
-}
+// TxData 구조체를 server 패키지의 정의로 대체하므로 여기서는 삭제합니다.
 
 func (app *PoliticianApp) Info(_ context.Context, info *types.RequestInfo) (*types.ResponseInfo, error) {
 	app.mtx.Lock()
@@ -66,7 +57,7 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 	defer app.mtx.Unlock()
 	respTxs := make([]*types.ExecTxResult, len(req.Txs))
 	for i, tx := range req.Txs {
-		var txData TxData
+		var txData server.TxData
 		if err := json.Unmarshal(tx, &txData); err != nil {
 			log.Printf("[ABCI] FinalizeBlock: 트랜잭션 #%d 처리 중 오류 (JSON 파싱 실패): %v", i, err)
 			respTxs[i] = &types.ExecTxResult{Code: 1, Log: "failed to unmarshal tx"}
@@ -106,9 +97,10 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 			BirthYear:   txData.BirthYear,
 			Politicians: txData.Politicians,
 			Balance:     totalReward,
+			Referrer:    txData.Referrer, // Add this line
 		}
 		app.accounts[txData.Email] = newAccount
-		log.Printf("새 계정 생성: %s", txData.Email)
+		log.Printf("새 계정 생성: %s (추천인: %s)", txData.Email, txData.Referrer)
 		respTxs[i] = &types.ExecTxResult{Code: types.CodeTypeOK}
 	}
 	app.appHash = []byte(strconv.Itoa(len(app.accounts)))

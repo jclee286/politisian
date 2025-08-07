@@ -28,6 +28,7 @@ type Account struct {
 	BirthYear   int      `json:"birthYear"`
 	Politicians []string `json:"politicians"`
 	Balance     int64    `json:"balance"`
+	Referrer    string   `json:"referrer,omitempty"` // 추천인 지갑 주소
 }
 
 // Politician은 정치인의 이름과 남은 토큰 발행량을 저장합니다.

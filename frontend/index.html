@@ -30,6 +30,8 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: flex; /* Add flexbox for alignment */
+            flex-direction: column; /* Stack items vertically */
         }
         .card h2 {
             color: #333;
@@ -43,6 +45,25 @@
             padding: 10px;
             border-radius: 4px;
             word-break: break-all;
+        }
+        .referral-container {
+            display: flex;
+            align-items: center;
+        }
+        #referral-link {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .copy-button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .copy-button:hover {
+            background-color: #0056b3;
         }
         .balance {
             font-size: 2em;
@@ -94,6 +115,15 @@
                 <li class="loading">목록을 불러오는 중...</li>
             </ul>
         </div>
+        <div class="card">
+            <h2>나의 추천인 링크</h2>
+            <p>친구에게 이 링크를 공유하고 보상을 받으세요!</p>
+            <div class="referral-container">
+                <input type="text" id="referral-link" class="wallet-address" readonly>
+                <button id="copy-button" class="copy-button">복사</button>
+            </div>
+            <p id="copy-status" style="height: 1em; color: green;"></p>
+        </div>
     </div>
 
     <script>
@@ -103,6 +133,9 @@
             const balanceElem = document.getElementById('balance');
             const politiciansListElem = document.getElementById('politicians-list');
             const loginButton = document.getElementById('login-button');
+            const referralLinkInput = document.getElementById('referral-link');
+            const copyButton = document.getElementById('copy-button');
+            const copyStatus = document.getElementById('copy-status');
 
             console.log('대시보드 페이지 로드, API에서 데이터 가져오는 중...');
 
@@ -127,6 +160,7 @@
                     welcomeMessage.textContent = `${data.nickname || '사용자'}님, 환영합니다!`;
                     walletAddressElem.textContent = data.wallet;
                     balanceElem.textContent = `${data.balance} P-COIN`;
+                    referralLinkInput.value = `${window.location.origin}/login.html?ref=${data.wallet}`;
 
                     if (data.politicians && data.politicians.length > 0) {
                         politiciansListElem.innerHTML = ''; // '불러오는 중...' 메시지 삭제
@@ -149,6 +183,15 @@
                     // 401 에러가 아니더라도 로그인 버튼을 보여줘서 재시도 유도
                     loginButton.style.display = 'block';
                 });
+            
+            copyButton.addEventListener('click', function() {
+                referralLinkInput.select();
+                document.execCommand('copy');
+                copyStatus.textContent = '복사되었습니다!';
+                setTimeout(() => {
+                    copyStatus.textContent = '';
+                }, 2000);
+            });
         });
     </script>
 </body>

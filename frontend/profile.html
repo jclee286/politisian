@@ -85,7 +85,7 @@
                     return response.json();
                 })
                 .then(data => {
-                    document.getElementById('walletAddress').value = data.Wallet || '주소 없음';
+                    document.getElementById('walletAddress').value = data.walletAddress || '주소 없음';
                 })
                 .catch(error => {
                     document.getElementById('statusMessage').textContent = error.message;
@@ -119,6 +119,17 @@
                 .catch(error => {
                     document.getElementById('statusMessage').textContent = error.message;
                 });
+            
+            // Get referrer from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const referrer = urlParams.get('ref');
+            if (referrer) {
+                const referrerInput = document.createElement('input');
+                referrerInput.type = 'hidden';
+                referrerInput.id = 'referrer';
+                referrerInput.value = referrer;
+                document.getElementById('profileForm').appendChild(referrerInput);
+            }
         });
 
         document.getElementById('profileForm').addEventListener('submit', function(event) {
@@ -130,7 +141,7 @@
             statusMessage.className = 'status-message';
 
             const formData = {
-                walletAddress: document.getElementById('walletAddress').value,
+                wallet: document.getElementById('walletAddress').value,
                 country: document.getElementById('country').value,
                 gender: document.querySelector('input[name="gender"]:checked').value,
                 birthYear: parseInt(document.getElementById('birthYear').value, 10),
@@ -138,7 +149,8 @@
                     document.getElementById('politician1').value,
                     document.getElementById('politician2').value,
                     document.getElementById('politician3').value
-                ]
+                ],
+                referrer: document.getElementById('referrer') ? document.getElementById('referrer').value : ''
             };
 
             // ### '진실을 비추는 거울' 수정 지점 ###

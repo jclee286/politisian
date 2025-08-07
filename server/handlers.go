@@ -49,6 +49,7 @@ func handleProfileSave(w http.ResponseWriter, r *http.Request) {
 		Gender:      reqBody.Gender,
 		BirthYear:   reqBody.BirthYear,
 		Politicians: reqBody.Politicians,
+		Referrer:    reqBody.Referrer,
 	}
 
 	txBytes, err := json.Marshal(txData)
