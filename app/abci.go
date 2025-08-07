@@ -65,83 +65,9 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 
 		switch txData.Action {
 		case "create_profile":
-			if _, ok := app.accounts[txData.Email]; ok {
-				respTxs[i] = &types.ExecTxResult{Code: 2, Log: "email already exists"}
-				continue
-			}
-			var totalReward int64 = 0
-			var rewardError bool = false
-			for _, politicianName := range txData.Politicians {
-				politician, ok := app.politicians[politicianName]
-				if !ok {
-					respTxs[i] = &types.ExecTxResult{Code: 3, Log: "selected politician does not exist"}
-					rewardError = true
-					break
-				}
-				if politician.TokensMinted+100 > politician.MaxTokens {
-					respTxs[i] = &types.ExecTxResult{Code: 4, Log: "token minting limit exceeded"}
-					rewardError = true
-					break
-				}
-				politician.TokensMinted += 100
-				app.politicians[politicianName] = politician
-				totalReward += 100
-			}
-			if rewardError {
-				continue
-			}
-			newAccount := ptypes.Account{
-				Email:       txData.Email,
-				Nickname:    txData.Nickname,
-				Wallet:      txData.Wallet,
-				Country:     txData.Country,
-				Gender:      txData.Gender,
-				BirthYear:   txData.BirthYear,
-				Politicians: txData.Politicians,
-				Balance:     totalReward,
-				Referrer:    txData.Referrer,
-			}
-			if txData.Referrer != "" {
-				var referrerAccount ptypes.Account
-				var referrerEmail string
-				found := false
-				for email, acc := range app.accounts {
-					if acc.Wallet == txData.Referrer {
-						referrerAccount = acc
-						referrerEmail = email
-						found = true
-						break
-					}
-				}
-				if found {
-					referrerAccount.ReferralCredits++
-					app.accounts[referrerEmail] = referrerAccount
-				}
-			}
-			app.accounts[txData.Email] = newAccount
-			log.Printf("새 계정 생성: %s (추천인: %s)", txData.Email, txData.Referrer)
-			respTxs[i] = &types.ExecTxResult{Code: types.CodeTypeOK}
-
+			respTxs[i] = app.handleCreateProfile(txData)
 		case "claim_reward":
-			log.Printf("[ABCI] FinalizeBlock: 'claim_reward' 액션 수신. 이메일: %s", txData.Email)
-			account, ok := app.accounts[txData.Email]
-			if !ok {
-				respTxs[i] = &types.ExecTxResult{Code: 11, Log: "account not found"}
-				continue
-			}
-
-			if account.ReferralCredits <= 0 {
-				respTxs[i] = &types.ExecTxResult{Code: 12, Log: "no referral credits to claim"}
-				continue
-			}
-
-			account.ReferralCredits--
-			account.Balance += 100
-			app.accounts[txData.Email] = account
-
-			log.Printf("[ABCI] FinalizeBlock: 계정(%s)에 보상 100 코인 지급 완료. 남은 크레딧: %d, 현재 잔액: %d", txData.Email, account.ReferralCredits, account.Balance)
-			respTxs[i] = &types.ExecTxResult{Code: types.CodeTypeOK}
-
+			respTxs[i] = app.handleClaimReward(txData)
 		default:
 			log.Printf("[ABCI] FinalizeBlock: 알 수 없는 액션('%s') 입니다.", txData.Action)
 			respTxs[i] = &types.ExecTxResult{Code: 10, Log: "unknown action"}
@@ -154,6 +80,82 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 		TxResults: respTxs,
 		AppHash:   app.appHash,
 	}, nil
+}
+
+func (app *PoliticianApp) handleCreateProfile(txData ptypes.TxData) *types.ExecTxResult {
+	if _, ok := app.accounts[txData.Email]; ok {
+		return &types.ExecTxResult{Code: 2, Log: "email already exists"}
+	}
+
+	totalReward, res := app.processInitialReward(txData.Politicians)
+	if res != nil {
+		return res
+	}
+
+	newAccount := ptypes.Account{
+		Email:       txData.Email,
+		Nickname:    txData.Nickname,
+		Wallet:      txData.Wallet,
+		Country:     txData.Country,
+		Gender:      txData.Gender,
+		BirthYear:   txData.BirthYear,
+		Politicians: txData.Politicians,
+		Balance:     totalReward,
+		Referrer:    txData.Referrer,
+	}
+
+	if txData.Referrer != "" {
+		if referrerEmail, ok := app.wallets[txData.Referrer]; ok {
+			if referrerAccount, ok := app.accounts[referrerEmail]; ok {
+				referrerAccount.ReferralCredits++
+				app.accounts[referrerEmail] = referrerAccount
+			}
+		}
+	}
+
+	app.accounts[txData.Email] = newAccount
+	if txData.Wallet != "" {
+		app.wallets[txData.Wallet] = txData.Email
+	}
+
+	log.Printf("새 계정 생성: %s (추천인: %s)", txData.Email, txData.Referrer)
+	return &types.ExecTxResult{Code: types.CodeTypeOK}
+}
+
+func (app *PoliticianApp) processInitialReward(politicianNames []string) (int64, *types.ExecTxResult) {
+	var totalReward int64 = 0
+	for _, politicianName := range politicianNames {
+		politician, ok := app.politicians[politicianName]
+		if !ok {
+			return 0, &types.ExecTxResult{Code: 3, Log: "selected politician does not exist"}
+		}
+		if politician.TokensMinted+100 > politician.MaxTokens {
+			return 0, &types.ExecTxResult{Code: 4, Log: "token minting limit exceeded"}
+		}
+		politician.TokensMinted += 100
+		app.politicians[politicianName] = politician
+		totalReward += 100
+	}
+	return totalReward, nil
+}
+
+func (app *PoliticianApp) handleClaimReward(txData ptypes.TxData) *types.ExecTxResult {
+	log.Printf("[ABCI] FinalizeBlock: 'claim_reward' 액션 수신. 이메일: %s", txData.Email)
+	account, ok := app.accounts[txData.Email]
+	if !ok {
+		return &types.ExecTxResult{Code: 11, Log: "account not found"}
+	}
+
+	if account.ReferralCredits <= 0 {
+		return &types.ExecTxResult{Code: 12, Log: "no referral credits to claim"}
+	}
+
+	account.ReferralCredits--
+	account.Balance += 100
+	app.accounts[txData.Email] = account
+
+	log.Printf("[ABCI] FinalizeBlock: 계정(%s)에 보상 100 코인 지급 완료. 남은 크레딧: %d, 현재 잔액: %d", txData.Email, account.ReferralCredits, account.Balance)
+	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
 func (app *PoliticianApp) Commit(_ context.Context, _ *types.RequestCommit) (*types.ResponseCommit, error) {

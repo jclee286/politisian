@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,8 +25,28 @@ var googleOauthConfig = &oauth2.Config{
 	Endpoint:     google.Endpoint,
 }
 
-// 세션 토큰과 이메일을 매핑하는 서버 측 세션 저장소
-var sessionStore = make(map[string]string)
+// SessionStore는 세션 토큰과 이메일을 안전하게 매핑하는 서버 측 세션 저장소입니다.
+type SessionStore struct {
+	mu       sync.RWMutex
+	sessions map[string]string
+}
+
+func (s *SessionStore) Set(token, email string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.sessions[token] = email
+}
+
+func (s *SessionStore) Get(token string) (string, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	email, exists := s.sessions[token]
+	return email, exists
+}
+
+var sessionStore = &SessionStore{
+	sessions: make(map[string]string),
+}
 
 type contextKey string
 
@@ -88,7 +109,7 @@ func handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	sessionToken := uuid.New().String()
 	// 세션 저장소에 토큰과 이메일을 기록합니다.
-	sessionStore[sessionToken] = email
+	sessionStore.Set(sessionToken, email)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
@@ -146,7 +167,7 @@ func authMiddleware(next http.Handler) http.Handler {
 		}
 
 		sessionToken := sessionCookie.Value
-		email, exists := sessionStore[sessionToken]
+		email, exists := sessionStore.Get(sessionToken)
 		if !exists {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return

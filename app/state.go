@@ -53,6 +53,15 @@ func (app *PoliticianApp) loadState() error {
 	app.politicians = state.Politicians
 	app.appHash = state.AppHash
 	app.lastBlockHeight = state.LastBlockHeight
+
+	// wallets 맵 재생성
+	app.wallets = make(map[string]string)
+	for email, account := range app.accounts {
+		if account.Wallet != "" {
+			app.wallets[account.Wallet] = email
+		}
+	}
+
 	log.Println("저장된 애플리케이션 상태를 성공적으로 불러왔습니다.")
 	return nil
 }

@@ -12,6 +12,7 @@ import (
 type PoliticianApp struct {
 	mtx             sync.Mutex
 	accounts        map[string]ptypes.Account
+	wallets         map[string]string // wallet_address -> email
 	politicians     map[string]ptypes.Politician
 	appHash         []byte
 	lastBlockHeight int64
@@ -22,6 +23,7 @@ type PoliticianApp struct {
 func NewPoliticianApp() *PoliticianApp {
 	app := &PoliticianApp{
 		accounts:        make(map[string]ptypes.Account),
+		wallets:         make(map[string]string),
 		politicians:     make(map[string]ptypes.Politician),
 		appHash:         []byte{},
 		lastBlockHeight: 0,

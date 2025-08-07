@@ -29,6 +29,21 @@ func handleGetProfileInfo(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// broadcastAndCheckTx는 트랜잭션을 브로드캐스트하고 결과를 확인하는 헬퍼 함수입니다.
+func broadcastAndCheckTx(ctx context.Context, txBytes []byte) error {
+	res, err := blockchainClient.BroadcastTxCommit(ctx, txBytes)
+	if err != nil {
+		return fmt.Errorf("블록체인 통신 실패 (RPC 오류): %v", err)
+	}
+	if res.CheckTx.Code != types.CodeTypeOK {
+		return fmt.Errorf("블록체인 트랜잭션 확인 실패: %s (코드: %d)", res.CheckTx.Log, res.CheckTx.Code)
+	}
+	if res.TxResult.Code != types.CodeTypeOK {
+		return fmt.Errorf("블록체인 트랜잭션 실행 실패: %s (코드: %d)", res.TxResult.Log, res.TxResult.Code)
+	}
+	return nil
+}
+
 func handleProfileSave(w http.ResponseWriter, r *http.Request) {
 	email, ok := r.Context().Value(userEmailKey).(string)
 	if !ok {
@@ -60,23 +75,8 @@ func handleProfileSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := blockchainClient.BroadcastTxCommit(r.Context(), txBytes)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("블록체인 통신 실패 (RPC 오류): %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	if res.CheckTx.Code != types.CodeTypeOK {
-		errorMsg := fmt.Sprintf("블록체인 트랜잭션 확인 실패: %s (코드: %d)", res.CheckTx.Log, res.CheckTx.Code)
-		http.Error(w, errorMsg, http.StatusInternalServerError)
-		return
-	}
-
-	// Use TxResult for CometBFT v0.38+
-	txResult := res.TxResult
-	if txResult.Code != types.CodeTypeOK {
-		errorMsg := fmt.Sprintf("블록체인 트랜잭션 실행 실패: %s (코드: %d)", txResult.Log, txResult.Code)
-		http.Error(w, errorMsg, http.StatusInternalServerError)
+	if err := broadcastAndCheckTx(r.Context(), txBytes); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -148,22 +148,8 @@ func handleClaimReward(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := blockchainClient.BroadcastTxCommit(r.Context(), txBytes)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("블록체인 통신 실패 (RPC 오류): %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	if res.CheckTx.Code != types.CodeTypeOK {
-		errorMsg := fmt.Sprintf("블록체인 트랜잭션 확인 실패: %s (코드: %d)", res.CheckTx.Log, res.CheckTx.Code)
-		http.Error(w, errorMsg, http.StatusInternalServerError)
-		return
-	}
-
-	txResult := res.TxResult
-	if txResult.Code != types.CodeTypeOK {
-		errorMsg := fmt.Sprintf("블록체인 트랜잭션 실행 실패: %s (코드: %d)", txResult.Log, txResult.Code)
-		http.Error(w, errorMsg, http.StatusInternalServerError)
+	if err := broadcastAndCheckTx(r.Context(), txBytes); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
