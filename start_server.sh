@@ -8,18 +8,10 @@ sleep 1
 # --- Complete Initialization for a Fresh Start ---
 echo "Performing complete initialization..."
 
-# 1. Delete old blockchain data
-echo "Deleting old blockchain data (.cometbft/data)..."
-rm -rf .cometbft/data
-
-# 2. Delete old application state ("memory")
-echo "Deleting old application state (app_state.json)..."
+# 1. Delete old blockchain data and application state
+echo "Deleting old blockchain data and application state..."
+rm -rf .cometbft
 rm -f app_state.json
-
-# 3. Recreate essential folder and state file for CometBFT
-echo "Creating essential CometBFT data directory..."
-mkdir -p .cometbft/data
-echo '{}' > .cometbft/data/priv_validator_state.json
 
 echo "Initialization complete."
 # --- End of Initialization ---
@@ -30,12 +22,22 @@ export GOOGLE_CLIENT_SECRET="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"
 
 # Build the project
 echo "Building the server..."
-go build -o politician_server .
+TMPDIR=/root/politician/build_temp go build -o politician_server .
 if [ $? -ne 0 ]; then
     echo "Build failed! Please check the errors above."
     exit 1
 fi
 echo "Build successful."
+
+# Initialize CometBFT using the newly built binary
+# This creates all necessary files (genesis.json, config.toml, node_key.json, priv_validator_key.json)
+echo "Initializing CometBFT..."
+./politician_server init
+if [ $? -ne 0 ]; then
+    echo "CometBFT initialization failed!"
+    exit 1
+fi
+echo "CometBFT initialized."
 
 # Run the server in the background with log redirection
 echo "Starting the server in the background..."
@@ -43,5 +45,4 @@ echo "Starting the server in the background..."
 
 # Print confirmation
 echo "Server started in the background (PID: $!). Logs are in stdout.log and stderr.log."
-echo "To check status after a few seconds: curl http://localhost:26657/status"
-echo "To stop: pkill -f politician_server" 
+echo "To check status after a few seconds: curl http://localhost:26657/status" 
