@@ -54,12 +54,24 @@ func runNode(cfg *config.Config, app abci.Application) error {
 
 	pv := privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
 
-	genesisDoc, err := types.GenesisDocFromFile(cfg.GenesisFile())
-	if err != nil {
-		return fmt.Errorf("제네시스 파일 로드 실패: %w", err)
-	}
+	dbProvider := node.DBProvider(func(ctx *node.DBContext) (dbm.DB, error) {
+		return dbm.NewDB(ctx.ID, ctx.Backend, ctx.Dir)
+	})
 
-	node, err := node.NewNode(cfg, pv, nodeKey, proxy.NewLocalClientCreator(app), genesisDoc, node.DefaultMetricsProvider(cfg.Instrumentation), logger)
+	genesisDocProvider := node.GenesisDocProvider(func() (*types.GenesisDoc, error) {
+		return types.GenesisDocFromFile(cfg.GenesisFile())
+	})
+
+	node, err := node.NewNode(
+		cfg,
+		pv,
+		nodeKey,
+		proxy.NewLocalClientCreator(app),
+		genesisDocProvider,
+		dbProvider,
+		node.DefaultMetricsProvider(cfg.Instrumentation),
+		logger,
+	)
 	if err != nil {
 		return fmt.Errorf("CometBFT 노드 생성 실패: %w", err)
 	}
