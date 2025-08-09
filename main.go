@@ -64,7 +64,7 @@ func runNode(cfg *config.Config, app abci.Application) error {
 		nodeKey,
 		proxy.NewLocalClientCreator(app),
 		genesisDocProvider,
-		node.DefaultDBProvider,
+		config.DefaultDBProvider,
 		node.DefaultMetricsProvider(cfg.Instrumentation),
 		logger,
 	)
