@@ -6,46 +6,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"crypto/sha256"
 
-	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/ed25519"
 	ptypes "politisian/pkg/types"
 
-	"github.com/google/uuid"
+	"github.com/cometbft/cometbft/abci/types"
 )
-
-func handleGetProfileInfo(w http.ResponseWriter, r *http.Request) {
-	// 이제 컨텍스트에서 이메일 대신 지갑 주소를 가져옵니다.
-	address, ok := r.Context().Value(userWalletAddressKey).(string)
-	if !ok {
-		http.Error(w, "컨텍스트에서 지갑 주소를 찾을 수 없습니다.", http.StatusInternalServerError)
-		return
-	}
-
-	// 사용자의 이메일을 기반으로 결정론적(deterministic) 키 쌍을 생성합니다.
-	// 이렇게 하면 동일한 이메일에 대해 항상 동일한 지갑 주소가 생성됩니다.
-	hasher := sha256.New()
-	hasher.Write([]byte(address))
-	seed := hasher.Sum(nil)
-	
-	privKey := ed25519.GenPrivKeyFromSecret(seed)
-	pubKey := privKey.PubKey()
-	walletAddress := pubKey.Address().String()
-
-	response := ptypes.ProfileInfoResponse{
-		Wallet: walletAddress,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
 
 // broadcastAndCheckTx는 트랜잭션을 브로드캐스트하고 결과를 확인하는 헬퍼 함수입니다.
 func broadcastAndCheckTx(ctx context.Context, txBytes []byte) error {
-	// `BroadcastTxCommit`은 타임아웃 위험이 있고, `BroadcastTxAsync`는 결과를 보장하지 않습니다.
-	// `BroadcastTxSync`는 트랜잭션이 Mempool에 포함되었는지 확인하여 안정성과 속도의 균형을 맞춥니다.
-	// res, err := blockchainClient.BroadcastTxCommit(ctx, txBytes)
 	res, err := blockchainClient.BroadcastTxSync(ctx, txBytes)
 	if err != nil {
 		return fmt.Errorf("블록체인 통신 실패 (RPC 오류): %v", err)
@@ -58,30 +26,26 @@ func broadcastAndCheckTx(ctx context.Context, txBytes []byte) error {
 	return nil
 }
 
+// handleProfileSave는 사용자의 프로필(지지 정치인)을 저장하는 요청을 처리합니다.
 func handleProfileSave(w http.ResponseWriter, r *http.Request) {
-	// 이제 컨텍스트에서 이메일 대신 지갑 주소를 가져옵니다.
-	address, ok := r.Context().Value(userWalletAddressKey).(string)
-	if !ok {
-		http.Error(w, "컨텍스트에서 지갑 주소를 찾을 수 없습니다.", http.StatusInternalServerError)
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok || userID == "" {
+		http.Error(w, "사용자 ID를 찾을 수 없습니다.", http.StatusInternalServerError)
 		return
 	}
 
-	var reqBody ptypes.ProfileSaveRequest
+	var reqBody struct {
+		Politisian []string `json:"politisian"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		http.Error(w, "잘못된 요청 형식입니다.", http.StatusBadRequest)
 		return
 	}
 
 	txData := ptypes.TxData{
-		Action:      "create_profile",
-		Email:       address,
-		Nickname:    reqBody.Nickname,
-		Wallet:      reqBody.Wallet,
-		Country:     reqBody.Country,
-		Gender:      reqBody.Gender,
-		BirthYear:   reqBody.BirthYear,
-		Politisians: reqBody.Politisians,
-		Referrer:    reqBody.Referrer,
+		Action:     "update_supporters", // 이 액션은 ABCI 앱에서 처리해야 합니다.
+		UserID:     userID,
+		Politisian: reqBody.Politisian,
 	}
 
 	txBytes, err := json.Marshal(txData)
@@ -96,88 +60,43 @@ func handleProfileSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("프로필 저장 성공"))
+	json.NewEncoder(w).Encode(map[string]string{"log": "프로필이 성공적으로 저장되었습니다."})
 }
 
-func handleDashboard(w http.ResponseWriter, r *http.Request) {
-	// 이제 컨텍스트에서 이메일 대신 지갑 주소를 가져옵니다.
-	address, ok := r.Context().Value(userWalletAddressKey).(string)
-	if !ok {
-		http.Error(w, "컨텍스트에서 지갑 주소를 찾을 수 없습니다.", http.StatusInternalServerError)
+
+// handleUserProfile는 사용자의 프로필 정보를 반환합니다.
+func handleUserProfile(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok || userID == "" {
+		http.Error(w, "사용자 ID를 찾을 수 없습니다.", http.StatusInternalServerError)
 		return
 	}
 
-	res, err := blockchainClient.ABCIQuery(context.Background(), "/account/profile-by-email", []byte(address))
+	// ABCI 쿼리를 통해 사용자 계정 정보 가져오기
+	queryPath := fmt.Sprintf("/account?address=%s", userID)
+	res, err := blockchainClient.ABCIQuery(context.Background(), queryPath, nil)
 	if err != nil {
-		http.Error(w, "블록체인에서 대시보드 정보를 가져오는데 실패했습니다.", http.StatusInternalServerError)
+		http.Error(w, "프로필 정보 조회 실패", http.StatusInternalServerError)
 		return
 	}
-
 	if res.Response.Code != 0 {
-		http.Error(w, "사용자 정보를 조회하는데 실패했습니다.", http.StatusNotFound)
+		http.Error(w, "계정을 찾을 수 없습니다.", http.StatusNotFound)
 		return
 	}
 
 	var account ptypes.Account
 	if err := json.Unmarshal(res.Response.Value, &account); err != nil {
-		http.Error(w, "블록체인 데이터 파싱 실패", http.StatusInternalServerError)
+		http.Error(w, "프로필 정보 파싱 실패", http.StatusInternalServerError)
 		return
 	}
-
-	response := ptypes.ProfileInfoResponse{
-		Email:           account.Email,
-		Nickname:        account.Nickname,
-		Wallet:          account.Wallet,
-		Country:         account.Country,
-		Gender:          account.Gender,
-		BirthYear:       account.BirthYear,
-		Politisians:     account.Politisians,
-		Balance:         account.Balance,
-		ReferralCredits: account.ReferralCredits,
-	}
-
+	
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "응답 생성 실패", http.StatusInternalServerError)
-	}
+	json.NewEncoder(w).Encode(account)
 }
 
-func handleClaimReward(w http.ResponseWriter, r *http.Request) {
-	// 이제 컨텍스트에서 이메일 대신 지갑 주소를 가져옵니다.
-	address, ok := r.Context().Value(userWalletAddressKey).(string)
-	if !ok {
-		http.Error(w, "컨텍스트에서 지갑 주소를 찾을 수 없습니다.", http.StatusInternalServerError)
-		return
-	}
 
-	// 참고: 보상 요청 시에는 요청자의 지갑 주소를 알아야 하지만,
-	// 현재 계정 시스템은 이메일 기반이므로 블록체인에서 조회해야 합니다.
-	// 이 부분은 시스템이 지갑 주소 기반으로 전환되면 더 효율적으로 변경될 수 있습니다.
-
-	txData := ptypes.TxData{
-		Action: "claim_reward",
-		Email:  address, // 블록체인에서 이 이메일로 계정을 찾아야 함
-	}
-
-	txBytes, err := json.Marshal(txData)
-	if err != nil {
-		http.Error(w, "트랜잭션 생성 실패", http.StatusInternalServerError)
-		return
-	}
-
-	if err := broadcastAndCheckTx(r.Context(), txBytes); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("보상 요청 성공"))
-}
-
-// handleGetPolitisians는 현재 지지받고 있는 정치인 목록을 반환합니다.
+// handleGetPolitisians는 등록된 전체 정치인 목록을 반환합니다.
 func handleGetPolitisians(w http.ResponseWriter, r *http.Request) {
-	// CometBFT의 ABCIQuery를 사용하여 애플리케이션 상태를 쿼리합니다.
-	// "/politisians/list" 경로는 PolitisianApp의 로직과 일치해야 합니다.
 	res, err := blockchainClient.ABCIQuery(context.Background(), "/politisian/list", nil)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("블록체인 쿼리 실패: %v", err), http.StatusInternalServerError)
@@ -193,16 +112,19 @@ func handleGetPolitisians(w http.ResponseWriter, r *http.Request) {
 	w.Write(res.Response.Value)
 }
 
-// handleProposePolitisian는 새로운 정치인을 지지 목록에 제안하는 요청을 처리합니다.
+// handleProposePolitisian는 새로운 정치인을 등록 제안하는 요청을 처리합니다.
 func handleProposePolitisian(w http.ResponseWriter, r *http.Request) {
-	// 사용자 ID를 컨텍스트에서 가져옵니다. authMiddleware가 설정해야 합니다.
 	userID, ok := r.Context().Value("userID").(string)
 	if !ok || userID == "" {
 		http.Error(w, "사용자 ID를 찾을 수 없습니다.", http.StatusInternalServerError)
 		return
 	}
 
-	var reqBody ptypes.ProposePolitisianRequest
+	var reqBody struct {
+		Name   string `json:"name"`
+		Region string `json:"region"`
+		Party  string `json:"party"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		http.Error(w, "잘못된 요청 형식입니다.", http.StatusBadRequest)
 		return
@@ -228,62 +150,5 @@ func handleProposePolitisian(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("정치인 발의가 성공적으로 블록체인에 기록되었습니다."))
-}
-
-func handleGetProposals(w http.ResponseWriter, r *http.Request) {
-	res, err := blockchainClient.ABCIQuery(context.Background(), "/proposals", nil)
-	if err != nil {
-		http.Error(w, "블록체인에서 제안 목록을 가져오는데 실패했습니다.", http.StatusInternalServerError)
-		return
-	}
-
-	if res.Response.Code != 0 {
-		http.Error(w, "제안 목록 조회에 실패했습니다.", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(res.Response.Value)
-}
-
-func handleVoteOnProposal(w http.ResponseWriter, r *http.Request) {
-	// 이제 컨텍스트에서 이메일 대신 지갑 주소를 가져옵니다.
-	address, ok := r.Context().Value(userWalletAddressKey).(string)
-	if !ok {
-		http.Error(w, "컨텍스트에서 지갑 주소를 찾을 수 없습니다.", http.StatusInternalServerError)
-		return
-	}
-
-	// URL 경로에서 제안 ID를 추출해야 합니다. 예: /api/proposals/{id}/vote
-	// 이 부분은 라우터(예: gorilla/mux)를 사용하면 더 깔끔하게 처리할 수 있습니다.
-	// 우선 표준 라이브러리로 처리합니다.
-	proposalID := r.URL.Path[len("/api/proposals/") : len(r.URL.Path)-len("/vote")]
-
-	var reqBody ptypes.VoteRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		http.Error(w, "잘못된 요청 형식입니다.", http.StatusBadRequest)
-		return
-	}
-
-	txData := ptypes.TxData{
-		Action:     "vote_on_proposal",
-		Email:      address,
-		ProposalID: proposalID,
-		Vote:       reqBody.Vote,
-	}
-
-	txBytes, err := json.Marshal(txData)
-	if err != nil {
-		http.Error(w, "트랜잭션 생성 실패", http.StatusInternalServerError)
-		return
-	}
-
-	if err := broadcastAndCheckTx(r.Context(), txBytes); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("투표가 성공적으로 블록체인에 기록되었습니다."))
+	json.NewEncoder(w).Encode(map[string]string{"log": "정치인 발의가 성공적으로 블록체인에 기록되었습니다."})
 }

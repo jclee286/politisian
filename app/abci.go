@@ -77,6 +77,8 @@ func (app *PolitisianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 			respTxs[i] = app.handleCreateProfile(txData)
 		case "claim_reward":
 			respTxs[i] = app.handleClaimReward(txData)
+		case "update_supporters":
+			respTxs[i] = app.updateSupporters(&txData)
 		case "propose_politisian":
 			respTxs[i] = app.proposePolitisian(&txData)
 		case "vote_on_proposal":
@@ -234,6 +236,22 @@ func (app *PolitisianApp) handleVoteOnProposal(txData ptypes.TxData) *types.Exec
 	}
 
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
+}
+
+// updateSupporters는 사용자가 지지하는 정치인 목록을 업데이트합니다.
+func (app *PolitisianApp) updateSupporters(txData *ptypes.TxData) *types.ExecTxResult {
+	account, exists := app.accounts[txData.UserID]
+	if !exists {
+		// 계정이 없으면 새로 생성할 수도 있습니다. 여기서는 에러 처리합니다.
+		return &types.ExecTxResult{Code: 30, Log: "account not found"}
+	}
+
+	// 지지하는 정치인 목록 업데이트
+	account.Politisian = txData.Politisian
+	app.accounts[txData.UserID] = account
+
+	log.Printf("[ABCI] 사용자 '%s'의 지지 정치인 목록이 업데이트되었습니다: %v", txData.UserID, txData.Politisian)
+	return &types.ExecTxResult{Code: 0, Log: "supporters updated successfully"}
 }
 
 

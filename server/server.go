@@ -23,12 +23,10 @@ func StartServer(node *node.Node) {
 	http.Handle("/ui/", http.StripPrefix("/ui/", fs))
 
 	// API 엔드포인트 라우팅 설정
-	// '/api/auth/wallet/login' 경로는 handleWalletLogin 함수와 연결됩니다.
 	http.Handle("/api/auth/wallet/login", http.HandlerFunc(handleWalletLogin))
-
-	// '/api/user/profile' 경로는 authMiddleware를 통과해야만 handleUserProfile 함수에 도달할 수 있습니다.
 	http.Handle("/api/user/profile", authMiddleware(http.HandlerFunc(handleUserProfile)))
-
+	http.Handle("/api/profile/save", authMiddleware(http.HandlerFunc(handleProfileSave)))
+	
 	// 정치인 관련 API
 	http.Handle("/api/politisian/list", authMiddleware(http.HandlerFunc(handleGetPolitisians)))
 	http.Handle("/api/politisian/propose", authMiddleware(http.HandlerFunc(handleProposePolitisian)))
