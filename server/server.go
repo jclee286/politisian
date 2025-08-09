@@ -13,21 +13,12 @@ import (
 var blockchainClient *local.Local
 
 func StartServer(node *node.Node) {
-	// Google OAuth 클라이언트 정보 설정
-	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
-	googleClientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
-	if googleClientID == "" || googleClientSecret == "" {
-		log.Println("WARNING: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not set. Authentication may not work.")
-		// Continue without fatal
-	} else {
-		InitOauth(googleClientID, googleClientSecret)
-	}
-
 	blockchainClient = local.New(node)
 
+	// --- 새로운 지갑 인증 라우트 ---
+	http.HandleFunc("/api/auth/wallet/login", handleWalletLogin)
+
 	// 인증이 필요 없는 라우트
-	http.HandleFunc("/api/auth/google", handleGoogleLogin)
-	http.HandleFunc("/api/auth/google/callback", handleGoogleCallback)
 	http.HandleFunc("/login.html", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./frontend/login.html")
 	})

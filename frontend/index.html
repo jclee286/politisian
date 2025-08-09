@@ -202,51 +202,79 @@
             loginButton.addEventListener('click', () => {
                 window.location.href = '/'; // 로그인 페이지로 이동
             });
+            
+            // 대시보드 UI를 업데이트하는 함수
+            function updateDashboardUI(data) {
+                welcomeMessage.textContent = `${data.nickname || '사용자'}님, 환영합니다!`;
+                walletAddressElem.textContent = data.wallet;
+                referralLinkInput.value = `${window.location.origin}/login.html?ref=${data.wallet}`;
+                
+                referralCreditsSpan.textContent = data.referral_credits || 0;
+                if (data.referral_credits > 0) {
+                    claimRewardButton.disabled = false;
+                }
 
-            fetch('/api/me/dashboard')
-                .then(response => {
-                    if (response.status === 401) {
-                         // 인증되지 않은 경우, 로그인 버튼을 보여주고 에러 메시지를 표시
+                if (data.politicians && data.politicians.length > 0) {
+                    politiciansListElem.innerHTML = ''; // '불러오는 중...' 메시지 삭제
+                    data.politicians.forEach(p => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `${p} <span style="float: right; color: #28a745; font-weight: normal;">100 P-COIN</span>`;
+                        politiciansListElem.appendChild(li);
+                    });
+                } else {
+                    politiciansListElem.innerHTML = '<li>지지하는 정치인이 없습니다.</li>';
+                }
+            }
+
+            // 대시보드 데이터를 가져오는 함수
+            function fetchDashboardData() {
+                return fetch('/api/me/dashboard')
+                    .then(response => {
+                        if (response.status === 401) {
+                            loginButton.style.display = 'block';
+                            throw new Error('인증이 필요합니다. 다시 로그인해주세요.');
+                        }
+                        if (!response.ok) {
+                            throw new Error('대시보드 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.');
+                        }
+                        return response.json();
+                    });
+            }
+
+            // 데이터가 완전히 기록될 때까지 폴링하는 함수
+            function pollForDashboardData(maxAttempts = 15, delay = 2000, attempt = 1) {
+                console.log(`대시보드 데이터 조회 시도 #${attempt}`);
+                fetchDashboardData()
+                    .then(data => {
+                        console.log('대시보드 데이터 수신:', data);
+                        updateDashboardUI(data); // 일단 UI를 업데이트합니다.
+
+                        // 프로필이 완전히 생성되었는지 (지갑 주소가 있는지) 확인합니다.
+                        if (data && data.wallet && data.wallet !== '주소 없음' && data.wallet.trim() !== '') {
+                            console.log('유효한 지갑 주소 수신, 폴링을 중단합니다.');
+                            return; // 성공, 폴링 중단
+                        }
+                        
+                        if (attempt < maxAttempts) {
+                            console.log('프로필이 아직 처리 중입니다. 잠시 후 다시 시도합니다...');
+                            setTimeout(() => pollForDashboardData(maxAttempts, delay, attempt + 1), delay);
+                        } else {
+                            console.error(`최대 시도 횟수(${maxAttempts})에 도달했지만, 완전한 데이터를 받지 못했습니다.`);
+                            throw new Error('프로필 정보를 처리하는데 시간이 더 필요합니다. 잠시 후 페이지를 새로고침해주세요.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching dashboard data:', error);
+                        welcomeMessage.textContent = '정보를 불러올 수 없습니다. 로그인이 필요할 수 있습니다.';
+                        walletAddressElem.textContent = '오류';
+                        politiciansListElem.innerHTML = `<li>${error.message}</li>`;
                         loginButton.style.display = 'block';
-                        throw new Error('인증이 필요합니다. 다시 로그인해주세요.');
-                    }
-                    if (!response.ok) {
-                        throw new Error('대시보드 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('대시보드 데이터 수신:', data);
-                    welcomeMessage.textContent = `${data.nickname || '사용자'}님, 환영합니다!`;
-                    walletAddressElem.textContent = data.wallet;
-                    referralLinkInput.value = `${window.location.origin}/login.html?ref=${data.wallet}`;
-                    
-                    referralCreditsSpan.textContent = data.referral_credits || 0;
-                    if (data.referral_credits > 0) {
-                        claimRewardButton.disabled = false;
-                    }
+                    });
+            }
 
-                    if (data.politicians && data.politicians.length > 0) {
-                        politiciansListElem.innerHTML = ''; // '불러오는 중...' 메시지 삭제
-                        data.politicians.forEach(p => {
-                            const li = document.createElement('li');
-                            li.innerHTML = `${p} <span style="float: right; color: #28a745; font-weight: normal;">100 P-COIN</span>`;
-                            politiciansListElem.appendChild(li);
-                        });
-                    } else {
-                        politiciansListElem.innerHTML = '<li>지지하는 정치인이 없습니다.</li>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching dashboard data:', error);
-                    // 에러 발생 시, 사용자에게 안내 메시지 표시
-                    welcomeMessage.textContent = '정보를 불러올 수 없습니다. 로그인이 필요할 수 있습니다.';
-                    walletAddressElem.textContent = '오류';
-                    politiciansListElem.innerHTML = `<li>${error.message}</li>`;
-                    // 401 에러가 아니더라도 로그인 버튼을 보여줘서 재시도 유도
-                    loginButton.style.display = 'block';
-                });
-
+            // 페이지 로드 시 폴링 시작
+            pollForDashboardData();
+            
             fetchProposals();
 
             copyButton.addEventListener('click', function() {

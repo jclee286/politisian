@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  app:
+    # 현재 디렉토리의 Dockerfile을 사용하여 이미지를 빌드합니다.
+    build: .
+    # 컨테이너의 이름을 'politician-app'으로 설정합니다.
+    container_name: politician-app
+    # 호스트(서버)의 포트와 컨테이너의 포트를 연결합니다.
+    # 예: 서버의 8080 포트로 오는 요청을 컨테이너의 8080 포트로 전달
+    ports:
+      - "8080:8080"      # 웹서버 포트
+      - "26657:26657"    # CometBFT RPC 포트
+    # 볼륨을 설정하여 데이터를 영속적으로 저장합니다.
+    # 호스트의 ./data/.cometbft 디렉토리를 컨테이너의 /root/.cometbft 디렉토리와 동기화합니다.
+    # 이렇게 하면 컨테이너가 삭제되어도 블록체인 데이터는 호스트에 안전하게 보관됩니다.
+    volumes:
+      - ./data/.cometbft:/root/.cometbft
+    # 컨테이너에 환경 변수를 설정합니다.
+    # start_server.sh의 export 부분을 이곳으로 옮겨와 중앙에서 관리합니다.
+    environment:
+      - PRIVY_APP_ID=cme44fxu403c5lb0b0dv9lq31
+      - PRIVY_APP_SECRET=4WYnujvc9uzSjPWG816i6N6c9ay3qTrULRRL6jAfzWtLfRk2WypE1jopHB2sCjhyvSYW5hzhqZW6nXyGMy31VsLQ
+    # 항상 컨테이너가 재시작되도록 설정하여, 서버가 재부팅되거나 예기치 않게 종료되어도 자동으로 서비스를 복구합니다.
+    restart: always 

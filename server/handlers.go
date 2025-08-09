@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"crypto/sha256"
 
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -12,13 +13,21 @@ import (
 )
 
 func handleGetProfileInfo(w http.ResponseWriter, r *http.Request) {
-	email, ok := r.Context().Value(userEmailKey).(string)
-	if !ok || email == "" {
-		http.Error(w, "인증된 사용자 정보를 찾을 수 없습니다.", http.StatusUnauthorized)
+	// 이제 컨텍스트에서 이메일 대신 지갑 주소를 가져옵니다.
+	address, ok := r.Context().Value(userWalletAddressKey).(string)
+	if !ok {
+		http.Error(w, "컨텍스트에서 지갑 주소를 찾을 수 없습니다.", http.StatusInternalServerError)
 		return
 	}
 
-	pubKey := ed25519.GenPrivKey().PubKey()
+	// 사용자의 이메일을 기반으로 결정론적(deterministic) 키 쌍을 생성합니다.
+	// 이렇게 하면 동일한 이메일에 대해 항상 동일한 지갑 주소가 생성됩니다.
+	hasher := sha256.New()
+	hasher.Write([]byte(address))
+	seed := hasher.Sum(nil)
+	
+	privKey := ed25519.GenPrivKeyFromSecret(seed)
+	pubKey := privKey.PubKey()
 	walletAddress := pubKey.Address().String()
 
 	response := ptypes.ProfileInfoResponse{
@@ -31,23 +40,26 @@ func handleGetProfileInfo(w http.ResponseWriter, r *http.Request) {
 
 // broadcastAndCheckTx는 트랜잭션을 브로드캐스트하고 결과를 확인하는 헬퍼 함수입니다.
 func broadcastAndCheckTx(ctx context.Context, txBytes []byte) error {
-	res, err := blockchainClient.BroadcastTxCommit(ctx, txBytes)
+	// `BroadcastTxCommit`은 타임아웃 위험이 있고, `BroadcastTxAsync`는 결과를 보장하지 않습니다.
+	// `BroadcastTxSync`는 트랜잭션이 Mempool에 포함되었는지 확인하여 안정성과 속도의 균형을 맞춥니다.
+	// res, err := blockchainClient.BroadcastTxCommit(ctx, txBytes)
+	res, err := blockchainClient.BroadcastTxSync(ctx, txBytes)
 	if err != nil {
 		return fmt.Errorf("블록체인 통신 실패 (RPC 오류): %v", err)
 	}
-	if res.CheckTx.Code != types.CodeTypeOK {
-		return fmt.Errorf("블록체인 트랜잭션 확인 실패: %s (코드: %d)", res.CheckTx.Log, res.CheckTx.Code)
+
+	if res.Code != types.CodeTypeOK {
+		return fmt.Errorf("블록체인 트랜잭션 확인 실패: %s (코드: %d)", res.Log, res.Code)
 	}
-	if res.TxResult.Code != types.CodeTypeOK {
-		return fmt.Errorf("블록체인 트랜잭션 실행 실패: %s (코드: %d)", res.TxResult.Log, res.TxResult.Code)
-	}
+
 	return nil
 }
 
 func handleProfileSave(w http.ResponseWriter, r *http.Request) {
-	email, ok := r.Context().Value(userEmailKey).(string)
+	// 이제 컨텍스트에서 이메일 대신 지갑 주소를 가져옵니다.
+	address, ok := r.Context().Value(userWalletAddressKey).(string)
 	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		http.Error(w, "컨텍스트에서 지갑 주소를 찾을 수 없습니다.", http.StatusInternalServerError)
 		return
 	}
 
@@ -59,7 +71,7 @@ func handleProfileSave(w http.ResponseWriter, r *http.Request) {
 
 	txData := ptypes.TxData{
 		Action:      "create_profile",
-		Email:       email,
+		Email:       address,
 		Nickname:    reqBody.Nickname,
 		Wallet:      reqBody.Wallet,
 		Country:     reqBody.Country,
@@ -85,13 +97,14 @@ func handleProfileSave(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleDashboard(w http.ResponseWriter, r *http.Request) {
-	email, ok := r.Context().Value(userEmailKey).(string)
-	if !ok || email == "" {
-		http.Error(w, "인증된 사용자 정보를 찾을 수 없습니다.", http.StatusUnauthorized)
+	// 이제 컨텍스트에서 이메일 대신 지갑 주소를 가져옵니다.
+	address, ok := r.Context().Value(userWalletAddressKey).(string)
+	if !ok {
+		http.Error(w, "컨텍스트에서 지갑 주소를 찾을 수 없습니다.", http.StatusInternalServerError)
 		return
 	}
 
-	res, err := blockchainClient.ABCIQuery(context.Background(), "/account/profile-by-email", []byte(email))
+	res, err := blockchainClient.ABCIQuery(context.Background(), "/account/profile-by-email", []byte(address))
 	if err != nil {
 		http.Error(w, "블록체인에서 대시보드 정보를 가져오는데 실패했습니다.", http.StatusInternalServerError)
 		return
@@ -127,9 +140,10 @@ func handleDashboard(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleClaimReward(w http.ResponseWriter, r *http.Request) {
-	email, ok := r.Context().Value(userEmailKey).(string)
-	if !ok || email == "" {
-		http.Error(w, "인증된 사용자 정보를 찾을 수 없습니다.", http.StatusUnauthorized)
+	// 이제 컨텍스트에서 이메일 대신 지갑 주소를 가져옵니다.
+	address, ok := r.Context().Value(userWalletAddressKey).(string)
+	if !ok {
+		http.Error(w, "컨텍스트에서 지갑 주소를 찾을 수 없습니다.", http.StatusInternalServerError)
 		return
 	}
 
@@ -139,7 +153,7 @@ func handleClaimReward(w http.ResponseWriter, r *http.Request) {
 
 	txData := ptypes.TxData{
 		Action: "claim_reward",
-		Email:  email, // 블록체인에서 이 이메일로 계정을 찾아야 함
+		Email:  address, // 블록체인에서 이 이메일로 계정을 찾아야 함
 	}
 
 	txBytes, err := json.Marshal(txData)
@@ -158,6 +172,8 @@ func handleClaimReward(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleGetPoliticians(w http.ResponseWriter, r *http.Request) {
+	// 이 함수는 모든 사용자에게 동일한 전체 정치인 목록을 반환하므로,
+	// 특정 사용자의 지갑 주소를 확인할 필요가 없습니다.
 	res, err := blockchainClient.ABCIQuery(context.Background(), "/politicians/list", nil)
 	if err != nil {
 		http.Error(w, "블록체인에서 정치인 목록을 가져오는데 실패했습니다.", http.StatusInternalServerError)
@@ -174,9 +190,10 @@ func handleGetPoliticians(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleProposePolitician(w http.ResponseWriter, r *http.Request) {
-	email, ok := r.Context().Value(userEmailKey).(string)
+	// 이제 컨텍스트에서 이메일 대신 지갑 주소를 가져옵니다.
+	address, ok := r.Context().Value(userWalletAddressKey).(string)
 	if !ok {
-		http.Error(w, "인증된 사용자 정보를 찾을 수 없습니다.", http.StatusUnauthorized)
+		http.Error(w, "컨텍스트에서 지갑 주소를 찾을 수 없습니다.", http.StatusInternalServerError)
 		return
 	}
 
@@ -188,7 +205,7 @@ func handleProposePolitician(w http.ResponseWriter, r *http.Request) {
 
 	txData := ptypes.TxData{
 		Action:         "propose_politician",
-		Email:          email,
+		Email:          address,
 		PoliticianName: reqBody.Name,
 		Region:         reqBody.Region,
 		Party:          reqBody.Party,
@@ -226,9 +243,10 @@ func handleGetProposals(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleVoteOnProposal(w http.ResponseWriter, r *http.Request) {
-	email, ok := r.Context().Value(userEmailKey).(string)
+	// 이제 컨텍스트에서 이메일 대신 지갑 주소를 가져옵니다.
+	address, ok := r.Context().Value(userWalletAddressKey).(string)
 	if !ok {
-		http.Error(w, "인증된 사용자 정보를 찾을 수 없습니다.", http.StatusUnauthorized)
+		http.Error(w, "컨텍스트에서 지갑 주소를 찾을 수 없습니다.", http.StatusInternalServerError)
 		return
 	}
 
@@ -245,7 +263,7 @@ func handleVoteOnProposal(w http.ResponseWriter, r *http.Request) {
 
 	txData := ptypes.TxData{
 		Action:     "vote_on_proposal",
-		Email:      email,
+		Email:      address,
 		ProposalID: proposalID,
 		Vote:       reqBody.Vote,
 	}

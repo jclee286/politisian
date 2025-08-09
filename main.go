@@ -38,32 +38,17 @@ func main() {
 
 	abciApp := app.NewPoliticianApp()
 
-	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
 	if err != nil {
-		log.Fatalf("노드 키 로드/생성 실패: %v", err)
+		log.Fatalf("노드 키 로드 실패: %v. 'cometbft init'을 실행했는지 확인하세요.", err)
 	}
 
 	logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
-	pv := privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile())
-	pubKey, err := pv.GetPubKey()
-	if err != nil {
-		log.Fatalf("Failed to get public key: %v", err)
-	}
 	
+	pv := privval.LoadFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile())
+
 	genesisProvider := func() (*types.GenesisDoc, error) {
-		genDoc, err := types.GenesisDocFromFile(config.GenesisFile())
-		if err != nil {
-			return nil, fmt.Errorf("failed to read genesis file: %w", err)
-		}
-		if len(genDoc.Validators) == 0 {
-			genDoc.Validators = []types.GenesisValidator{{
-				Address: pubKey.Address(),
-				PubKey:  pubKey,
-				Power:   10,
-				Name:    "genesis-validator",
-			}}
-		}
-		return genDoc, nil
+		return types.GenesisDocFromFile(config.GenesisFile())
 	}
 
 	cometNode, err := node.NewNode(config,
@@ -108,11 +93,8 @@ func main() {
 	}
 	log.Println("CometBFT RPC 서버가 성공적으로 준비되었습니다. HTTP 서버를 시작합니다.")
 
-	// ### 수정된 부분 ###
-	// RPC 준비가 완료된 후, HTTP 서버를 별도의 고루틴에서 시작합니다.
 	go server.StartServer(cometNode)
 
-	// --- 종료 신호 대기 ---
 	fmt.Println("통합 서버가 성공적으로 시작되었습니다. 종료하려면 Ctrl+C를 누르세요.")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)

@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>로그인 - 나의 공화국</title>
+    <title>로그인 - 정치인 공화국</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             background-color: #f4f4f9;
             display: flex;
             justify-content: center;
@@ -16,40 +16,130 @@
         }
         .login-container {
             background-color: #fff;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 50px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
             text-align: center;
+            width: 360px;
         }
         h1 {
-            color: #333;
-            margin-bottom: 20px;
+            color: #1a1a1a;
+            margin-bottom: 10px;
+            font-size: 24px;
+            font-weight: 600;
         }
         p {
             color: #666;
             margin-bottom: 30px;
-        }
-        .google-login-btn {
-            background-color: #4285F4;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 4px;
             font-size: 16px;
+        }
+        .login-btn {
+            background-color: #6a4bff;
+            color: white;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
+            width: 100%;
+            transition: background-color 0.2s ease-in-out;
         }
-        .google-login-btn:hover {
-            background-color: #357ae8;
+        .login-btn:hover {
+            background-color: #5a3acc;
+        }
+        #status-message {
+            margin-top: 20px;
+            font-weight: 500;
+            color: #333;
         }
     </style>
+    <!-- 1. Privy SDK 스크립트 추가 -->
+    <script src="https://unpkg.com/@privy-io/sdk-beta"></script>
 </head>
 <body>
     <div class="login-container">
-        <h1>나의 공화국에 오신 것을 환영합니다</h1>
-        <p>정치 참여를 통해 만들어가는 새로운 디지털 국가</p>
-        <a href="/api/auth/google" class="google-login-btn">Google 계정으로 시작하기</a>
+        <h1>정치인 공화국</h1>
+        <p>참여를 통해 만들어가는 새로운 디지털 국가</p>
+        <!-- 2. Privy가 제어할 로그인 버튼 -->
+        <button id="login-button" class="login-btn">시작하기</button>
+        <div id="status-message"></div>
     </div>
+
+    <!-- 3. Privy 연동을 위한 JavaScript 로직 -->
+    <script>
+        const appId = 'cme44fxu403c5lb0b0dv9lq31'; // 발급받은 Privy App ID
+        const loginButton = document.getElementById('login-button');
+        const statusMessage = document.getElementById('status-message');
+
+        const privy = new Privy.PrivyClient({
+            appId: appId,
+            config: {
+                loginMethods: ['email', 'google', 'wallet'],
+                embeddedWallets: {
+                    createOnLogin: 'users-without-wallets'
+                }
+            },
+        });
+
+        const handleLogin = async (user) => {
+            statusMessage.textContent = '로그인 정보를 확인하는 중...';
+            
+            const wallet = user.wallet || (user.wallets && user.wallets[0]);
+            if (!wallet) {
+                statusMessage.textContent = '지갑 정보를 찾을 수 없습니다. 다시 시도해주세요.';
+                return;
+            }
+            const userAddress = wallet.address;
+
+            try {
+                const response = await fetch('/api/auth/wallet/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: userAddress })
+                });
+
+                if (response.ok) {
+                    statusMessage.textContent = '로그인 성공! 프로필 페이지로 이동합니다.';
+                    window.location.href = '/profile.html';
+                } else {
+                    const errorText = await response.text();
+                    statusMessage.textContent = `로그인 실패: ${errorText}`;
+                    // 로그인 실패 시 Privy 세션도 로그아웃 처리
+                    await privy.logout();
+                }
+            } catch (error) {
+                console.error('API 로그인 요청 오류:', error);
+                statusMessage.textContent = '서버와 통신 중 오류가 발생했습니다.';
+                await privy.logout();
+            }
+        };
+
+        // Privy의 onLogin 콜백을 설정하여 로그인 성공 시 handleLogin 함수를 호출합니다.
+        privy.onLogin(handleLogin);
+
+        loginButton.addEventListener('click', async () => {
+            try {
+                // 이미 로그인되어 있는지 확인
+                if (await privy.isAuthenticated()) {
+                    const user = await privy.getUser();
+                    if (user) {
+                        handleLogin(user);
+                    } else {
+                        // 사용자는 인증되었지만 정보를 가져올 수 없는 경우, 다시 로그인 시도
+                        await privy.login();
+                    }
+                } else {
+                    // 로그인되어 있지 않으면 로그인 UI를 엽니다.
+                    await privy.login();
+                }
+            } catch (error) {
+                console.error('Privy 로그인 프로세스 오류:', error);
+                statusMessage.textContent = '로그인 중 오류가 발생했습니다.';
+            }
+        });
+    </script>
 </body>
 </html> 

@@ -1,0 +1,20 @@
+# Git-related files
+.git
+.gitignore
+
+# Docker-related files
+Dockerfile
+.dockerignore
+
+# Local development files
+nohup.out
+*.log
+*.bak
+app_state.json
+
+# Local blockchain data
+.cometbft/
+
+# Build artifacts (will be created inside the container)
+politician_server
+build_temp/ 
