@@ -28,7 +28,7 @@ func StartServer(node *node.Node) {
 	
 	// 정치인 관련 API
 	http.Handle("/api/politisian/list", authMiddleware(http.HandlerFunc(handleGetPolitisians)))
-	http.Handle("/api/politisian/propose", authMiddleware(http.HandlerFunc(handleProposePolitisian)))
+	http.Handle("/api/politisian/propose", authMiddleware(http.HandlerFunc(handleProposePolitician)))
 
 
 	// 서버 시작

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,14 +11,13 @@ import (
 	ptypes "politisian/pkg/types"
 )
 
-// Info, Query, CheckTx, Commit 함수는 이전과 동일하게 유지
+// Info, Query, CheckTx, Commit, InitChain 등 다른 ABCI 함수들은 이전과 동일하게 유지합니다.
 
 func (app *PoliticianApp) Info(req *types.RequestInfo) (*types.ResponseInfo, error) {
 	return &types.ResponseInfo{}, nil
 }
 
 func (app *PoliticianApp) Query(req *types.RequestQuery) (*types.ResponseQuery, error) {
-	log.Printf("[ABCI] Query: 경로 '%s'에 대한 쿼리 수신", req.Path)
 	switch req.Path {
 	case "/politisian/list":
 		res, err := json.Marshal(app.politicians)
@@ -41,28 +41,50 @@ func (app *PoliticianApp) Commit() (*types.ResponseCommit, error) {
 	return &types.ResponseCommit{}, nil
 }
 
-// DeliverTx는 트랜잭션을 올바른 핸들러로 라우팅합니다.
-func (app *PoliticianApp) DeliverTx(req *types.RequestDeliverTx) (*types.ResponseDeliverTx, error) {
-	var txData ptypes.TxData
-	if err := json.Unmarshal(req.Tx, &txData); err != nil {
-		return &types.ResponseDeliverTx{Code: 1, Log: "failed to parse transaction data"}, nil
+func (app *PoliticianApp) InitChain(req *types.RequestInitChain) (*types.ResponseInitChain, error) {
+	var genesisState ptypes.GenesisState
+	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
+		return nil, fmt.Errorf("failed to parse genesis state: %w", err)
 	}
-
-	log.Printf("[ABCI] DeliverTx: 사용자 '%s'로부터 액션 '%s' 처리 중", txData.UserID, txData.Action)
-
-	switch txData.Action {
-	case "create_profile":
-		return app.handleCreateProfile(&txData), nil
-	case "update_supporters":
-		return app.updateSupporters(&txData), nil
-	case "propose_politician":
-		return app.proposePolitician(&txData), nil
-	case "vote_on_proposal":
-		return app.handleVoteOnProposal(&txData), nil
-	default:
-		return &types.ResponseDeliverTx{Code: 10, Log: "unknown action"}, nil
+	if genesisState.Politicians != nil {
+		app.politicians = genesisState.Politicians
 	}
+	if genesisState.Accounts != nil {
+		app.accounts = genesisState.Accounts
+	}
+	return &types.ResponseInitChain{}, nil
 }
+
+
+// FinalizeBlock은 ABCI++의 핵심 메서드로, 블록에 포함된 모든 트랜잭션을 처리합니다.
+func (app *PoliticianApp) FinalizeBlock(ctx context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+	respTxs := make([]*types.ExecTxResult, len(req.Txs))
+	for i, tx := range req.Txs {
+		var txData ptypes.TxData
+		if err := json.Unmarshal(tx, &txData); err != nil {
+			log.Printf("트랜잭션 파싱 실패: %v", err)
+			respTxs[i] = &types.ExecTxResult{Code: 1, Log: "failed to parse transaction data"}
+			continue
+		}
+
+		// 각 액션에 맞는 핸들러 호출
+		switch txData.Action {
+		case "create_profile":
+			respTxs[i] = app.handleCreateProfile(&txData)
+		case "update_supporters":
+			respTxs[i] = app.updateSupporters(&txData)
+		case "propose_politician":
+			respTxs[i] = app.proposePolitician(&txData)
+		case "vote_on_proposal":
+			respTxs[i] = app.handleVoteOnProposal(&txData)
+		default:
+			respTxs[i] = &types.ExecTxResult{Code: 10, Log: "unknown action"}
+		}
+	}
+
+	return &types.ResponseFinalizeBlock{TxResults: respTxs}, nil
+}
+
 
 // --- 트랜잭션 핸들러 함수들 ---
 
@@ -76,7 +98,6 @@ func (app *PoliticianApp) handleCreateProfile(txData *ptypes.TxData) *types.Exec
 		Politicians: txData.Politicians,
 	}
 	app.accounts[txData.UserID] = newAccount
-	log.Printf("[ABCI] 새로운 계정 생성: %s", txData.UserID)
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
@@ -86,12 +107,10 @@ func (app *PoliticianApp) updateSupporters(txData *ptypes.TxData) *types.ExecTxR
 		return &types.ExecTxResult{Code: 30, Log: "account not found"}
 	}
 	account.Politicians = txData.Politicians
-	log.Printf("[ABCI] 사용자 '%s'의 지지 정치인 목록 업데이트: %v", txData.UserID, txData.Politicians)
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
 func (app *PoliticianApp) proposePolitician(txData *ptypes.TxData) *types.ExecTxResult {
-	// 제안(Proposal) 로직을 다시 구현합니다.
 	proposalID := uuid.New().String()
 	newProposal := &ptypes.Proposal{
 		ID: proposalID,
@@ -104,7 +123,6 @@ func (app *PoliticianApp) proposePolitician(txData *ptypes.TxData) *types.ExecTx
 		Votes:    make(map[string]bool),
 	}
 	app.proposals[proposalID] = newProposal
-	log.Printf("[ABCI] 새로운 정치인 제안: %s (제안자: %s)", txData.PoliticianName, txData.UserID)
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
@@ -122,10 +140,7 @@ func (app *PoliticianApp) handleVoteOnProposal(txData *ptypes.TxData) *types.Exe
 	} else {
 		proposal.NoVotes++
 	}
-
-	// 간단한 예시: 10표 이상 찬성 시 정치인으로 등록
-	if proposal.YesVotes >= 10 {
-		log.Printf("[ABCI] 제안 통과! 정치인 '%s' 등록", proposal.Politician.Name)
+	if proposal.YesVotes >= 10 { // 10표 이상 찬성 시 등록
 		newPolitician := &proposal.Politician
 		app.politicians[newPolitician.Name] = newPolitician
 		delete(app.proposals, txData.ProposalID)
@@ -133,18 +148,11 @@ func (app *PoliticianApp) handleVoteOnProposal(txData *ptypes.TxData) *types.Exe
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
-// InitChain는 이전과 동일
-func (app *PoliticianApp) InitChain(req *types.RequestInitChain) (*types.ResponseInitChain, error) {
-	log.Println("[ABCI] InitChain: 체인 초기화 시작...")
-	var genesisState ptypes.GenesisState
-	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
-		return nil, fmt.Errorf("failed to parse genesis state: %w", err)
-	}
-	if genesisState.Politicians != nil {
-		app.politicians = genesisState.Politicians
-	}
-	if genesisState.Accounts != nil {
-		app.accounts = genesisState.Accounts
-	}
-	return &types.ResponseInitChain{}, nil
+// PrepareProposal과 ProcessProposal은 ABCI++의 일부로, 기본 구현을 제공합니다.
+func (app *PoliticianApp) PrepareProposal(ctx context.Context, req *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
+	return &types.ResponsePrepareProposal{Txs: req.Txs}, nil
+}
+
+func (app *PoliticianApp) ProcessProposal(ctx context.Context, req *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
+	return &types.ResponseProcessProposal{Status: types.ResponseProcessProposal_ACCEPT}, nil
 }
