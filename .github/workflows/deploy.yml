@@ -75,7 +75,10 @@ jobs:
             
             git pull
             
-            # --env-file 옵션을 사용하여 .env 파일을 명시적으로 지정합니다.
-            docker-compose --env-file .env pull
+            # --- Docker 정리 및 실행 ---
+            # 공간 확보를 위해 사용하지 않는 Docker 리소스(이미지, 컨테이너 등)를 정리합니다.
+            echo "Pruning Docker system..."
+            docker system prune -af
             
-            docker-compose --env-file .env up -d --remove-orphans 
+            # --env-file 옵션을 사용하여 .env 파일을 명시적으로 지정하고, 항상 새로 빌드하여 실행합니다.
+            docker-compose --env-file .env up -d --build --remove-orphans 
