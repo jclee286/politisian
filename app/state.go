@@ -7,7 +7,7 @@ import (
 	"politisian/pkg/types"
 )
 
-// AppState는 애플리케이션의 전체 상태를 나타내는 구조체입니다. (디버깅 및 상태 저장용)
+// AppState는 애플리케이션의 전체 상태를 나타내는 구조체입니다.
 type AppState struct {
 	Accounts    map[string]*types.Account    `json:"accounts"`
 	Proposals   map[string]*types.Proposal   `json:"proposals"`
@@ -33,7 +33,6 @@ func (app *PoliticianApp) loadState() error {
 	stateBytes, err := os.ReadFile("app_state.json")
 	if err != nil {
 		if os.IsNotExist(err) {
-			// 파일이 없으면 초기 상태로 시작
 			app.accounts = make(map[string]*types.Account)
 			app.proposals = make(map[string]*types.Proposal)
 			app.politicians = make(map[string]*types.Politician)

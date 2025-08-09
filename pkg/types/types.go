@@ -2,12 +2,15 @@ package types
 
 // TxData는 클라이언트가 전송하는 트랜잭션의 표준 구조입니다.
 type TxData struct {
-	Action         string   `json:"action"` // "update_supporters", "propose_politisian"
+	Action         string   `json:"action"` // "create_profile", "update_supporters", "propose_politician", "vote_on_proposal"
 	UserID         string   `json:"user_id,omitempty"`
+	Email          string   `json:"email,omitempty"`
 	PoliticianName string   `json:"politician_name,omitempty"`
 	Region         string   `json:"region,omitempty"`
 	Party          string   `json:"party,omitempty"`
 	Politicians    []string `json:"politicians,omitempty"` // 지지하는 정치인 이름 목록
+	ProposalID     string   `json:"proposal_id,omitempty"`
+	Vote           bool     `json:"vote,omitempty"`
 }
 
 // ProfileInfoResponse는 사용자 프로필 조회 시 반환되는 데이터 구조입니다.
@@ -51,8 +54,7 @@ type Politician struct {
 	MaxTokens    int64    `json:"max_tokens"`
 }
 
-// Proposal은 이 시스템에서 사용되지 않으므로 주석 처리하거나 삭제할 수 있습니다.
-/*
+// Proposal은 새로운 정치인을 등록하기 위한 제안을 나타냅니다.
 type Proposal struct {
 	ID         string     `json:"id"`
 	Politician Politician `json:"politician"`
@@ -61,7 +63,6 @@ type Proposal struct {
 	YesVotes   int        `json:"yes_votes"`
 	NoVotes    int        `json:"no_votes"`
 }
-*/
 
 // ProposePolitisianRequest는 정치인 발의 API 요청을 위한 구조체입니다.
 type ProposePolitisianRequest struct {
