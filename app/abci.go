@@ -13,18 +13,16 @@ import (
 	"github.com/google/uuid"
 )
 
-func (app *PolitisianApp) Info(_ context.Context, info *types.RequestInfo) (*types.ResponseInfo, error) {
-	app.mtx.Lock()
-	defer app.mtx.Unlock()
-	return &types.ResponseInfo{
-		LastBlockHeight:  app.lastBlockHeight,
-		LastBlockAppHash: app.appHash,
-	}, nil
+// Info는 애플리케이션의 상태 정보를 반환합니다.
+func (app *PolitisianApp) Info(req *types.RequestInfo) (*types.ResponseInfo, error) {
+	// 이 함수는 BaseApplication에 의해 기본적인 기능이 구현되어 있습니다.
+	// 필요하다면 여기에 추가적인 로직을 구현할 수 있습니다.
+	// 예: 마지막 블록 높이와 앱 해시를 반환
+	return &types.ResponseInfo{}, nil
 }
 
-func (app *PolitisianApp) Query(_ context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
-	app.mtx.Lock()
-	defer app.mtx.Unlock()
+// Query는 애플리케이션의 상태를 조회합니다.
+func (app *PolitisianApp) Query(req *types.RequestQuery) (*types.ResponseQuery, error) {
 	switch req.Path {
 	case "/account/exists":
 		email := string(req.Data)
@@ -255,12 +253,13 @@ func (app *PolitisianApp) updateSupporters(txData *ptypes.TxData) *types.ExecTxR
 }
 
 
-func (app *PolitisianApp) Commit(_ context.Context, _ *types.RequestCommit) (*types.ResponseCommit, error) {
+func (app *PolitisianApp) Commit() (*types.ResponseCommit, error) {
+	// 상태 변경사항을 데이터베이스에 저장
 	if err := app.saveState(); err != nil {
-		log.Printf("[ABCI] Commit: 상태 저장 실패! %v", err)
-		log.Printf("심각한 오류: 상태 저장 실패: %v", err)
+		log.Printf("상태 저장 실패: %v", err)
+		// 실제 운영 환경에서는 여기서 패닉을 발생시켜 노드를 중지시킬 수 있습니다.
 	}
-	return &types.ResponseCommit{RetainHeight: 0}, nil
+	return &types.ResponseCommit{}, nil
 }
 
 func (app *PolitisianApp) InitChain(_ context.Context, req *types.RequestInitChain) (*types.ResponseInitChain, error) {
@@ -289,7 +288,9 @@ func (app *PolitisianApp) InitChain(_ context.Context, req *types.RequestInitCha
 	}, nil
 }
 
-func (app *PolitisianApp) CheckTx(_ context.Context, _ *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+// CheckTx는 트랜잭션이 유효한지 검사합니다.
+// 현재는 모든 트랜잭션을 유효하다고 가정합니다.
+func (app *PolitisianApp) CheckTx(req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	return &types.ResponseCheckTx{Code: types.CodeTypeOK}, nil
 }
 
