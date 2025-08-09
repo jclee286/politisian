@@ -7,11 +7,9 @@ toolchain go1.23.11
 require (
 	github.com/cometbft/cometbft v0.38.12
 	github.com/google/uuid v1.6.0
-	golang.org/x/oauth2 v0.30.0
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.7.0 // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4 // indirect
