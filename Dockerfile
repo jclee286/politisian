@@ -1,6 +1,6 @@
 # 1단계: 빌드 환경 (코드를 컴파일하는 역할)
-# Go 1.21 버전의 가벼운 Alpine Linux를 기반으로 빌드 서버를 구성합니다.
-FROM golang:1.21-alpine AS builder
+# Go 1.23 버전의 가벼운 Alpine Linux를 기반으로 빌드 서버를 구성합니다.
+FROM golang:1.23-alpine AS builder
 
 # 작업 디렉토리 설정
 WORKDIR /app
