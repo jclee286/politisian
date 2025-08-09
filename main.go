@@ -54,10 +54,6 @@ func runNode(cfg *config.Config, app abci.Application) error {
 
 	pv := privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
 
-	dbProvider := node.DBProvider(func(ctx *node.DBContext) (dbm.DB, error) {
-		return dbm.NewDB(ctx.ID, ctx.Backend, ctx.Dir)
-	})
-
 	genesisDocProvider := node.GenesisDocProvider(func() (*types.GenesisDoc, error) {
 		return types.GenesisDocFromFile(cfg.GenesisFile())
 	})
@@ -68,7 +64,7 @@ func runNode(cfg *config.Config, app abci.Application) error {
 		nodeKey,
 		proxy.NewLocalClientCreator(app),
 		genesisDocProvider,
-		dbProvider,
+		node.DefaultDBProvider,
 		node.DefaultMetricsProvider(cfg.Instrumentation),
 		logger,
 	)
