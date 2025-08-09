@@ -49,9 +49,19 @@ jobs:
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            # 프로젝트 디렉토리로 이동합니다. 없으면 GitHub에서 클론합니다.
+            # git과 docker-compose가 없으면 설치합니다.
+            apt-get update
+            apt-get install -y git
+            if ! command -v docker-compose &> /dev/null; then
+                echo "docker-compose not found, installing..."
+                curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                chmod +x /usr/local/bin/docker-compose
+            fi
+
+            # SSH 방식으로 저장소를 클론합니다 (없을 경우에만).
+            # 중요: 이 방법이 작동하려면, 서버의 SSH 공개 키를 GitHub 저장소의 'Deploy Key'로 등록해야 합니다.
             if [ ! -d "/root/politisian" ]; then
-              git clone https://github.com/${{ github.repository }}.git /root/politisian
+              git clone git@github.com:${{ github.repository }}.git /root/politisian
             fi
             cd /root/politisian
             
@@ -62,5 +72,4 @@ jobs:
             docker-compose pull
             
             # Docker Compose를 사용하여 애플리케이션을 백그라운드에서 실행(또는 재시작)합니다.
-            # --remove-orphans 옵션은 이전 버전의 컨테이너가 남아있으면 정리해줍니다.
             docker-compose up -d --remove-orphans 
