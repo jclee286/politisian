@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/rpc/client/local"
-	"github.com/cometbft/cometbft/types"
 )
 
 var blockchainClient *local.Local
 
-func StartServer(node *types.Node) {
+func StartServer(node *node.Node) {
 	blockchainClient = local.New(node)
 
 	// 클라이언트 측 자산을 제공하기 위해 파일 서버를 설정합니다.
