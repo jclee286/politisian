@@ -16,6 +16,7 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/types"
 )
 
 func main() {
@@ -53,7 +54,12 @@ func runNode(cfg *config.Config, app abci.Application) error {
 
 	pv := privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
 
-	node, err := node.NewNode(cfg, pv, nodeKey, proxy.NewLocalClientCreator(app), node.MakeGenesisDocProviderFromFile(cfg.GenesisFile()), node.DefaultDBProvider, node.DefaultMetricsProvider(cfg.Instrumentation), logger)
+	genesisDoc, err := types.GenesisDocFromFile(cfg.GenesisFile())
+	if err != nil {
+		return fmt.Errorf("제네시스 파일 로드 실패: %w", err)
+	}
+
+	node, err := node.NewNode(cfg, pv, nodeKey, proxy.NewLocalClientCreator(app), genesisDoc, node.DefaultMetricsProvider(cfg.Instrumentation), logger)
 	if err != nil {
 		return fmt.Errorf("CometBFT 노드 생성 실패: %w", err)
 	}
