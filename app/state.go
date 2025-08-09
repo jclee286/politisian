@@ -2,76 +2,51 @@ package app
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 
 	"politisian/pkg/types"
 )
 
-const (
-	stateFilePath = "app_state.json"
-)
-
-// AppState는 애플리케이션의 전체 상태를 나타냅니다.
+// AppState는 애플리케이션의 전체 상태를 나타내는 구조체입니다. (디버깅 및 상태 저장용)
 type AppState struct {
-	Accounts        map[string]types.Account    `json:"accounts"`
-	Politisian     map[string]types.Politisian `json:"politisian"`
-	Proposals       map[string]types.Proposal   `json:"proposals"`
-	AppHash         []byte                      `json:"appHash"`
-	LastBlockHeight int64                       `json:"lastBlockHeight"`
+	Accounts    map[string]*types.Account    `json:"accounts"`
+	Proposals   map[string]*types.Proposal   `json:"proposals"`
+	Politicians map[string]*types.Politician `json:"politicians"`
 }
 
-// saveState는 현재 애플리케이션 상태를 stateFilePath에 JSON 형식으로 저장합니다.
-func (app *PolitisianApp) saveState() error {
-	app.mtx.Lock()
-	defer app.mtx.Unlock()
+// saveState는 현재 애플리케이션 상태를 파일에 저장합니다.
+func (app *PoliticianApp) saveState() error {
 	state := AppState{
-		Accounts:        app.accounts,
-		Politisian:     app.politisian,
-		Proposals:       app.proposals,
-		AppHash:         app.appHash,
-		LastBlockHeight: app.lastBlockHeight,
+		Accounts:    app.accounts,
+		Proposals:   app.proposals,
+		Politicians: app.politicians,
 	}
-	data, err := json.MarshalIndent(state, "", "  ")
+	stateBytes, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(stateFilePath, data, 0644)
+	return os.WriteFile("app_state.json", stateBytes, 0644)
 }
 
-// loadState는 stateFilePath에서 JSON 형식의 상태를 불러와 애플리케이션에 적용합니다.
-func (app *PolitisianApp) loadState() error {
-	data, err := os.ReadFile(stateFilePath)
+// loadState는 파일에서 애플리케이션 상태를 불러옵니다.
+func (app *PoliticianApp) loadState() error {
+	stateBytes, err := os.ReadFile("app_state.json")
 	if err != nil {
 		if os.IsNotExist(err) {
 			// 파일이 없으면 초기 상태로 시작
-			app.accounts = make(map[string]types.Account)
-			app.proposals = make(map[string]types.Proposal)
-			app.politisian = make(map[string]types.Politisian)
+			app.accounts = make(map[string]*types.Account)
+			app.proposals = make(map[string]*types.Proposal)
+			app.politicians = make(map[string]*types.Politician)
 			return nil
 		}
 		return err
 	}
 	var state AppState
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err := json.Unmarshal(stateBytes, &state); err != nil {
 		return err
 	}
-	app.mtx.Lock()
-	defer app.mtx.Unlock()
 	app.accounts = state.Accounts
-	app.politisian = state.Politisian
 	app.proposals = state.Proposals
-	app.appHash = state.AppHash
-	app.lastBlockHeight = state.LastBlockHeight
-
-	// wallets 맵 재생성
-	app.wallets = make(map[string]string)
-	for email, account := range app.accounts {
-		if account.Wallet != "" {
-			app.wallets[account.Wallet] = email
-		}
-	}
-
-	log.Println("저장된 애플리케이션 상태를 성공적으로 불러왔습니다.")
+	app.politicians = state.Politicians
 	return nil
 }

@@ -2,14 +2,12 @@ package types
 
 // TxData는 클라이언트가 전송하는 트랜잭션의 표준 구조입니다.
 type TxData struct {
-	Action         string   `json:"action"` // "create_profile", "claim_reward", "propose_politisian", "vote_on_proposal"
+	Action         string   `json:"action"` // "update_supporters", "propose_politisian"
 	UserID         string   `json:"user_id,omitempty"`
-	PolitisianName string   `json:"politisian_name,omitempty"`
+	PoliticianName string   `json:"politician_name,omitempty"`
 	Region         string   `json:"region,omitempty"`
 	Party          string   `json:"party,omitempty"`
-	Politisian     []string `json:"politisian,omitempty"`
-	ProposalID     string   `json:"proposal_id,omitempty"`
-	Vote           bool     `json:"vote,omitempty"` // true for 'yes', false for 'no'
+	Politicians    []string `json:"politicians,omitempty"` // 지지하는 정치인 이름 목록
 }
 
 // ProfileInfoResponse는 사용자 프로필 조회 시 반환되는 데이터 구조입니다.
@@ -39,14 +37,12 @@ type ProfileSaveRequest struct {
 // Account는 사용자의 계정 정보를 나타냅니다.
 type Account struct {
 	Address     string   `json:"address"`
-	Email       string   `json:"email"`
-	Politisian  []string `json:"politisian"`
-	LastReward  int64    `json:"last_reward"`  // 마지막 보상 시점 (Unix 타임스탬프)
-	RewardCount int      `json:"reward_count"` // 총 보상 횟수
+	Email       string   `json:"email,omitempty"`
+	Politicians []string `json:"politicians"`
 }
 
-// Politisian은 정치인의 정보를 나타냅니다.
-type Politisian struct {
+// Politician은 정치인의 정보를 나타냅니다.
+type Politician struct {
 	Name         string   `json:"name"`
 	Region       string   `json:"region"`
 	Party        string   `json:"party"`
@@ -55,15 +51,17 @@ type Politisian struct {
 	MaxTokens    int64    `json:"max_tokens"`
 }
 
-// Proposal은 새로운 정치인을 등록하기 위한 제안을 나타냅니다.
+// Proposal은 이 시스템에서 사용되지 않으므로 주석 처리하거나 삭제할 수 있습니다.
+/*
 type Proposal struct {
 	ID         string     `json:"id"`
-	Politisian Politisian `json:"politisian"`
+	Politician Politician `json:"politician"`
 	Proposer   string     `json:"proposer"`
-	Votes      map[string]bool `json:"votes"` // voter_address -> vote (true:yes, false:no)
+	Votes      map[string]bool `json:"votes"`
 	YesVotes   int        `json:"yes_votes"`
 	NoVotes    int        `json:"no_votes"`
 }
+*/
 
 // ProposePolitisianRequest는 정치인 발의 API 요청을 위한 구조체입니다.
 type ProposePolitisianRequest struct {
@@ -79,6 +77,6 @@ type VoteRequest struct {
 
 // GenesisState는 블록체인의 초기 상태를 정의합니다.
 type GenesisState struct {
-	Accounts  map[string]*Account   `json:"accounts"`
-	Politisian map[string]Politisian `json:"politisian"`
+	Accounts    map[string]*Account    `json:"accounts"`
+	Politicians map[string]*Politician `json:"politicians"`
 } 

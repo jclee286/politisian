@@ -33,6 +33,7 @@ func main() {
 	
 	config := cfg.DefaultConfig()
 	config.SetRoot(cometbftDir)
+	config.EnsureRoot(cometbftDir)
 
 	config.RPC.ListenAddress = "tcp://0.0.0.0:26657"
 
@@ -41,7 +42,7 @@ func main() {
 	if err != nil {
 		return fmt.Errorf("데이터베이스 생성 실패: %w", err)
 	}
-	abciApp := app.NewPolitisianApp(db)
+	abciApp := app.NewPoliticianApp(db)
 
 	nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
 	if err != nil {
