@@ -1,4 +1,4 @@
-module politician
+module politisian
 
 go 1.23.5
 

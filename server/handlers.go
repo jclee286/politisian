@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"crypto/sha256"
 
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	ptypes "politician/pkg/types"
+	ptypes "politisian/pkg/types"
+
+	"github.com/google/uuid"
 )
 
 func handleGetProfileInfo(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +80,7 @@ func handleProfileSave(w http.ResponseWriter, r *http.Request) {
 		Country:     reqBody.Country,
 		Gender:      reqBody.Gender,
 		BirthYear:   reqBody.BirthYear,
-		Politicians: reqBody.Politicians,
+		Politisians: reqBody.Politisians,
 		Referrer:    reqBody.Referrer,
 	}
 
@@ -128,7 +131,7 @@ func handleDashboard(w http.ResponseWriter, r *http.Request) {
 		Country:         account.Country,
 		Gender:          account.Gender,
 		BirthYear:       account.BirthYear,
-		Politicians:     account.Politicians,
+		Politisians:     account.Politisians,
 		Balance:         account.Balance,
 		ReferralCredits: account.ReferralCredits,
 	}
@@ -171,12 +174,13 @@ func handleClaimReward(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("보상 요청 성공"))
 }
 
-func handleGetPoliticians(w http.ResponseWriter, r *http.Request) {
-	// 이 함수는 모든 사용자에게 동일한 전체 정치인 목록을 반환하므로,
-	// 특정 사용자의 지갑 주소를 확인할 필요가 없습니다.
-	res, err := blockchainClient.ABCIQuery(context.Background(), "/politicians/list", nil)
+// handleGetPolitisians는 현재 지지받고 있는 정치인 목록을 반환합니다.
+func handleGetPolitisians(w http.ResponseWriter, r *http.Request) {
+	// CometBFT의 ABCIQuery를 사용하여 애플리케이션 상태를 쿼리합니다.
+	// "/politisians/list" 경로는 PolitisianApp의 로직과 일치해야 합니다.
+	res, err := blockchainClient.ABCIQuery(context.Background(), "/politisian/list", nil)
 	if err != nil {
-		http.Error(w, "블록체인에서 정치인 목록을 가져오는데 실패했습니다.", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("블록체인 쿼리 실패: %v", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -189,24 +193,25 @@ func handleGetPoliticians(w http.ResponseWriter, r *http.Request) {
 	w.Write(res.Response.Value)
 }
 
-func handleProposePolitician(w http.ResponseWriter, r *http.Request) {
-	// 이제 컨텍스트에서 이메일 대신 지갑 주소를 가져옵니다.
-	address, ok := r.Context().Value(userWalletAddressKey).(string)
-	if !ok {
-		http.Error(w, "컨텍스트에서 지갑 주소를 찾을 수 없습니다.", http.StatusInternalServerError)
+// handleProposePolitisian는 새로운 정치인을 지지 목록에 제안하는 요청을 처리합니다.
+func handleProposePolitisian(w http.ResponseWriter, r *http.Request) {
+	// 사용자 ID를 컨텍스트에서 가져옵니다. authMiddleware가 설정해야 합니다.
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok || userID == "" {
+		http.Error(w, "사용자 ID를 찾을 수 없습니다.", http.StatusInternalServerError)
 		return
 	}
 
-	var reqBody ptypes.ProposePoliticianRequest
+	var reqBody ptypes.ProposePolitisianRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		http.Error(w, "잘못된 요청 형식입니다.", http.StatusBadRequest)
 		return
 	}
 
 	txData := ptypes.TxData{
-		Action:         "propose_politician",
-		Email:          address,
-		PoliticianName: reqBody.Name,
+		Action:         "propose_politisian",
+		UserID:         userID,
+		PolitisianName: reqBody.Name,
 		Region:         reqBody.Region,
 		Party:          reqBody.Party,
 	}

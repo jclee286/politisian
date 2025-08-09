@@ -4,7 +4,7 @@ services:
   app:
     # 현재 디렉토리의 Dockerfile을 사용하여 이미지를 빌드합니다.
     build: .
-    # 컨테이너의 이름을 'politician-app'으로 설정합니다.
+    # 컨테이너의 이름을 'politisian-app'으로 설정합니다.
     container_name: politisian-app
     # 호스트(서버)의 포트와 컨테이너의 포트를 연결합니다.
     # 예: 서버의 8080 포트로 오는 요청을 컨테이너의 8080 포트로 전달

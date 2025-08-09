@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"politician/pkg/types"
+	"politisian/pkg/types"
 )
 
 const (
@@ -15,19 +15,19 @@ const (
 // AppState는 애플리케이션의 전체 상태를 나타냅니다.
 type AppState struct {
 	Accounts        map[string]types.Account    `json:"accounts"`
-	Politicians     map[string]types.Politician `json:"politicians"`
+	Politisian     map[string]types.Politisian `json:"politisian"`
 	Proposals       map[string]types.Proposal   `json:"proposals"`
 	AppHash         []byte                      `json:"appHash"`
 	LastBlockHeight int64                       `json:"lastBlockHeight"`
 }
 
 // saveState는 현재 애플리케이션 상태를 stateFilePath에 JSON 형식으로 저장합니다.
-func (app *PoliticianApp) saveState() error {
+func (app *PolitisianApp) saveState() error {
 	app.mtx.Lock()
 	defer app.mtx.Unlock()
 	state := AppState{
 		Accounts:        app.accounts,
-		Politicians:     app.politicians,
+		Politisian:     app.politisian,
 		Proposals:       app.proposals,
 		AppHash:         app.appHash,
 		LastBlockHeight: app.lastBlockHeight,
@@ -40,9 +40,16 @@ func (app *PoliticianApp) saveState() error {
 }
 
 // loadState는 stateFilePath에서 JSON 형식의 상태를 불러와 애플리케이션에 적용합니다.
-func (app *PoliticianApp) loadState() error {
+func (app *PolitisianApp) loadState() error {
 	data, err := os.ReadFile(stateFilePath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			// 파일이 없으면 초기 상태로 시작
+			app.accounts = make(map[string]types.Account)
+			app.proposals = make(map[string]types.Proposal)
+			app.politisian = make(map[string]types.Politisian)
+			return nil
+		}
 		return err
 	}
 	var state AppState
@@ -52,7 +59,7 @@ func (app *PoliticianApp) loadState() error {
 	app.mtx.Lock()
 	defer app.mtx.Unlock()
 	app.accounts = state.Accounts
-	app.politicians = state.Politicians
+	app.politisian = state.Politisian
 	app.proposals = state.Proposals
 	app.appHash = state.AppHash
 	app.lastBlockHeight = state.LastBlockHeight

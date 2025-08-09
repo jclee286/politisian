@@ -19,8 +19,8 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 
-	"politician/app"
-	"politician/server"
+	"politisian/app"
+	"politisian/server"
 )
 
 func main() {
@@ -28,15 +28,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("사용자 홈 디렉토리 찾기 실패: %v", err)
 	}
-	politicianDir := filepath.Join(homeDir, "politician")
-	cometbftDir := filepath.Join(politicianDir, ".cometbft")
+	politisianDir := filepath.Join(homeDir, "politisian")
+	cometbftDir := filepath.Join(politisianDir, ".cometbft")
 	
 	config := cfg.DefaultConfig()
 	config.SetRoot(cometbftDir)
 
 	config.RPC.ListenAddress = "tcp://0.0.0.0:26657"
 
-	abciApp := app.NewPoliticianApp()
+	abciApp := app.NewPolitisianApp()
 
 	nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
 	if err != nil {

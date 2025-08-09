@@ -15,39 +15,33 @@ var blockchainClient *local.Local
 func StartServer(node *node.Node) {
 	blockchainClient = local.New(node)
 
-	// --- 새로운 지갑 인증 라우트 ---
-	http.HandleFunc("/api/auth/wallet/login", handleWalletLogin)
+	// 클라이언트 측 자산을 제공하기 위해 파일 서버를 설정합니다.
+	// http.Dir("./frontend/")는 ./frontend/ 디렉토리의 파일을 사용하도록 지정합니다.
+	// http.StripPrefix("/ui/", ...)는 URL에서 "/ui/" 접두사를 제거하여
+	// /ui/login.html 요청이 실제로는 ./frontend/login.html 파일을 찾도록 합니다.
+	fs := http.FileServer(http.Dir("./frontend/"))
+	http.Handle("/ui/", http.StripPrefix("/ui/", fs))
 
-	// 인증이 필요 없는 라우트
-	http.HandleFunc("/login.html", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./frontend/login.html")
-	})
+	// API 엔드포인트 라우팅 설정
+	// '/api/auth/wallet/login' 경로는 handleWalletLogin 함수와 연결됩니다.
+	http.Handle("/api/auth/wallet/login", http.HandlerFunc(handleWalletLogin))
 
-	// 인증이 필요한 API 라우트
-	http.Handle("/api/me/profile-info", authMiddleware(http.HandlerFunc(handleGetProfileInfo)))
-	http.Handle("/api/profile/save", authMiddleware(http.HandlerFunc(handleProfileSave)))
-	http.Handle("/api/politicians", authMiddleware(http.HandlerFunc(handleGetPoliticians)))
-	http.Handle("/api/me/dashboard", authMiddleware(http.HandlerFunc(handleDashboard)))
-	http.Handle("/api/rewards/claim", authMiddleware(http.HandlerFunc(handleClaimReward)))
+	// '/api/user/profile' 경로는 authMiddleware를 통과해야만 handleUserProfile 함수에 도달할 수 있습니다.
+	http.Handle("/api/user/profile", authMiddleware(http.HandlerFunc(handleUserProfile)))
 
-	// 거버넌스 관련 API 라우트 (인증 필요)
-	http.Handle("/api/politicians/propose", authMiddleware(http.HandlerFunc(handleProposePolitician)))
-	http.Handle("/api/proposals", authMiddleware(http.HandlerFunc(handleGetProposals)))
-	http.HandleFunc("/api/proposals/", func(w http.ResponseWriter, r *http.Request) {
-		// /api/proposals/{id}/vote 형태의 경로를 처리
-		if strings.HasSuffix(r.URL.Path, "/vote") {
-			authMiddleware(http.HandlerFunc(handleVoteOnProposal)).ServeHTTP(w, r)
-			return
-		}
-		// 다른 /api/proposals/ 경로는 404 처리
-		http.NotFound(w, r)
-	})
+	// 정치인 관련 API
+	http.Handle("/api/politisian/list", authMiddleware(http.HandlerFunc(handleGetPolitisians)))
+	http.Handle("/api/politisian/propose", authMiddleware(http.HandlerFunc(handleProposePolitisian)))
 
-	// 그 외 모든 정적 파일 요청은 인증 미들웨어를 거침
-	http.Handle("/", authFileServerMiddleware())
 
-	log.Println("HTTP server listening on :8080")
-	err := http.ListenAndServe(":8080", nil)
+	// 서버 시작
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("HTTP server listening on :%s", port)
+	err := http.ListenAndServe(":"+port, nil)
 	if err != nil {
 		log.Fatalf("HTTP server failed: %v", err)
 	}

@@ -1,45 +1,41 @@
 #!/bin/bash
+# 서버를 시작하기 전에 이전 프로세스를 종료합니다.
+echo "이전 서버 프로세스 종료 시도..."
+pkill -f politisian_server || true
+sleep 2
 
-# Stop any currently running server process
-echo "Stopping existing server..."
-pkill -f politician_server || true
-sleep 1
-
-# --- Complete Initialization for a Fresh Start ---
-echo "Performing complete initialization..."
-
-# 1. Delete old blockchain data
-echo "Deleting old blockchain data..."
-rm -rf .cometbft
-rm -f app_state.json
-
-# 2. Initialize CometBFT using the official command
-# This creates all necessary files (genesis.json, config.toml, node_key.json, priv_validator_key.json)
-echo "Initializing CometBFT..."
-cometbft init --home .cometbft
+# Go 소스를 빌드하여 실행 파일을 생성합니다.
+# -o politisian_server는 출력 파일의 이름을 지정합니다.
+echo "Go 소스 코드 빌드 중..."
+go build -o politisian_server .
 if [ $? -ne 0 ]; then
-    echo "CometBFT initialization failed!"
+    echo "빌드 실패! 스크립트를 종료합니다."
     exit 1
 fi
-echo "CometBFT initialized."
+echo "빌드 성공."
 
-# Set environment variables (Privy keys, etc.)
-export PRIVY_APP_ID="cme44fxu403c5lb0b0dv9lq31"
-export PRIVY_APP_SECRET="4WYnujvc9uzSjPWG816i6N6c9ay3qTrULRRL6jAfzWtLfRk2WypE1jopHB2sCjhyvSYW5hzhqZW6nXyGMy31VsLQ"
-
-# Build the project
-echo "Building the server..."
-go build -o politician_server .
-if [ $? -ne 0 ]; then
-    echo "Build failed! Please check the errors above."
-    exit 1
+# CometBFT 초기화 (필요한 경우)
+# .cometbft 디렉토리가 없으면 초기화 명령을 실행합니다.
+if [ ! -d ".cometbft" ]; then
+    echo ".cometbft 디렉토리가 없으므로 새로 초기화합니다."
+    # 여기서는 cometbft 바이너리가 시스템 PATH에 설치되어 있다고 가정합니다.
+    cometbft init --home .cometbft
+    if [ $? -ne 0 ]; then
+        echo "CometBFT 초기화 실패! 스크립트를 종료합니다."
+        exit 1
+    fi
+    echo "CometBFT 초기화 성공."
 fi
-echo "Build successful."
 
-# Run the server in the background with log redirection
-echo "Starting the server in the background..."
-./politician_server > stdout.log 2> stderr.log &
+# 애플리케이션 서버를 백그라운드에서 실행하고,
+# 표준 출력(stdout)은 stdout.log 파일에, 표준 에러(stderr)는 stderr.log 파일에 저장합니다.
+echo "서버 시작 중... 로그는 stdout.log와 stderr.log 파일을 확인하세요."
+nohup ./politisian_server > stdout.log 2> stderr.log &
+sleep 2
 
-# Print confirmation
-echo "Server started in the background (PID: $!). Logs are in stdout.log and stderr.log."
-echo "To check status after a few seconds: curl http://localhost:26657/status" 
+# 서버가 정상적으로 실행되었는지 확인
+if pgrep -f "politisian_server" > /dev/null; then
+    echo "서버가 성공적으로 시작되었습니다."
+else
+    echo "서버 시작에 실패했습니다. stderr.log 파일을 확인해주세요."
+fi 

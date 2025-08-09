@@ -1,46 +1,31 @@
 package app
 
 import (
-	"log"
-	"sync"
-
-	ptypes "politician/pkg/types"
+	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft-db"
+	ptypes "politisian/pkg/types"
 )
 
-// PoliticianApp은 ABCI 애플리케이션의 핵심 구조체입니다.
-// 애플리케이션의 상태(계정, 정치인 정보 등)를 관리합니다.
-type PoliticianApp struct {
-	mtx             sync.Mutex
-	accounts        map[string]ptypes.Account
-	wallets         map[string]string // wallet_address -> email
-	politicians     map[string]ptypes.Politician
-	proposals       map[string]ptypes.Proposal // proposal_id -> proposal
-	appHash         []byte
-	lastBlockHeight int64
+// PolitisianApp은 ABCI 애플리케이션의 상태를 저장합니다.
+type PolitisianApp struct {
+	types.BaseApplication
+	db          dbm.DB
+	accounts    map[string]*ptypes.Account    // 사용자 계정 정보 (주소 -> 계정)
+	proposals   map[string]*ptypes.Proposal   // 제안 정보 (제안 ID -> 제안)
+	politisian  map[string]ptypes.Politisian  // 정치인 정보 (이름 -> 정치인)
 }
 
-// NewPoliticianApp은 새로운 PoliticianApp 인스턴스를 생성하고 초기화합니다.
-// 저장된 상태가 있으면 불러오고, 없으면 기본 정치인 정보로 초기화합니다.
-func NewPoliticianApp() *PoliticianApp {
-	app := &PoliticianApp{
-		accounts:        make(map[string]ptypes.Account),
-		wallets:         make(map[string]string),
-		politicians:     make(map[string]ptypes.Politician),
-		proposals:       make(map[string]ptypes.Proposal),
-		appHash:         []byte{},
-		lastBlockHeight: 0,
+func NewPolitisianApp(db dbm.DB) *PolitisianApp {
+	app := &PolitisianApp{
+		db:          db,
+		accounts:    make(map[string]*ptypes.Account),
+		proposals:   make(map[string]*ptypes.Proposal),
+		politisian:  make(map[string]ptypes.Politisian),
 	}
-
-	// 서버 시작 시, 저장된 상태를 불러옵니다.
+	// 앱 시작 시 상태 로드
 	if err := app.loadState(); err != nil {
-		log.Printf("저장된 상태를 찾을 수 없음 (초기 상태로 시작): %v", err)
-		// 초기 정치인 설정
-		initialPoliticians := map[string]ptypes.Politician{
-			"이순신": {Name: "이순신", Region: "전라좌도", Party: "조선", TokensMinted: 0, MaxTokens: 10000000},
-			"김구":  {Name: "김구", Region: "황해도", Party: "대한민국 임시정부", TokensMinted: 0, MaxTokens: 10000000},
-			"세종대왕": {Name: "세종대왕", Region: "한성", Party: "조선", TokensMinted: 0, MaxTokens: 10000000},
-		}
-		app.politicians = initialPoliticians
+		// 로드 실패 시, 새로운 상태로 시작
+		// 이 경우, 제네시스 블록에서 초기 상태를 설정하게 됩니다.
 	}
 	return app
 }

@@ -71,11 +71,11 @@
             color: #28a745;
             text-align: right;
         }
-        .politician-list {
+        .politisian-list {
             list-style: none;
             padding: 0;
         }
-        .politician-list li {
+        .politisian-list li {
             background-color: #f8f9fa;
             padding: 10px;
             border-radius: 4px;
@@ -147,7 +147,7 @@
         </div>
         <div class="card">
             <h2>내가 지지하는 정치인</h2>
-            <ul id="politicians-list" class="politician-list">
+            <ul id="politisian-list" class="politisian-list">
                 <li class="loading">목록을 불러오는 중...</li>
             </ul>
         </div>
@@ -175,7 +175,7 @@
         </div>
         <div class="card">
             <h2>진행중인 발의 목록</h2>
-            <ul id="proposals-list" class="politician-list">
+            <ul id="proposals-list" class="politisian-list">
                 <li class="loading">목록을 불러오는 중...</li>
             </ul>
         </div>
@@ -185,7 +185,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const welcomeMessage = document.getElementById('welcome-message');
             const walletAddressElem = document.getElementById('wallet-address');
-            const politiciansListElem = document.getElementById('politicians-list');
+            const politisianListElem = document.getElementById('politisian-list');
             const loginButton = document.getElementById('login-button');
             const referralLinkInput = document.getElementById('referral-link');
             const copyButton = document.getElementById('copy-button');
@@ -214,15 +214,15 @@
                     claimRewardButton.disabled = false;
                 }
 
-                if (data.politicians && data.politicians.length > 0) {
-                    politiciansListElem.innerHTML = ''; // '불러오는 중...' 메시지 삭제
-                    data.politicians.forEach(p => {
+                if (data.politisians && data.politisians.length > 0) {
+                    politisianListElem.innerHTML = ''; // '불러오는 중...' 메시지 삭제
+                    data.politisians.forEach(p => {
                         const li = document.createElement('li');
                         li.innerHTML = `${p} <span style="float: right; color: #28a745; font-weight: normal;">100 P-COIN</span>`;
-                        politiciansListElem.appendChild(li);
+                        politisianListElem.appendChild(li);
                     });
                 } else {
-                    politiciansListElem.innerHTML = '<li>지지하는 정치인이 없습니다.</li>';
+                    politisianListElem.innerHTML = '<li>지지하는 정치인이 없습니다.</li>';
                 }
             }
 
@@ -267,7 +267,7 @@
                         console.error('Error fetching dashboard data:', error);
                         welcomeMessage.textContent = '정보를 불러올 수 없습니다. 로그인이 필요할 수 있습니다.';
                         walletAddressElem.textContent = '오류';
-                        politiciansListElem.innerHTML = `<li>${error.message}</li>`;
+                        politisianListElem.innerHTML = `<li>${error.message}</li>`;
                         loginButton.style.display = 'block';
                     });
             }
@@ -316,16 +316,16 @@
                 event.preventDefault();
                 proposeStatus.textContent = '발의 요청 중...';
 
-                const politicianData = {
+                const politisianData = {
                     name: document.getElementById('name').value,
                     region: document.getElementById('region').value,
                     party: document.getElementById('party').value,
                 };
 
-                fetch('/api/politicians/propose', {
+                fetch('/api/politisians/propose', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(politicianData)
+                    body: JSON.stringify(politisianData)
                 })
                 .then(response => {
                     if (!response.ok) {
@@ -365,7 +365,7 @@
                             const p = proposals[id];
                             const li = document.createElement('li');
                             li.innerHTML = `
-                                <strong>${p.politician.name}</strong> (지역: ${p.politician.region}, 정당: ${p.politician.party})
+                                <strong>${p.politisian.name}</strong> (지역: ${p.politisian.region}, 정당: ${p.politisian.party})
                                 <br>
                                 <span>찬성: ${p.yes_votes} / 반대: ${p.no_votes}</span>
                                 <button class="button vote-button approve" data-id="${p.id}" data-vote="true">찬성</button>

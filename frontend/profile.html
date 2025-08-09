@@ -51,16 +51,23 @@
             </div>
             <hr style="margin: 30px 0;">
             <div class="form-group">
-                <label>지지할 정치인 3명을 선택해주세요.</label>
-                <select id="politician1" name="politician1"></select>
+                <label>지지 정치인 선택</label>
+                <p>매일 자동으로 100 P-COIN이 지급됩니다. (최대 3명)</p>
+                <div>
+                    <label for="politisian1">정치인 1:</label>
+                    <select id="politisian1" name="politisian1"></select>
+                </div>
+                <div>
+                    <label for="politisian2">정치인 2:</label>
+                    <select id="politisian2" name="politisian2"></select>
+                </div>
+                <div>
+                    <label for="politisian3">정치인 3:</label>
+                    <select id="politisian3" name="politisian3"></select>
+                </div>
             </div>
-            <div class="form-group">
-                <select id="politician2" name="politician2"></select>
-            </div>
-            <div class="form-group">
-                <select id="politician3" name="politician3"></select>
-            </div>
-            <button type="submit">설정 완료</button>
+
+            <button type="submit">프로필 저장</button>
         </form>
         <div id="statusMessage" class="status-message"></div>
     </div>
@@ -92,32 +99,55 @@
                     document.getElementById('statusMessage').className = 'status-message error';
                 });
 
-            fetch('/api/politicians')
+            // 1. 전체 정치인 목록을 불러와서 select 옵션을 채웁니다.
+            fetch('/api/politisian/list')
                 .then(response => {
                     if (!response.ok) {
-                        if (response.status === 401) window.location.href = '/login.html';
-                        throw new Error('서버에서 정치인 목록을 불러오는데 실패했습니다.');
+                        throw new Error('정치인 목록을 불러오는데 실패했습니다.');
                     }
                     return response.json();
                 })
-                .then(politicians => {
-                    const politicianSelectors = [
-                        document.getElementById('politician1'),
-                        document.getElementById('politician2'),
-                        document.getElementById('politician3')
+                .then(politisian => {
+                    const politisianSelectors = [
+                        document.getElementById('politisian1'),
+                        document.getElementById('politisian2'),
+                        document.getElementById('politisian3')
                     ];
-                    politicianSelectors.forEach(select => {
-                        select.innerHTML = '';
-                        for (const name in politicians) {
+                    politisianSelectors.forEach(select => {
+                        select.innerHTML = '<option value="">선택 안함</option>'; // 기본 옵션
+                        for (const name in politisian) {
                             const option = document.createElement('option');
                             option.value = name;
                             option.textContent = name;
                             select.appendChild(option);
                         }
                     });
+
+                    // 2. 현재 사용자의 프로필 정보를 불러와서 폼에 채웁니다.
+                    return fetch('/api/user/profile');
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('사용자 프로필을 불러오는데 실패했습니다.');
+                    }
+                    return response.json();
+                })
+                .then(profile => {
+                    document.getElementById('nickname').value = profile.nickname || '';
+                    document.getElementById('country').value = profile.country || '';
+                    document.getElementById('gender').value = profile.gender || '';
+                    document.getElementById('birthYear').value = profile.birthYear || '';
+                    
+                    // 사용자가 지지하는 정치인을 select 요소에 반영합니다.
+                    if (profile.politisian && profile.politisian.length > 0) {
+                        document.getElementById('politisian1').value = profile.politisian[0] || '';
+                        document.getElementById('politisian2').value = profile.politisian[1] || '';
+                        document.getElementById('politisian3').value = profile.politisian[2] || '';
+                    }
                 })
                 .catch(error => {
-                    document.getElementById('statusMessage').textContent = error.message;
+                    console.error('Error loading data:', error);
+                    alert(error.message);
                 });
             
             // Get referrer from URL
@@ -140,24 +170,25 @@
             statusMessage.textContent = '프로필을 저장하는 중...';
             statusMessage.className = 'status-message';
 
-            const formData = {
-                wallet: document.getElementById('walletAddress').value,
+            const selectedPolitisian = [
+                document.getElementById('politisian1').value,
+                document.getElementById('politisian2').value,
+                document.getElementById('politisian3').value
+            ].filter(Boolean); // 선택 안한 것 (빈 문자열)은 제외
+
+            const profileData = {
+                nickname: document.getElementById('nickname').value,
                 country: document.getElementById('country').value,
-                gender: document.querySelector('input[name="gender"]:checked').value,
+                gender: document.getElementById('gender').value,
                 birthYear: parseInt(document.getElementById('birthYear').value, 10),
-                politicians: [
-                    document.getElementById('politician1').value,
-                    document.getElementById('politician2').value,
-                    document.getElementById('politician3').value
-                ],
-                referrer: document.getElementById('referrer') ? document.getElementById('referrer').value : ''
+                politisian: selectedPolitisian
             };
 
             // ### '진실을 비추는 거울' 수정 지점 ###
             fetch('/api/profile/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(profileData)
             })
             .then(response => {
                 if (!response.ok) {

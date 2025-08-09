@@ -1,8 +1,12 @@
 # CometBFT and application state
 .cometbft/
 app_state.json
-politician_server
+politisian_server
 server.log
+
+# Build artifacts
+*.o
+*.a
 
 # Log files
 *.log

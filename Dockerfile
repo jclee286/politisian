@@ -15,8 +15,8 @@ COPY . .
 
 # CGO_ENABLED=0는 다른 시스템 라이브러리에 대한 의존성이 없는 정적 바이너리를 만듭니다.
 # 이렇게 하면 어떤 리눅스 환경에서도 실행 파일이 독립적으로 실행될 수 있습니다.
-# -o /politician_server는 컴파일 결과물이 / 경로에 politician_server라는 이름으로 저장되도록 합니다.
-RUN CGO_ENABLED=0 go build -o /politician_server .
+# -o /politisian_server는 컴파일 결과물이 / 경로에 politisian_server라는 이름으로 저장되도록 합니다.
+RUN CGO_ENABLED=0 go build -o /politisian_server .
 
 
 # 2단계: 실행 환경 (빌드된 결과물만 실행하는 역할)
@@ -27,7 +27,7 @@ FROM alpine:latest
 WORKDIR /root/
 
 # 빌드 환경(builder)에서 컴파일된 실행 파일만 복사합니다.
-COPY --from=builder /politician_server .
+COPY --from=builder /politisian_server .
 
 # 빌드 환경(builder)에서 프론트엔드 파일들을 복사합니다.
 COPY --from=builder /app/frontend ./frontend/
@@ -36,4 +36,4 @@ COPY --from=builder /app/frontend ./frontend/
 EXPOSE 8080 26657
 
 # 이 컨테이너가 실행될 때 최종적으로 시작될 명령어를 정의합니다.
-CMD ["./politician_server"] 
+CMD ["./politisian_server"] 

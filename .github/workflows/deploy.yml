@@ -38,7 +38,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/politician-app:latest,${{ secrets.DOCKER_USERNAME }}/politician-app:${{ github.sha }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/politisian-app:latest,${{ secrets.DOCKER_USERNAME }}/politisian-app:${{ github.sha }}
 
       # 4. DigitalOcean 서버에 접속하여 배포
       # SSH를 사용하여 서버에 접속하고, 필요한 명령어들을 실행합니다.
