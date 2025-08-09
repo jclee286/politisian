@@ -49,27 +49,33 @@ jobs:
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            # git과 docker-compose가 없으면 설치합니다.
+            # --- 필수 프로그램 설치 및 실행 ---
             apt-get update
-            apt-get install -y git
+            # git, curl 설치
+            apt-get install -y git curl
+            # Docker가 없으면 설치하고, 실행합니다.
+            if ! command -v docker &> /dev/null; then
+                echo "Docker not found, installing..."
+                apt-get install -y docker.io
+            fi
+            systemctl start docker
+            systemctl enable docker
+            # docker-compose가 없으면 설치합니다.
             if ! command -v docker-compose &> /dev/null; then
                 echo "docker-compose not found, installing..."
                 curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
                 chmod +x /usr/local/bin/docker-compose
             fi
 
-            # SSH 방식으로 저장소를 클론합니다 (없을 경우에만).
-            # 중요: 이 방법이 작동하려면, 서버의 SSH 공개 키를 GitHub 저장소의 'Deploy Key'로 등록해야 합니다.
+            # --- 애플리케이션 배포 ---
             if [ ! -d "/root/politisian" ]; then
               git clone git@github.com:${{ github.repository }}.git /root/politisian
             fi
             cd /root/politisian
             
-            # 최신 코드를 가져옵니다.
             git pull
             
-            # Docker Hub에서 최신 이미지를 내려받습니다.
-            docker-compose pull
+            # --env-file 옵션을 사용하여 .env 파일을 명시적으로 지정합니다.
+            docker-compose --env-file .env pull
             
-            # Docker Compose를 사용하여 애플리케이션을 백그라운드에서 실행(또는 재시작)합니다.
-            docker-compose up -d --remove-orphans 
+            docker-compose --env-file .env up -d --remove-orphans 
