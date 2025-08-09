@@ -8,6 +8,7 @@ import (
 	"politisian/app"
 	"politisian/server"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/node"
@@ -15,7 +16,6 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/types"
 )
 
 func main() {
@@ -43,7 +43,7 @@ func run() error {
 	return runNode(cfg, abciApp)
 }
 
-func runNode(cfg *config.Config, app types.Application) error {
+func runNode(cfg *config.Config, app abci.Application) error {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
@@ -53,7 +53,7 @@ func runNode(cfg *config.Config, app types.Application) error {
 
 	pv := privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
 
-	node, err := node.NewNode(cfg, pv, nodeKey, proxy.NewLocalClientCreator(app), node.DefaultGenesisDocProvider(cfg), node.DefaultDBProvider, node.DefaultMetricsProvider(cfg.Instrumentation), logger)
+	node, err := node.NewNode(cfg, pv, nodeKey, proxy.NewLocalClientCreator(app), node.MakeGenesisDocProviderFromFile(cfg.GenesisFile()), node.DefaultDBProvider, node.DefaultMetricsProvider(cfg.Instrumentation), logger)
 	if err != nil {
 		return fmt.Errorf("CometBFT 노드 생성 실패: %w", err)
 	}
