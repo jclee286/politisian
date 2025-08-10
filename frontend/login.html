@@ -56,25 +56,25 @@
             color: #333;
         }
     </style>
-    <!-- 1. Privy SDK 스크립트 추가 (수정됨) -->
-    <script src="https://unpkg.com/@privy-io/privy-browser@1.59.3/dist/privy-browser.umd.js"></script>
+    <!-- 1. Privy SDK 스크립트 추가 (최신 UMD 버전 명시) -->
+    <script src="https://unpkg.com/@privy-io/privy-browser@latest/dist/privy-browser.umd.js"></script>
 </head>
 <body>
     <div class="login-container">
         <h1>정치인 공화국</h1>
         <p>참여를 통해 만들어가는 새로운 디지털 국가</p>
-        <!-- 2. Privy가 제어할 로그인 버튼 -->
         <button id="login-button" class="login-btn">시작하기</button>
         <div id="status-message"></div>
     </div>
 
-    <!-- 3. Privy 연동을 위한 JavaScript 로직 (수정됨) -->
+    <!-- 3. Privy 연동을 위한 JavaScript 로직 (전면 수정) -->
     <script>
-        const appId = 'clwzrqkno01g11g5a43a05sjp'; // 여기에 실제 Privy App ID를 입력하세요.
+        const appId = 'clwzrqkno01g11g5a43a05sjp'; // Privy App ID
         const loginButton = document.getElementById('login-button');
         const statusMessage = document.getElementById('status-message');
 
-        const privy = new Privy.PrivyClient({
+        // Privy 클라이언트 초기화 (수정된 방식)
+        const privy = new Privy.Privy({
             appId: appId,
             config: {
                 loginMethods: ['email', 'google', 'wallet'],
@@ -83,25 +83,29 @@
                 },
                 events: {
                     onLogin: handleLogin,
+                    onError: (error) => {
+                        console.error('Privy Error:', error);
+                        statusMessage.textContent = '로그인 중 오류가 발생했습니다. 콘솔을 확인해주세요.';
+                    }
                 }
-            },
+            }
         });
 
         async function handleLogin(user) {
-            statusMessage.textContent = '로그인 정보를 확인하는 중...';
-            
-            // 사용자의 첫 번째 지갑 주소를 가져옵니다.
+            statusMessage.textContent = '로그인 정보 확인 중...';
+            console.log('Privy user object:', user);
+
             const wallet = user.wallet;
             if (!wallet) {
                 statusMessage.textContent = '지갑 정보를 찾을 수 없습니다. 다시 시도해주세요.';
-                // 로그아웃을 시도하여 사용자가 다시 로그인할 수 있도록 합니다.
                 await privy.logout();
                 return;
             }
             const userAddress = wallet.address;
+            console.log('User wallet address:', userAddress);
 
             try {
-                // 백엔드에 로그인 요청을 보냅니다.
+                // 백엔드에 로그인 요청
                 const response = await fetch('/api/auth/wallet/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -110,36 +114,24 @@
 
                 if (response.ok) {
                     statusMessage.textContent = '로그인 성공! 프로필 페이지로 이동합니다.';
-                    // 성공 시 프로필 페이지로 리디렉션합니다.
                     window.location.href = '/profile.html';
                 } else {
                     const errorText = await response.text();
+                    console.error('Backend login failed:', errorText);
                     statusMessage.textContent = `로그인 실패: ${errorText}`;
-                    // 서버측 로그인 실패 시 Privy 세션도 종료합니다.
                     await privy.logout();
                 }
             } catch (error) {
-                console.error('API 로그인 요청 오류:', error);
+                console.error('API login request error:', error);
                 statusMessage.textContent = '서버와 통신 중 오류가 발생했습니다.';
                 await privy.logout();
             }
         };
 
+        // 로그인 버튼 클릭 시 Privy 로그인 함수 직접 호출 (수정된 방식)
         loginButton.addEventListener('click', async () => {
-            try {
-                // 사용자가 이미 Privy에 로그인되어 있는지 확인합니다.
-                const user = await privy.getUser();
-                if (user) {
-                     // 이미 로그인된 경우, 바로 백엔드 로그인 절차를 진행합니다.
-                    handleLogin(user);
-                } else {
-                    // 로그인되어 있지 않으면 Privy의 로그인 모달을 띄웁니다.
-                    await privy.login();
-                }
-            } catch (error) {
-                console.error('Privy 로그인 프로세스 오류:', error);
-                statusMessage.textContent = '로그인 중 오류가 발생했습니다.';
-            }
+            statusMessage.textContent = '로그인을 시작합니다...';
+            await privy.login();
         });
     </script>
 </body>
