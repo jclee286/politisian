@@ -13,8 +13,19 @@
         .login-btn:hover { background-color: #5a3acc; }
         #status-message { margin-top: 20px; font-weight: 500; color: #333; }
     </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>정치인 공화국</h1>
+        <p>참여를 통해 만들어가는 새로운 디지털 국가</p>
+        <button id="login-button" class="login-btn">시작하기</button>
+        <div id="status-message"></div>
+    </div>
 
-    <!-- 1. Privy 로직을 먼저 정의합니다. -->
+    <!-- 
+      스크립트를 body 맨 끝으로 이동하여 HTML 요소들이 먼저 로드되도록 합니다.
+      이렇게 하면 initPrivy 함수가 document.getElementById('login-button') 등을 찾지 못하는 문제를 방지할 수 있습니다.
+    -->
     <script>
         function initPrivy() {
             console.log("Privy SDK loaded from local file. Initializing Privy app...");
@@ -96,15 +107,7 @@
         }
     </script>
     
-    <!-- 2. 로컬 Privy SDK를 불러오고, 로드가 완료되면 initPrivy()를 실행합니다. -->
+    <!-- 로컬 Privy SDK를 불러오고, 로드가 완료되면 initPrivy()를 실행합니다. -->
     <script src="/js/privy-browser.umd.js" onload="initPrivy()"></script>
-</head>
-<body>
-    <div class="login-container">
-        <h1>정치인 공화국</h1>
-        <p>참여를 통해 만들어가는 새로운 디지털 국가</p>
-        <button id="login-button" class="login-btn">시작하기</button>
-        <div id="status-message"></div>
-    </div>
 </body>
 </html> 

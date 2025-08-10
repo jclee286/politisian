@@ -25,7 +25,11 @@ func StartServer(node *node.Node) {
 	mux.Handle("/api/politisian/propose", authMiddleware(http.HandlerFunc(handleProposePolitician)))
 	// 나중에 추가될 API 핸들러들...
 
-	// 2. 그 외 모든 요청을 처리할 핸들러를 등록합니다. (가장 마지막에 위치)
+	// 2. 정적 파일 핸들러 (CSS, JS 등)를 등록합니다. 이 요청들은 인증을 거치지 않습니다.
+	// ./frontend/js/ 디렉토리를 /js/ URL 경로에 매핑합니다.
+	mux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir("./frontend/js"))))
+
+	// 3. 그 외 모든 페이지 요청을 처리할 핸들러를 등록합니다. (가장 마지막에 위치)
 	fs := http.FileServer(http.Dir("./frontend"))
 	mux.HandleFunc("/", rootFileHandler(fs))
 
