@@ -68,28 +68,4 @@ func handleWalletLogin(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
-}
-
-// authMiddleware는 이제 쿠키에서 지갑 주소를 확인합니다.
-func authMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sessionCookie, err := r.Cookie("session_token")
-		if err != nil {
-			// 쿠키가 없으면 로그인 페이지로 리디렉션하거나 401 오류를 반환할 수 있습니다.
-			// 여기서는 API 요청이므로 401을 반환합니다.
-			http.Error(w, "Unauthorized: No session token", http.StatusUnauthorized)
-			return
-		}
-
-		sessionToken := sessionCookie.Value
-		address, exists := sessionStore.Get(sessionToken)
-		if !exists {
-			http.Error(w, "Unauthorized: Invalid session token", http.StatusUnauthorized)
-			return
-		}
-
-		// 컨텍스트에 지갑 주소를 추가합니다.
-		ctx := context.WithValue(r.Context(), userWalletAddressKey, address)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
 } 
