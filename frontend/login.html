@@ -28,13 +28,13 @@
     -->
     <script>
         function initPrivy() {
-            console.log("Privy SDK loaded from local file. Initializing Privy app...");
+            console.log("Privy SDK loaded from CDN. Initializing Privy app...");
             const appId = 'clwzrqkno01g11g5a43a05sjp';
             const loginButton = document.getElementById('login-button');
             const statusMessage = document.getElementById('status-message');
 
             if (!window.Privy) {
-                console.error('Privy object not found. The local SDK file might be corrupted or empty.');
+                console.error('Privy object not found. SDK might have failed to load from CDN.');
                 statusMessage.textContent = '로그인 모듈 초기화에 실패했습니다.';
                 return;
             }
@@ -107,7 +107,7 @@
         }
     </script>
     
-    <!-- 로컬 Privy SDK를 불러오고, 로드가 완료되면 initPrivy()를 실행합니다. -->
-    <script src="/js/privy-browser.umd.js" onload="initPrivy()"></script>
+    <!-- CDN에서 Privy SDK를 불러오고, 로드가 완료되면 initPrivy()를 실행합니다. -->
+    <script src="https://unpkg.com/@privy-io/privy-browser@latest/dist/privy-browser.umd.js" onload="initPrivy()"></script>
 </body>
 </html> 
