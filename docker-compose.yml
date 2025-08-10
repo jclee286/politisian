@@ -15,7 +15,7 @@ services:
     # 호스트의 ./data/.cometbft 디렉토리를 컨테이너의 /root/.cometbft 디렉토리와 동기화합니다.
     # 이렇게 하면 컨테이너가 삭제되어도 블록체인 데이터는 호스트에 안전하게 보관됩니다.
     volumes:
-      - ./data/.cometbft:/root/.cometbft
+      - ./data/politisian/.cometbft:/root/politisian/.cometbft
     # 컨테이너에 환경 변수를 설정합니다.
     # 이 값들은 GitHub Secrets에서 자동으로 주입됩니다.
     environment:
