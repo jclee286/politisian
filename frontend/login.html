@@ -5,72 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>로그인 - 정치인 공화국</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background-color: #f4f4f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .login-container {
-            background-color: #fff;
-            padding: 50px;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-            text-align: center;
-            width: 360px;
-        }
-        h1 {
-            color: #1a1a1a;
-            margin-bottom: 10px;
-            font-size: 24px;
-            font-weight: 600;
-        }
-        p {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 16px;
-        }
-        .login-btn {
-            background-color: #6a4bff;
-            color: white;
-            padding: 14px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            width: 100%;
-            transition: background-color 0.2s ease-in-out;
-        }
-        .login-btn:hover {
-            background-color: #5a3acc;
-        }
-        #status-message {
-            margin-top: 20px;
-            font-weight: 500;
-            color: #333;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-container { background-color: #fff; padding: 50px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); text-align: center; width: 360px; }
+        h1 { color: #1a1a1a; margin-bottom: 10px; font-size: 24px; font-weight: 600; }
+        p { color: #666; margin-bottom: 30px; font-size: 16px; }
+        .login-btn { background-color: #6a4bff; color: white; padding: 14px 24px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; width: 100%; transition: background-color 0.2s ease-in-out; }
+        .login-btn:hover { background-color: #5a3acc; }
+        #status-message { margin-top: 20px; font-weight: 500; color: #333; }
     </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>정치인 공화국</h1>
+        <p>참여를 통해 만들어가는 새로운 디지털 국가</p>
+        <button id="login-button" class="login-btn">시작하기</button>
+        <div id="status-message"></div>
+    </div>
 
-    <!-- 1. Privy 로직을 먼저 정의합니다. -->
     <script>
-        function initPrivy() {
-            console.log("Privy SDK loaded. Initializing Privy app...");
-            const appId = 'clwzrqkno01g11g5a43a05sjp';
-            const loginButton = document.getElementById('login-button');
-            const statusMessage = document.getElementById('status-message');
+        // 이 스크립트는 페이지의 다른 모든 요소가 로드된 후에 실행됩니다.
 
-            if (!window.Privy) {
-                console.error('Privy object is not available on the window object.');
-                statusMessage.textContent = '로그인 모듈 로딩에 실패했습니다. 페이지를 새로고침 해주세요.';
-                return;
-            }
+        const appId = 'clwzrqkno01g11g5a43a05sjp'; // Privy App ID
+        const loginButton = document.getElementById('login-button');
+        const statusMessage = document.getElementById('status-message');
 
+        // Privy SDK 로드가 완료되면 실행될 초기화 함수
+        function initializePrivy() {
+            console.log("Privy SDK is loaded. Initializing...");
+            
             const privy = new Privy({
                 appId: appId,
                 config: {
@@ -82,7 +44,7 @@
                         onLogin: handleLogin,
                         onError: (error) => {
                             console.error('Privy Error:', error);
-                            statusMessage.textContent = '로그인 중 오류가 발생했습니다. 콘솔을 확인해주세요.';
+                            statusMessage.textContent = '로그인 중 오류가 발생했습니다.';
                         }
                     }
                 }
@@ -90,8 +52,6 @@
 
             async function handleLogin(user) {
                 statusMessage.textContent = '로그인 정보 확인 중...';
-                console.log('Privy user object:', user);
-
                 const wallet = user.wallet;
                 if (!wallet) {
                     statusMessage.textContent = '지갑 정보를 찾을 수 없습니다. 다시 시도해주세요.';
@@ -99,7 +59,6 @@
                     return;
                 }
                 const userAddress = wallet.address;
-                console.log('User wallet address:', userAddress);
 
                 try {
                     const response = await fetch('/api/auth/wallet/login', {
@@ -113,7 +72,6 @@
                         window.location.href = '/profile.html';
                     } else {
                         const errorText = await response.text();
-                        console.error('Backend login failed:', errorText);
                         statusMessage.textContent = `로그인 실패: ${errorText}`;
                         await privy.logout();
                     }
@@ -122,7 +80,7 @@
                     statusMessage.textContent = '서버와 통신 중 오류가 발생했습니다.';
                     await privy.logout();
                 }
-            };
+            }
 
             const startLoginProcess = async () => {
                 statusMessage.textContent = '로그인을 시작합니다...';
@@ -135,19 +93,26 @@
             };
 
             loginButton.addEventListener('click', startLoginProcess);
-            startLoginProcess(); // 페이지 로드 후 바로 로그인 시작
+            
+            // 자동으로 로그인 절차 시작
+            startLoginProcess();
         }
+
+        // Privy SDK 스크립트를 동적으로 생성하고 로드합니다.
+        const privyScript = document.createElement('script');
+        privyScript.src = 'https://unpkg.com/@privy-io/privy-browser@latest/dist/privy-browser.umd.js';
+        
+        // 스크립트 로드가 성공하면 초기화 함수를 실행합니다.
+        privyScript.onload = initializePrivy;
+
+        // 스크립트 로드가 실패하면 에러 메시지를 표시합니다.
+        privyScript.onerror = function() {
+            console.error('Privy SDK script failed to load.');
+            statusMessage.textContent = '로그인 서비스를 불러오는데 실패했습니다. 네트워크 연결을 확인하고 새로고침 해주세요.';
+        };
+        
+        // 생성된 스크립트 태그를 body에 추가하여 로드를 시작합니다.
+        document.body.appendChild(privyScript);
     </script>
-    
-    <!-- 2. Privy SDK를 불러오고, 로드가 완료되면 initPrivy()를 실행합니다. -->
-    <script src="https://unpkg.com/@privy-io/privy-browser@latest/dist/privy-browser.umd.js" onload="initPrivy()"></script>
-</head>
-<body>
-    <div class="login-container">
-        <h1>정치인 공화국</h1>
-        <p>참여를 통해 만들어가는 새로운 디지털 국가</p>
-        <button id="login-button" class="login-btn">시작하기</button>
-        <div id="status-message"></div>
-    </div>
 </body>
 </html> 
