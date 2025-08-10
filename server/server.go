@@ -15,8 +15,8 @@ func StartServer(node *node.Node) {
 	blockchainClient = local.New(node)
 
 	// API 엔드포인트 라우팅을 먼저 설정합니다.
-	// 이렇게 하면 /api/ 요청이 파일 서버에 의해 가로채지지 않습니다.
-	http.Handle("/api/auth/wallet/login", http.HandlerFunc(handleWalletLogin))
+	// 미들웨어가 적용된 핸들러는 http.Handle을 사용해야 합니다.
+	http.HandleFunc("/api/auth/wallet/login", handleWalletLogin)
 	http.Handle("/api/user/profile", authMiddleware(http.HandlerFunc(handleUserProfile)))
 	http.Handle("/api/profile/save", authMiddleware(http.HandlerFunc(handleProfileSave)))
 	http.Handle("/api/politisian/list", authMiddleware(http.HandlerFunc(handleGetPolitisians)))
