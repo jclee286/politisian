@@ -108,6 +108,10 @@
     </script>
     
     <!-- CDN에서 Privy SDK를 불러오고, 로드가 완료되면 initPrivy()를 실행합니다. -->
-    <script src="https://unpkg.com/@privy-io/privy-browser@latest/dist/privy-browser.umd.js" onload="initPrivy()"></script>
+    <script 
+        src="https://unpkg.com/@privy-io/privy-browser@latest/dist/privy-browser.umd.js" 
+        onload="initPrivy()"
+        onerror="console.error('Privy SDK 스크립트 로딩 실패. 네트워크, 광고 차단 프로그램 또는 콘텐츠 보안 정책(CSP)을 확인하세요.'); document.getElementById('status-message').textContent = '로그인 모듈 로딩에 실패했습니다. 네트워크나 브라우저 확장 프로그램을 확인해주세요.';"
+    ></script>
 </body>
 </html> 
