@@ -37,9 +37,7 @@ func run() error {
 	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
 
 	// 설정 디렉토리 및 기본 config.toml 파일 생성 (없을 경우)
-	if err := config.EnsureRoot(cometbftDir); err != nil {
-		return fmt.Errorf("failed to ensure root directory: %w", err)
-	}
+	config.EnsureRoot(cometbftDir)
 	configFilePath := filepath.Join(cometbftDir, "config", "config.toml")
 	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
 		config.WriteConfigFile(configFilePath, cfg)
