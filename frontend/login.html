@@ -56,25 +56,21 @@
             color: #333;
         }
     </style>
-    <!-- 1. Privy SDK 스크립트 추가하고, 로드 완료 후 initPrivy 함수를 호출하도록 설정 -->
-    <script src="https://unpkg.com/@privy-io/privy-browser@latest/dist/privy-browser.umd.js" onload="initPrivy()"></script>
-</head>
-<body>
-    <div class="login-container">
-        <h1>정치인 공화국</h1>
-        <p>참여를 통해 만들어가는 새로운 디지털 국가</p>
-        <button id="login-button" class="login-btn">시작하기</button>
-        <div id="status-message"></div>
-    </div>
 
+    <!-- 1. Privy 로직을 먼저 정의합니다. -->
     <script>
-        // Privy SDK 로드가 완료된 후 호출될 함수
         function initPrivy() {
-            const appId = 'clwzrqkno01g11g5a43a05sjp'; // Privy App ID
+            console.log("Privy SDK loaded. Initializing Privy app...");
+            const appId = 'clwzrqkno01g11g5a43a05sjp';
             const loginButton = document.getElementById('login-button');
             const statusMessage = document.getElementById('status-message');
 
-            // Privy 클라이언트 초기화
+            if (!window.Privy) {
+                console.error('Privy object is not available on the window object.');
+                statusMessage.textContent = '로그인 모듈 로딩에 실패했습니다. 페이지를 새로고침 해주세요.';
+                return;
+            }
+
             const privy = new Privy({
                 appId: appId,
                 config: {
@@ -106,7 +102,6 @@
                 console.log('User wallet address:', userAddress);
 
                 try {
-                    // 백엔드에 로그인 요청
                     const response = await fetch('/api/auth/wallet/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -129,7 +124,6 @@
                 }
             };
 
-            // 로그인 절차를 시작하는 함수
             const startLoginProcess = async () => {
                 statusMessage.textContent = '로그인을 시작합니다...';
                 try {
@@ -140,12 +134,20 @@
                 }
             };
 
-            // 사용자가 실수로 모달을 닫았을 경우를 대비해 버튼에 클릭 리스너를 남겨둡니다.
             loginButton.addEventListener('click', startLoginProcess);
-
-            // 페이지가 로드되자마자 자동으로 로그인 절차를 시작합니다.
-            startLoginProcess();
+            startLoginProcess(); // 페이지 로드 후 바로 로그인 시작
         }
     </script>
+    
+    <!-- 2. Privy SDK를 불러오고, 로드가 완료되면 initPrivy()를 실행합니다. -->
+    <script src="https://unpkg.com/@privy-io/privy-browser@latest/dist/privy-browser.umd.js" onload="initPrivy()"></script>
+</head>
+<body>
+    <div class="login-container">
+        <h1>정치인 공화국</h1>
+        <p>참여를 통해 만들어가는 새로운 디지털 국가</p>
+        <button id="login-button" class="login-btn">시작하기</button>
+        <div id="status-message"></div>
+    </div>
 </body>
 </html> 
