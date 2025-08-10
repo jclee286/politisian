@@ -46,7 +46,6 @@ func run(logger log.Logger) error {
 	cfg.SetRoot(cometbftDir)
 	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
 	// 빠른 동기화를 위해 fast_sync 버전을 v0으로 설정
-	cfg.Consensus.SetDefaults()
 	cfg.Consensus.TimeoutCommit = 5 * time.Second
 
 	config.EnsureRoot(cometbftDir)
@@ -103,9 +102,9 @@ func run(logger log.Logger) error {
 	abciApp := app.NewPoliticianApp(db, logger.With("module", "abci-app"))
 
 	genesisDocProvider := node.DefaultGenesisDocProviderFunc(cfg)
-	dbProvider := node.DefaultDBProvider
+	dbProvider := config.DefaultDBProvider
 
-	logger.Info("Creating CometBFT node...")
+	logger.Info("Creating CometBft node...")
 	cometNode, err := node.NewNode(
 		context.Background(),
 		cfg,

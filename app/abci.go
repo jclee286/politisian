@@ -42,7 +42,7 @@ func (app *PoliticianApp) CheckTx(_ context.Context, req *types.RequestCheckTx) 
 }
 
 // Commit은 블록의 모든 트랜잭션이 처리된 후, 최종 상태를 DB에 저장합니다.
-func (app *PoliticianApp) Commit(_ context.Context) (*types.ResponseCommit, error) {
+func (app *PoliticianApp) Commit(_ context.Context, _ *types.RequestCommit) (*types.ResponseCommit, error) {
 	app.height++
 	if err := app.saveState(); err != nil {
 		app.logger.Error("Failed to save state on Commit", "error", err)
