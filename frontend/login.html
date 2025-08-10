@@ -13,33 +13,26 @@
         .login-btn:hover { background-color: #5a3acc; }
         #status-message { margin-top: 20px; font-weight: 500; color: #333; }
     </style>
-</head>
-<body>
-    <div class="login-container">
-        <h1>정치인 공화국</h1>
-        <p>참여를 통해 만들어가는 새로운 디지털 국가</p>
-        <button id="login-button" class="login-btn">시작하기</button>
-        <div id="status-message"></div>
-    </div>
 
+    <!-- 1. Privy 로직을 먼저 정의합니다. -->
     <script>
-        // 이 스크립트는 페이지의 다른 모든 요소가 로드된 후에 실행됩니다.
+        function initPrivy() {
+            console.log("Privy SDK loaded from local file. Initializing Privy app...");
+            const appId = 'clwzrqkno01g11g5a43a05sjp';
+            const loginButton = document.getElementById('login-button');
+            const statusMessage = document.getElementById('status-message');
 
-        const appId = 'clwzrqkno01g11g5a43a05sjp'; // Privy App ID
-        const loginButton = document.getElementById('login-button');
-        const statusMessage = document.getElementById('status-message');
+            if (!window.Privy) {
+                console.error('Privy object not found. The local SDK file might be corrupted or empty.');
+                statusMessage.textContent = '로그인 모듈 초기화에 실패했습니다.';
+                return;
+            }
 
-        // Privy SDK 로드가 완료되면 실행될 초기화 함수
-        function initializePrivy() {
-            console.log("Privy SDK is loaded. Initializing...");
-            
             const privy = new Privy({
                 appId: appId,
                 config: {
                     loginMethods: ['email', 'google', 'wallet'],
-                    embeddedWallets: {
-                        createOnLogin: 'users-without-wallets'
-                    },
+                    embeddedWallets: { createOnLogin: 'users-without-wallets' },
                     events: {
                         onLogin: handleLogin,
                         onError: (error) => {
@@ -54,7 +47,7 @@
                 statusMessage.textContent = '로그인 정보 확인 중...';
                 const wallet = user.wallet;
                 if (!wallet) {
-                    statusMessage.textContent = '지갑 정보를 찾을 수 없습니다. 다시 시도해주세요.';
+                    statusMessage.textContent = '지갑 정보를 찾을 수 없습니다.';
                     await privy.logout();
                     return;
                 }
@@ -68,8 +61,14 @@
                     });
 
                     if (response.ok) {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const referrer = urlParams.get('ref');
+                        let redirectUrl = '/profile.html';
+                        if (referrer) {
+                            redirectUrl += `?ref=${referrer}`;
+                        }
                         statusMessage.textContent = '로그인 성공! 프로필 페이지로 이동합니다.';
-                        window.location.href = '/profile.html';
+                        window.location.href = redirectUrl;
                     } else {
                         const errorText = await response.text();
                         statusMessage.textContent = `로그인 실패: ${errorText}`;
@@ -93,26 +92,19 @@
             };
 
             loginButton.addEventListener('click', startLoginProcess);
-            
-            // 자동으로 로그인 절차 시작
             startLoginProcess();
         }
-
-        // Privy SDK 스크립트를 동적으로 생성하고 로드합니다.
-        const privyScript = document.createElement('script');
-        privyScript.src = 'https://unpkg.com/@privy-io/privy-browser@latest/dist/privy-browser.umd.js';
-        
-        // 스크립트 로드가 성공하면 초기화 함수를 실행합니다.
-        privyScript.onload = initializePrivy;
-
-        // 스크립트 로드가 실패하면 에러 메시지를 표시합니다.
-        privyScript.onerror = function() {
-            console.error('Privy SDK script failed to load.');
-            statusMessage.textContent = '로그인 서비스를 불러오는데 실패했습니다. 네트워크 연결을 확인하고 새로고침 해주세요.';
-        };
-        
-        // 생성된 스크립트 태그를 body에 추가하여 로드를 시작합니다.
-        document.body.appendChild(privyScript);
     </script>
+    
+    <!-- 2. 로컬 Privy SDK를 불러오고, 로드가 완료되면 initPrivy()를 실행합니다. -->
+    <script src="/js/privy-browser.umd.js" onload="initPrivy()"></script>
+</head>
+<body>
+    <div class="login-container">
+        <h1>정치인 공화국</h1>
+        <p>참여를 통해 만들어가는 새로운 디지털 국가</p>
+        <button id="login-button" class="login-btn">시작하기</button>
+        <div id="status-message"></div>
+    </div>
 </body>
 </html> 
