@@ -37,16 +37,15 @@ func (app *PoliticianApp) CheckTx(req *types.RequestCheckTx) (*types.ResponseChe
 	return &types.ResponseCheckTx{Code: types.CodeTypeOK}, nil
 }
 
-// Commit은 블록의 모든 트랜잭션이 처리된 후, 최종 상태를 DB에 저장하고 AppHash를 반환합니다.
+// Commit은 블록의 모든 트랜잭션이 처리된 후, 최종 상태를 DB에 저장합니다.
 func (app *PoliticianApp) Commit() (*types.ResponseCommit, error) {
 	app.height++
-	appHash, err := app.saveState()
-	if err != nil {
+	if err := app.saveState(); err != nil {
 		log.Printf("CRITICAL: Failed to save state: %v", err)
 		// 여기서 패닉을 발생시켜 노드를 안전하게 중지시킬 수 있습니다.
 		panic(err)
 	}
-	return &types.ResponseCommit{Data: appHash}, nil
+	return &types.ResponseCommit{}, nil
 }
 
 // InitChain은 블록체인이 처음 시작될 때 한 번만 호출됩니다.
@@ -64,7 +63,7 @@ func (app *PoliticianApp) InitChain(req *types.RequestInitChain) (*types.Respons
 	return &types.ResponseInitChain{}, nil
 }
 
-// FinalizeBlock은 블록에 포함된 모든 트랜잭션을 실행합니다.
+// FinalizeBlock은 블록에 포함된 모든 트랜잭션을 실행하고, 상태 해시를 계산하여 반환합니다.
 func (app *PoliticianApp) FinalizeBlock(req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
 	respTxs := make([]*types.ExecTxResult, len(req.Txs))
 	for i, tx := range req.Txs {
@@ -87,8 +86,14 @@ func (app *PoliticianApp) FinalizeBlock(req *types.RequestFinalizeBlock) (*types
 			respTxs[i] = &types.ExecTxResult{Code: 10, Log: "unknown action"}
 		}
 	}
+
+	app.hashState() // 모든 트랜잭션 처리 후 상태 해시 업데이트
+
 	// `Commit`이 이어서 호출되어 변경사항을 DB에 최종 저장합니다.
-	return &types.ResponseFinalizeBlock{TxResults: respTxs}, nil
+	return &types.ResponseFinalizeBlock{
+		TxResults: respTxs,
+		AppHash:   app.appHash,
+	}, nil
 }
 
 // --- 핸들러 함수들 ---

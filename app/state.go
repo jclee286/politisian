@@ -22,7 +22,7 @@ type AppState struct {
 }
 
 // saveState는 현재 애플리케이션 상태를 데이터베이스에 저장합니다.
-func (app *PoliticianApp) saveState() ([]byte, error) {
+func (app *PoliticianApp) saveState() error {
 	state := AppState{
 		Height:      app.height,
 		AppHash:     app.appHash,
@@ -30,37 +30,24 @@ func (app *PoliticianApp) saveState() ([]byte, error) {
 		Proposals:   app.proposals,
 		Politicians: app.politicians,
 	}
-
 	stateBytes, err := json.Marshal(state)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	// 상태 해시 계산
-	hash := sha256.Sum256(stateBytes)
-	app.appHash = hash[:]
-
-	// DB에 상태 저장
-	err = app.db.SetSync(stateKey, stateBytes)
-	if err != nil {
-		return nil, err
-	}
-	return app.appHash, nil
+	return app.db.SetSync(stateKey, stateBytes)
 }
 
 // loadState는 데이터베이스에서 애플리케이션 상태를 불러옵니다.
 func (app *PoliticianApp) loadState() error {
 	stateBytes, err := app.db.Get(stateKey)
 	if err != nil {
-		// 키가 없는 경우(초기 상태)는 에러가 아님
 		if err == dbm.ErrKeyNotFound {
-			return nil
+			return nil // DB에 아직 상태가 없으면 초기 상태로 시작
 		}
 		return err
 	}
-	// 데이터가 없는 경우 (초기 상태)
 	if len(stateBytes) == 0 {
-		return nil
+		return nil // 데이터가 비어있어도 초기 상태
 	}
 
 	var state AppState
@@ -74,4 +61,21 @@ func (app *PoliticianApp) loadState() error {
 	app.proposals = state.Proposals
 	app.politicians = state.Politicians
 	return nil
+}
+
+// hashState는 현재 상태의 해시를 계산하여 app.appHash를 업데이트합니다.
+func (app *PoliticianApp) hashState() {
+	state := AppState{
+		Height:      app.height,
+		Accounts:    app.accounts,
+		Proposals:   app.proposals,
+		Politicians: app.politicians,
+	}
+	stateBytes, err := json.Marshal(state)
+	if err != nil {
+		// 이 에러는 발생해서는 안됩니다. 발생 시 시스템적인 문제입니다.
+		panic(err)
+	}
+	hash := sha256.Sum256(stateBytes)
+	app.appHash = hash[:]
 }
