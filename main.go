@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"politisian/app"
+	ptypes "politisian/pkg/types"
 	"politisian/server"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -57,6 +59,11 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("failed to get pubkey from priv validator: %w", err)
 		}
+		// 애플리케이션의 초기 상태 (빈 객체)
+		appState, err := json.Marshal(ptypes.GenesisState{})
+		if err != nil {
+			return fmt.Errorf("failed to marshal genesis app state: %w", err)
+		}
 		genDoc := &types.GenesisDoc{
 			ChainID:         "politisian-chain-1",
 			GenesisTime:     time.Now(),
@@ -66,6 +73,7 @@ func run() error {
 				PubKey:  pubKey,
 				Power:   10,
 			}},
+			AppState: json.RawMessage(appState),
 		}
 		if err := genDoc.SaveAs(genesisFile); err != nil {
 			return fmt.Errorf("failed to save genesis file: %w", err)
