@@ -21,8 +21,9 @@ func StartServer(node *node.Node) {
 	http.Handle("/api/profile/save", authMiddleware(http.HandlerFunc(handleProfileSave)))
 	http.Handle("/api/politisian/list", authMiddleware(http.HandlerFunc(handleGetPolitisians)))
 	http.Handle("/api/politisian/propose", authMiddleware(http.HandlerFunc(handleProposePolitician)))
-
-	// 정적 파일을 제공하는 파일 서버를 설정합니다. 이 핸들러는 API 핸들러 뒤에 위치해야 합니다.
+	// 여기에 나중에 추가될 API 핸들러들...
+	
+	// 정적 파일을 제공하는 파일 서버를 설정합니다. 이 핸들러는 모든 API 핸들러 뒤, 가장 마지막에 위치해야 합니다.
 	fs := http.FileServer(http.Dir("./frontend/"))
 	http.Handle("/", fs)
 
@@ -40,6 +41,7 @@ func StartServer(node *node.Node) {
 }
 
 // authFileServerMiddleware는 정적 파일 요청에 대한 인증을 처리하는 미들웨어입니다.
+// 현재 사용되고 있지는 않지만, 나중에 특정 페이지 접근 제어에 사용할 수 있습니다.
 func authFileServerMiddleware() http.Handler {
 	fs := http.FileServer(http.Dir("./frontend"))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -228,7 +228,7 @@
 
             // 대시보드 데이터를 가져오는 함수
             function fetchDashboardData() {
-                return fetch('/api/me/dashboard')
+                return fetch('/api/user/profile') // 수정: 올바른 대시보드 API 엔드포인트
                     .then(response => {
                         if (response.status === 401) {
                             loginButton.style.display = 'block';
@@ -290,7 +290,7 @@
                 claimStatus.textContent = '보상 요청 중...';
                 claimRewardButton.disabled = true;
 
-                fetch('/api/rewards/claim', {
+                fetch('/api/rewards/claim', { // 참고: 이 API는 아직 백엔드에 구현 필요
                     method: 'POST',
                 })
                 .then(response => {
@@ -322,7 +322,7 @@
                     party: document.getElementById('party').value,
                 };
 
-                fetch('/api/politisians/propose', {
+                fetch('/api/politisian/propose', { // 수정: 올바른 발의 API 엔드포인트
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(politisianData)
@@ -348,7 +348,7 @@
 
             function fetchProposals() {
                 proposalsListElem.innerHTML = '<li class="loading">목록을 불러오는 중...</li>';
-                fetch('/api/proposals')
+                fetch('/api/politisian/list') // 수정: 올바른 제안 목록 API 엔드포인트
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('제안 목록을 불러오는데 실패했습니다.');
@@ -386,7 +386,7 @@
                     
                     event.target.parentElement.querySelectorAll('.vote-button').forEach(btn => btn.disabled = true);
 
-                    fetch(`/api/proposals/${proposalId}/vote`, {
+                    fetch(`/api/proposals/${proposalId}/vote`, { // 참고: 이 API는 아직 백엔드에 구현 필요
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ vote: vote })
