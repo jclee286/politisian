@@ -56,8 +56,8 @@
             color: #333;
         }
     </style>
-    <!-- 1. Privy SDK 스크립트 추가 -->
-    <script src="https://unpkg.com/@privy-io/privy-browser@latest/dist/privy-browser.umd.js"></script>
+    <!-- 1. Privy SDK 스크립트 추가하고, 로드 완료 후 initPrivy 함수를 호출하도록 설정 -->
+    <script src="https://unpkg.com/@privy-io/privy-browser@latest/dist/privy-browser.umd.js" onload="initPrivy()"></script>
 </head>
 <body>
     <div class="login-container">
@@ -68,7 +68,8 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // Privy SDK 로드가 완료된 후 호출될 함수
+        function initPrivy() {
             const appId = 'clwzrqkno01g11g5a43a05sjp'; // Privy App ID
             const loginButton = document.getElementById('login-button');
             const statusMessage = document.getElementById('status-message');
@@ -132,8 +133,6 @@
             const startLoginProcess = async () => {
                 statusMessage.textContent = '로그인을 시작합니다...';
                 try {
-                    // privy.login()은 사용자가 Privy에 이미 로그인되어 있는지 확인하고
-                    // 그렇지 않은 경우에만 모달을 표시하는 것을 포함하여 전체 흐름을 처리합니다.
                     await privy.login();
                 } catch (error) {
                     console.error('Privy login process failed:', error);
@@ -146,7 +145,7 @@
 
             // 페이지가 로드되자마자 자동으로 로그인 절차를 시작합니다.
             startLoginProcess();
-        });
+        }
     </script>
 </body>
 </html> 
