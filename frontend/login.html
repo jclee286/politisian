@@ -74,7 +74,7 @@
         const statusMessage = document.getElementById('status-message');
 
         // Privy 클라이언트 초기화 (수정된 방식)
-        const privy = new Privy.Privy({
+        const privy = new Privy({
             appId: appId,
             config: {
                 loginMethods: ['email', 'google', 'wallet'],
@@ -131,6 +131,7 @@
         // 로그인 버튼 클릭 시 Privy 로그인 함수 직접 호출 (수정된 방식)
         loginButton.addEventListener('click', async () => {
             statusMessage.textContent = '로그인을 시작합니다...';
+            // 사용자가 이미 로그인 되어 있는지 privy가 내부적으로 처리하므로, 바로 login()을 호출합니다.
             await privy.login();
         });
     </script>
