@@ -3,7 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	// "log" // 사용하지 않으므로 제거
 
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/google/uuid"
@@ -129,7 +129,7 @@ func (app *PoliticianApp) updateSupporters(txData *ptypes.TxData) *types.ExecTxR
 	account, exists := app.accounts[txData.UserID]
 	if !exists {
 		logMsg := "Account not found for update"
-		app.logger.Warn(logMsg, "user_id", txData.UserID)
+		app.logger.Info(logMsg, "user_id", txData.UserID)
 		return &types.ExecTxResult{Code: 30, Log: logMsg}
 	}
 	account.Politicians = txData.Politicians
@@ -152,7 +152,7 @@ func (app *PoliticianApp) handleVoteOnProposal(txData *ptypes.TxData) *types.Exe
 	proposal, exists := app.proposals[txData.ProposalID]
 	if !exists {
 		logMsg := "Proposal not found for vote"
-		app.logger.Warn(logMsg, "proposal_id", txData.ProposalID)
+		app.logger.Info(logMsg, "proposal_id", txData.ProposalID)
 		return &types.ExecTxResult{Code: 40, Log: logMsg}
 	}
 	if _, alreadyVoted := proposal.Votes[txData.UserID]; alreadyVoted {

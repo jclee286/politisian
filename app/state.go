@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	dbm "github.com/cometbft/cometbft-db"
 	ptypes "politisian/pkg/types"
 )
 
