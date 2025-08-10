@@ -16,13 +16,13 @@ func StartServer(node *node.Node) {
 
 	// 클라이언트 측 자산을 제공하기 위해 파일 서버를 설정합니다.
 	// http.Dir("./frontend/")는 ./frontend/ 디렉토리의 파일을 사용하도록 지정합니다.
-	// http.StripPrefix("/ui/", ...)는 URL에서 "/ui/" 접두사를 제거하여
-	// /ui/login.html 요청이 실제로는 ./frontend/login.html 파일을 찾도록 합니다.
-	fs := http.FileServer(http.Dir("./frontend/"))
+	// http.StripPrefix를 사용하지 않고, 모든 요청을 파일 서버로 보냅니다.
+	fs := http.FileServer(http.Dir("./frontend"))
 	http.Handle("/", fs)
 
 	// API 엔드포인트 라우팅 설정
-	http.Handle("/api/auth/wallet/login", http.HandlerFunc(handleWalletLogin))
+	// API 핸들러가 파일 서버 핸들러보다 먼저 등록되어야 /api/ 경로가 올바르게 처리됩니다.
+	http.HandleFunc("/api/auth/wallet/login", handleWalletLogin)
 	http.Handle("/api/user/profile", authMiddleware(http.HandlerFunc(handleUserProfile)))
 	http.Handle("/api/profile/save", authMiddleware(http.HandlerFunc(handleProfileSave)))
 	
