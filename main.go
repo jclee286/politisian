@@ -23,7 +23,6 @@ import (
 )
 
 func main() {
-	// 로거를 먼저 생성하여 전체 실행 과정의 로그를 기록합니다.
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
 	if err := run(logger); err != nil {
@@ -100,7 +99,7 @@ func run(logger log.Logger) error {
 	abciApp := app.NewPoliticianApp(db, logger.With("module", "abci-app"))
 
 	genesisDocProvider := node.DefaultGenesisDocProviderFunc(cfg)
-	dbProvider := node.DefaultDBProvider // 이 함수는 config.DefaultDBProvider가 아니라 node.DefaultDBProvider를 사용해야 합니다.
+	dbProvider := config.DefaultDBProvider
 
 	logger.Info("Creating CometBFT node...")
 	cometNode, err := node.NewNode(
@@ -132,4 +131,4 @@ func run(logger log.Logger) error {
 	cometNode.Wait()
 
 	return nil
-}
+} 
