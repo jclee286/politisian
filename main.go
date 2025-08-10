@@ -103,7 +103,6 @@ func run(logger log.Logger) error {
 
 	logger.Info("Creating CometBFT node...")
 	cometNode, err := node.NewNode(
-		context.Background(),
 		cfg,
 		pv,
 		nodeKey,
