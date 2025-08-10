@@ -78,6 +78,40 @@ jobs:
                 chmod +x /usr/local/bin/docker-compose
             fi
             
+            # Check and install Nginx
+            if ! command -v nginx &> /dev/null
+            then
+                echo "Nginx not found, installing..."
+                apt-get update
+                apt-get install -y nginx
+            fi
+
+            # Configure Nginx as a reverse proxy
+            cat > /etc/nginx/sites-available/politisian <<'EOF'
+            server {
+                listen 80;
+                listen [::]:80;
+
+                server_name politisian.org www.politisian.org;
+
+                location / {
+                    proxy_pass http://localhost:8080;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                }
+            }
+            EOF
+
+            # Enable the new configuration
+            ln -sf /etc/nginx/sites-available/politisian /etc/nginx/sites-enabled/
+            # Disable the default Nginx configuration
+            rm -f /etc/nginx/sites-enabled/default
+            # Test config and restart Nginx
+            nginx -t
+            systemctl restart nginx
+            
             # Clone repo if it doesn't exist, otherwise force update
             if [ ! -d "/root/politisian" ] ; then
               git clone git@github.com:${{ github.repository }}.git /root/politisian
