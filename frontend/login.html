@@ -56,8 +56,8 @@
             color: #333;
         }
     </style>
-    <!-- 1. Privy SDK 스크립트 추가 (최신 버전으로 수정) -->
-    <script src="https://unpkg.com/@privy-io/privy-browser"></script>
+    <!-- 1. Privy SDK 스크립트 추가 (수정됨) -->
+    <script src="https://unpkg.com/@privy-io/privy-browser@1.59.3/dist/privy-browser.umd.js"></script>
 </head>
 <body>
     <div class="login-container">
@@ -68,9 +68,9 @@
         <div id="status-message"></div>
     </div>
 
-    <!-- 3. Privy 연동을 위한 JavaScript 로직 -->
+    <!-- 3. Privy 연동을 위한 JavaScript 로직 (수정됨) -->
     <script>
-        const appId = 'cme44fxu403c5lb0b0dv9lq31'; // 발급받은 Privy App ID
+        const appId = 'clwzrqkno01g11g5a43a05sjp'; // 여기에 실제 Privy App ID를 입력하세요.
         const loginButton = document.getElementById('login-button');
         const statusMessage = document.getElementById('status-message');
 
@@ -80,21 +80,28 @@
                 loginMethods: ['email', 'google', 'wallet'],
                 embeddedWallets: {
                     createOnLogin: 'users-without-wallets'
+                },
+                events: {
+                    onLogin: handleLogin,
                 }
             },
         });
 
-        const handleLogin = async (user) => {
+        async function handleLogin(user) {
             statusMessage.textContent = '로그인 정보를 확인하는 중...';
             
-            const wallet = user.wallet || (user.wallets && user.wallets[0]);
+            // 사용자의 첫 번째 지갑 주소를 가져옵니다.
+            const wallet = user.wallet;
             if (!wallet) {
                 statusMessage.textContent = '지갑 정보를 찾을 수 없습니다. 다시 시도해주세요.';
+                // 로그아웃을 시도하여 사용자가 다시 로그인할 수 있도록 합니다.
+                await privy.logout();
                 return;
             }
             const userAddress = wallet.address;
 
             try {
+                // 백엔드에 로그인 요청을 보냅니다.
                 const response = await fetch('/api/auth/wallet/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -103,11 +110,12 @@
 
                 if (response.ok) {
                     statusMessage.textContent = '로그인 성공! 프로필 페이지로 이동합니다.';
+                    // 성공 시 프로필 페이지로 리디렉션합니다.
                     window.location.href = '/profile.html';
                 } else {
                     const errorText = await response.text();
                     statusMessage.textContent = `로그인 실패: ${errorText}`;
-                    // 로그인 실패 시 Privy 세션도 로그아웃 처리
+                    // 서버측 로그인 실패 시 Privy 세션도 종료합니다.
                     await privy.logout();
                 }
             } catch (error) {
@@ -117,22 +125,15 @@
             }
         };
 
-        // Privy의 onLogin 콜백을 설정하여 로그인 성공 시 handleLogin 함수를 호출합니다.
-        privy.onLogin(handleLogin);
-
         loginButton.addEventListener('click', async () => {
             try {
-                // 이미 로그인되어 있는지 확인
-                if (await privy.isAuthenticated()) {
-                    const user = await privy.getUser();
-                    if (user) {
-                        handleLogin(user);
-                    } else {
-                        // 사용자는 인증되었지만 정보를 가져올 수 없는 경우, 다시 로그인 시도
-                        await privy.login();
-                    }
+                // 사용자가 이미 Privy에 로그인되어 있는지 확인합니다.
+                const user = await privy.getUser();
+                if (user) {
+                     // 이미 로그인된 경우, 바로 백엔드 로그인 절차를 진행합니다.
+                    handleLogin(user);
                 } else {
-                    // 로그인되어 있지 않으면 로그인 UI를 엽니다.
+                    // 로그인되어 있지 않으면 Privy의 로그인 모달을 띄웁니다.
                     await privy.login();
                 }
             } catch (error) {

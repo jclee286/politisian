@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -14,11 +15,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -30,7 +31,10 @@ func main() {
 }
 
 func run() error {
-	homeDir, _ := os.UserHomeDir()
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %w", err)
+	}
 	politisianDir := filepath.Join(homeDir, "politisian")
 	cometbftDir := filepath.Join(politisianDir, ".cometbft")
 
@@ -38,28 +42,24 @@ func run() error {
 	cfg.SetRoot(cometbftDir)
 	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
 
-	// 설정 디렉토리 및 기본 config.toml 파일 생성 (없을 경우)
 	config.EnsureRoot(cometbftDir)
-	configFilePath := filepath.Join(cometbftDir, "config", "config.toml")
+	configFilePath := filepath.Join(cfg.RootDir, "config", "config.toml")
 	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
 		config.WriteConfigFile(configFilePath, cfg)
 	}
 
-	// private validator 와 node key 생성 (없을 경우)
 	pv := privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		return fmt.Errorf("failed to load or gen node key: %w", err)
 	}
 
-	// genesis.json 파일 생성 (없을 경우)
 	genesisFile := cfg.GenesisFile()
 	if _, err := os.Stat(genesisFile); os.IsNotExist(err) {
 		pubKey, err := pv.GetPubKey()
 		if err != nil {
 			return fmt.Errorf("failed to get pubkey from priv validator: %w", err)
 		}
-		// 애플리케이션의 초기 상태 (빈 객체)
 		appState, err := json.Marshal(ptypes.GenesisState{})
 		if err != nil {
 			return fmt.Errorf("failed to marshal genesis app state: %w", err)
@@ -80,42 +80,42 @@ func run() error {
 		}
 	}
 
-	db, err := dbm.NewDB("politisian_app", dbm.GoLevelDBBackend, cometbftDir)
+	dbPath := filepath.Join(cometbftDir, "data")
+	db, err := dbm.NewDB("politisian_app", dbm.GoLevelDBBackend, dbPath)
 	if err != nil {
-		return fmt.Errorf("데이터베이스 생성 실패: %w", err)
+		return fmt.Errorf("failed to create db: %w", err)
 	}
 	abciApp := app.NewPoliticianApp(db)
 
-	return runNode(cfg, abciApp, pv, nodeKey)
-}
-
-func runNode(cfg *config.Config, app abci.Application, pv types.PrivValidator, nodeKey *p2p.NodeKey) error {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
-	genesisDocProvider := node.GenesisDocProvider(func() (*types.GenesisDoc, error) {
-		return types.GenesisDocFromFile(cfg.GenesisFile())
-	})
+	genesisDocProvider := node.DefaultGenesisDocProviderFunc(cfg)
+	dbProvider := node.DefaultDBProvider
 
-	node, err := node.NewNode(
+	cometNode, err := node.NewNode(
+		context.Background(),
 		cfg,
 		pv,
 		nodeKey,
-		proxy.NewLocalClientCreator(app),
+		proxy.NewLocalClientCreator(abciApp),
 		genesisDocProvider,
-		config.DefaultDBProvider,
+		dbProvider,
 		node.DefaultMetricsProvider(cfg.Instrumentation),
 		logger,
 	)
 	if err != nil {
-		return fmt.Errorf("CometBFT 노드 생성 실패: %w", err)
+		return fmt.Errorf("failed to create CometBFT node: %w", err)
 	}
 
-	if err := node.Start(); err != nil {
-		return fmt.Errorf("CometBFT 노드 시작 실패: %w", err)
+	if err := cometNode.Start(); err != nil {
+		return fmt.Errorf("failed to start CometBFT node: %w", err)
 	}
 
-	server.StartServer(node)
+	// 웹 서버 시작
+	go server.StartServer(cometNode)
 
-	node.Wait()
+	// 노드가 중지될 때까지 기다림
+	cometNode.Wait()
+
 	return nil
 }
