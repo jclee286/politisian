@@ -56,7 +56,7 @@
             color: #333;
         }
     </style>
-    <!-- 1. Privy SDK 스크립트 추가 (최신 UMD 버전 명시) -->
+    <!-- 1. Privy SDK 스크립트 추가 -->
     <script src="https://unpkg.com/@privy-io/privy-browser@latest/dist/privy-browser.umd.js"></script>
 </head>
 <body>
@@ -67,13 +67,12 @@
         <div id="status-message"></div>
     </div>
 
-    <!-- 3. Privy 연동을 위한 JavaScript 로직 (전면 수정) -->
     <script>
         const appId = 'clwzrqkno01g11g5a43a05sjp'; // Privy App ID
         const loginButton = document.getElementById('login-button');
         const statusMessage = document.getElementById('status-message');
 
-        // Privy 클라이언트 초기화 (수정된 방식)
+        // Privy 클라이언트 초기화
         const privy = new Privy({
             appId: appId,
             config: {
@@ -128,11 +127,19 @@
             }
         };
 
-        // 로그인 버튼 클릭 시 Privy 로그인 함수 직접 호출 (수정된 방식)
+        // 로그인 버튼 클릭 이벤트
         loginButton.addEventListener('click', async () => {
             statusMessage.textContent = '로그인을 시작합니다...';
-            // 사용자가 이미 로그인 되어 있는지 privy가 내부적으로 처리하므로, 바로 login()을 호출합니다.
-            await privy.login();
+            try {
+                // 이전 세션이 남아있을 수 있으므로 먼저 로그아웃을 시도합니다.
+                // 오류가 발생해도 무시하고 로그인 절차를 계속 진행합니다.
+                try { await privy.logout(); } catch (e) {} 
+                
+                await privy.login();
+            } catch (error) {
+                console.error('Privy login process failed:', error);
+                statusMessage.textContent = '로그인 절차를 시작하는 중 오류가 발생했습니다.';
+            }
         });
     </script>
 </body>
