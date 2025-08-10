@@ -19,7 +19,7 @@ func StartServer(node *node.Node) {
 	// http.StripPrefix("/ui/", ...)는 URL에서 "/ui/" 접두사를 제거하여
 	// /ui/login.html 요청이 실제로는 ./frontend/login.html 파일을 찾도록 합니다.
 	fs := http.FileServer(http.Dir("./frontend/"))
-	http.Handle("/ui/", http.StripPrefix("/ui/", fs))
+	http.Handle("/", fs)
 
 	// API 엔드포인트 라우팅 설정
 	http.Handle("/api/auth/wallet/login", http.HandlerFunc(handleWalletLogin))

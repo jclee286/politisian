@@ -49,41 +49,51 @@ jobs:
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            # --- 필수 프로그램 설치 및 실행 ---
-            apt-get update
-            # git, curl 설치
-            apt-get install -y git curl
-            # Docker가 없으면 설치하고, 실행합니다.
-            if ! command -v docker &> /dev/null; then
-                echo "Docker not found, installing..."
-                apt-get install -y docker.io
+            set -e
+            whoami
+            
+            # Check and install Git
+            if ! command -v git &> /dev/null
+            then
+                echo "Git could not be found, installing..."
+                apt-get update
+                apt-get install -y git
             fi
-            systemctl start docker
-            systemctl enable docker
-            # docker-compose가 없으면 설치합니다.
-            if ! command -v docker-compose &> /dev/null; then
-                echo "docker-compose not found, installing..."
+
+            # Check and install Docker
+            if ! command -v docker &> /dev/null
+            then
+                echo "Docker could not be found, installing..."
+                apt-get update
+                apt-get install -y docker.io
+                systemctl start docker
+                systemctl enable docker
+            fi
+
+            # Check and install Docker Compose
+            if ! command -v docker-compose &> /dev/null
+            then
+                echo "Docker Compose could not be found, installing..."
                 curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
                 chmod +x /usr/local/bin/docker-compose
             fi
-
-            # --- 애플리케이션 배포 ---
-            if [ ! -d "/root/politisian" ]; then
+            
+            # Clone repo if it doesn't exist, otherwise force update
+            if [ ! -d "/root/politisian" ] ; then
               git clone git@github.com:${{ github.repository }}.git /root/politisian
+              cd /root/politisian
+            else
+              cd /root/politisian
+              git fetch origin main
+              git reset --hard origin/main
             fi
-            cd /root/politisian
             
-            git pull
-            
-            # --- Docker 정리 및 실행 ---
-            # 현재 프로젝트를 안전하게 중지하고 관련 네트워크를 삭제합니다.
-            echo "Bringing down the docker-compose project to ensure a clean state..."
-            docker-compose --env-file .env down
-            
-            # 이전 데이터를 삭제하여 깨끗한 상태에서 시작합니다.
-            echo "Removing old application data..."
+            # Ensure data directory exists but is clean
             rm -rf ./data
-            
-            # --env-file 옵션을 사용하여 .env 파일을 명시적으로 지정하고, 항상 새로 빌드하여 실행합니다.
-            echo "Starting the application with a fresh build..."
-            docker-compose --env-file .env up -d --build --remove-orphans 
+            mkdir -p ./data
+
+            # Run docker-compose with force recreate
+            echo "IMAGE_TAG=${{ github.sha }}" > .env
+            docker-compose --env-file .env down
+            docker-compose --env-file .env pull
+            docker-compose --env-file .env up -d --build --remove-orphans --force-recreate 
