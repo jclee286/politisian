@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	// "log" // 사용하지 않으므로 제거
@@ -11,16 +12,16 @@ import (
 )
 
 // Info는 CometBFT가 노드 시작/재시작 시 앱의 마지막 상태를 질의하기 위해 호출합니다.
-func (app *PoliticianApp) Info(req *types.RequestInfo) (*types.ResponseInfo, error) {
+func (app *PoliticianApp) Info(_ context.Context, req *types.RequestInfo) (*types.ResponseInfo, error) {
 	app.logger.Info("Received Info request", "last_height", app.height, "last_app_hash", fmt.Sprintf("%X", app.appHash))
 	return &types.ResponseInfo{
-		LastBlockHeight: app.height,
+		LastBlockHeight:  app.height,
 		LastBlockAppHash: app.appHash,
 	}, nil
 }
 
 // Query는 애플리케이션의 상태를 조회합니다.
-func (app *PoliticianApp) Query(req *types.RequestQuery) (*types.ResponseQuery, error) {
+func (app *PoliticianApp) Query(_ context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
 	app.logger.Info("Received Query", "path", req.Path, "data", string(req.Data))
 	switch req.Path {
 	case "/politisian/list":
@@ -35,13 +36,13 @@ func (app *PoliticianApp) Query(req *types.RequestQuery) (*types.ResponseQuery, 
 }
 
 // CheckTx는 트랜잭션이 유효한지 기본적인 검사를 수행합니다.
-func (app *PoliticianApp) CheckTx(req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+func (app *PoliticianApp) CheckTx(_ context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	app.logger.Debug("Received CheckTx", "tx", string(req.Tx))
 	return &types.ResponseCheckTx{Code: types.CodeTypeOK}, nil
 }
 
 // Commit은 블록의 모든 트랜잭션이 처리된 후, 최종 상태를 DB에 저장합니다.
-func (app *PoliticianApp) Commit() (*types.ResponseCommit, error) {
+func (app *PoliticianApp) Commit(_ context.Context) (*types.ResponseCommit, error) {
 	app.height++
 	if err := app.saveState(); err != nil {
 		app.logger.Error("Failed to save state on Commit", "error", err)
@@ -53,7 +54,7 @@ func (app *PoliticianApp) Commit() (*types.ResponseCommit, error) {
 }
 
 // InitChain은 블록체인이 처음 시작될 때 한 번만 호출됩니다.
-func (app *PoliticianApp) InitChain(req *types.RequestInitChain) (*types.ResponseInitChain, error) {
+func (app *PoliticianApp) InitChain(_ context.Context, req *types.RequestInitChain) (*types.ResponseInitChain, error) {
 	app.logger.Info("Initializing chain from genesis", "chain_id", req.ChainId, "app_state_bytes", len(req.AppStateBytes))
 	var genesisState ptypes.GenesisState
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
@@ -72,7 +73,7 @@ func (app *PoliticianApp) InitChain(req *types.RequestInitChain) (*types.Respons
 }
 
 // FinalizeBlock은 블록에 포함된 모든 트랜잭션을 실행하고, 상태 해시를 계산하여 반환합니다.
-func (app *PoliticianApp) FinalizeBlock(req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
 	app.logger.Info("Finalizing block", "height", req.Height, "num_txs", len(req.Txs))
 	respTxs := make([]*types.ExecTxResult, len(req.Txs))
 	for i, tx := range req.Txs {
@@ -178,27 +179,30 @@ func (app *PoliticianApp) handleVoteOnProposal(txData *ptypes.TxData) *types.Exe
 }
 
 // --- ABCI++ 필수 메서드 (기본 구현) ---
-func (app *PoliticianApp) PrepareProposal(req *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
+func (app *PoliticianApp) PrepareProposal(_ context.Context, req *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
 	return &types.ResponsePrepareProposal{Txs: req.Txs}, nil
 }
-func (app *PoliticianApp) ProcessProposal(req *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
+func (app *PoliticianApp) ProcessProposal(_ context.Context, req *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
 	return &types.ResponseProcessProposal{Status: types.ResponseProcessProposal_ACCEPT}, nil
 }
-func (app *PoliticianApp) ExtendVote(req *types.RequestExtendVote) (*types.ResponseExtendVote, error) {
+
+// 아래 메서드들은 ABCI++에서 필수로 요구하는 메서드들입니다.
+// 현재 앱에서는 특별한 로직이 필요 없으므로 기본 응답을 반환합니다.
+func (app *PoliticianApp) ExtendVote(_ context.Context, req *types.RequestExtendVote) (*types.ResponseExtendVote, error) {
 	return &types.ResponseExtendVote{}, nil
 }
-func (app *PoliticianApp) VerifyVoteExtension(req *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error) {
+func (app *PoliticianApp) VerifyVoteExtension(_ context.Context, req *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error) {
 	return &types.ResponseVerifyVoteExtension{Status: types.ResponseVerifyVoteExtension_ACCEPT}, nil
 }
-func (app *PoliticianApp) ListSnapshots(req *types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
+func (app *PoliticianApp) ListSnapshots(_ context.Context, req *types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
 	return &types.ResponseListSnapshots{}, nil
 }
-func (app *PoliticianApp) OfferSnapshot(req *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error) {
+func (app *PoliticianApp) OfferSnapshot(_ context.Context, req *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error) {
 	return &types.ResponseOfferSnapshot{Result: types.ResponseOfferSnapshot_ABORT}, nil
 }
-func (app *PoliticianApp) LoadSnapshotChunk(req *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error) {
+func (app *PoliticianApp) LoadSnapshotChunk(_ context.Context, req *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error) {
 	return &types.ResponseLoadSnapshotChunk{}, nil
 }
-func (app *PoliticianApp) ApplySnapshotChunk(req *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error) {
+func (app *PoliticianApp) ApplySnapshotChunk(_ context.Context, req *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error) {
 	return &types.ResponseApplySnapshotChunk{Result: types.ResponseApplySnapshotChunk_ACCEPT}, nil
 }

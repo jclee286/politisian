@@ -12,7 +12,7 @@ import (
 	ptypes "politisian/pkg/types"
 	"politisian/server"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	// "github.com/cometbft/cometbft/abci/types" // app.go 에서 사용하므로 main에서는 직접 필요 없음
 	"github.com/cometbft/cometbft/config"
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
@@ -42,10 +42,12 @@ func run(logger log.Logger) error {
 	cometbftDir := filepath.Join(politisianDir, ".cometbft")
 	logger.Info("Base directory paths configured", "politisianDir", politisianDir, "cometbftDir", cometbftDir)
 
-
 	cfg := config.DefaultConfig()
 	cfg.SetRoot(cometbftDir)
 	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
+	// 빠른 동기화를 위해 fast_sync 버전을 v0으로 설정
+	cfg.Consensus.SetDefaults()
+	cfg.Consensus.TimeoutCommit = 5 * time.Second
 
 	config.EnsureRoot(cometbftDir)
 	configFilePath := filepath.Join(cfg.RootDir, "config", "config.toml")
@@ -93,7 +95,7 @@ func run(logger log.Logger) error {
 	}
 
 	dbPath := filepath.Join(cometbftDir, "data")
-	logger.Info("Opening application database", "backend", dbm.GoLevelDBBackend, "path", dbPath)
+	logger.Info("Opening application database", "backend", "goleveldb", "path", dbPath)
 	db, err := dbm.NewDB("politisian_app", dbm.GoLevelDBBackend, dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to create db: %w", err)
