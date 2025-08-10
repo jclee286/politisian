@@ -41,8 +41,8 @@ func (app *PoliticianApp) saveState() error {
 func (app *PoliticianApp) loadState() error {
 	stateBytes, err := app.db.Get(stateKey)
 	if err != nil {
-		if err == dbm.ErrKeyNotFound {
-			return nil // DB에 아직 상태가 없으면 초기 상태로 시작
+		if err == dbm.ErrKeyNotFound { // DB에 아직 상태가 없으면 초기 상태로 시작
+			return nil
 		}
 		return err
 	}
