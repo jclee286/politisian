@@ -128,20 +128,24 @@
                 }
             };
 
-            // 로그인 버튼 클릭 이벤트
-            loginButton.addEventListener('click', async () => {
+            // 로그인 절차를 시작하는 함수
+            const startLoginProcess = async () => {
                 statusMessage.textContent = '로그인을 시작합니다...';
                 try {
-                    // 이전 세션이 남아있을 수 있으므로 먼저 로그아웃을 시도합니다.
-                    // 오류가 발생해도 무시하고 로그인 절차를 계속 진행합니다.
-                    try { await privy.logout(); } catch (e) {} 
-                    
+                    // privy.login()은 사용자가 Privy에 이미 로그인되어 있는지 확인하고
+                    // 그렇지 않은 경우에만 모달을 표시하는 것을 포함하여 전체 흐름을 처리합니다.
                     await privy.login();
                 } catch (error) {
                     console.error('Privy login process failed:', error);
                     statusMessage.textContent = '로그인 절차를 시작하는 중 오류가 발생했습니다.';
                 }
-            });
+            };
+
+            // 사용자가 실수로 모달을 닫았을 경우를 대비해 버튼에 클릭 리스너를 남겨둡니다.
+            loginButton.addEventListener('click', startLoginProcess);
+
+            // 페이지가 로드되자마자 자동으로 로그인 절차를 시작합니다.
+            startLoginProcess();
         });
     </script>
 </body>
