@@ -12,7 +12,6 @@ import (
 	ptypes "politisian/pkg/types"
 	"politisian/server"
 
-	// "github.com/cometbft/cometbft/abci/types" // app.go 에서 사용하므로 main에서는 직접 필요 없음
 	"github.com/cometbft/cometbft/config"
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
@@ -45,7 +44,6 @@ func run(logger log.Logger) error {
 	cfg := config.DefaultConfig()
 	cfg.SetRoot(cometbftDir)
 	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
-	// 빠른 동기화를 위해 fast_sync 버전을 v0으로 설정
 	cfg.Consensus.TimeoutCommit = 5 * time.Second
 
 	config.EnsureRoot(cometbftDir)
@@ -102,9 +100,9 @@ func run(logger log.Logger) error {
 	abciApp := app.NewPoliticianApp(db, logger.With("module", "abci-app"))
 
 	genesisDocProvider := node.DefaultGenesisDocProviderFunc(cfg)
-	dbProvider := config.DefaultDBProvider
+	dbProvider := node.DefaultDBProvider // 이 함수는 config.DefaultDBProvider가 아니라 node.DefaultDBProvider를 사용해야 합니다.
 
-	logger.Info("Creating CometBft node...")
+	logger.Info("Creating CometBFT node...")
 	cometNode, err := node.NewNode(
 		context.Background(),
 		cfg,

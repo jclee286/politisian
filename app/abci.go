@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	// "log" // 사용하지 않으므로 제거
 
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/google/uuid"
 	ptypes "politisian/pkg/types"
 )
 
-// Info는 CometBFT가 노드 시작/재시작 시 앱의 마지막 상태를 질의하기 위해 호출합니다.
+// Info is called by CometBFT to query the application's last state.
 func (app *PoliticianApp) Info(_ context.Context, req *types.RequestInfo) (*types.ResponseInfo, error) {
 	app.logger.Info("Received Info request", "last_height", app.height, "last_app_hash", fmt.Sprintf("%X", app.appHash))
 	return &types.ResponseInfo{
@@ -20,7 +19,7 @@ func (app *PoliticianApp) Info(_ context.Context, req *types.RequestInfo) (*type
 	}, nil
 }
 
-// Query는 애플리케이션의 상태를 조회합니다.
+// Query queries the application state.
 func (app *PoliticianApp) Query(_ context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
 	app.logger.Info("Received Query", "path", req.Path, "data", string(req.Data))
 	switch req.Path {
@@ -35,25 +34,24 @@ func (app *PoliticianApp) Query(_ context.Context, req *types.RequestQuery) (*ty
 	}
 }
 
-// CheckTx는 트랜잭션이 유효한지 기본적인 검사를 수행합니다.
+// CheckTx validates a transaction for the mempool.
 func (app *PoliticianApp) CheckTx(_ context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	app.logger.Debug("Received CheckTx", "tx", string(req.Tx))
 	return &types.ResponseCheckTx{Code: types.CodeTypeOK}, nil
 }
 
-// Commit은 블록의 모든 트랜잭션이 처리된 후, 최종 상태를 DB에 저장합니다.
+// Commit saves the new state to the database.
 func (app *PoliticianApp) Commit(_ context.Context, _ *types.RequestCommit) (*types.ResponseCommit, error) {
 	app.height++
 	if err := app.saveState(); err != nil {
 		app.logger.Error("Failed to save state on Commit", "error", err)
-		// 여기서 패닉을 발생시켜 노드를 안전하게 중지시킬 수 있습니다.
 		panic(err)
 	}
 	app.logger.Info("Committed state", "height", app.height, "appHash", fmt.Sprintf("%X", app.appHash))
 	return &types.ResponseCommit{}, nil
 }
 
-// InitChain은 블록체인이 처음 시작될 때 한 번만 호출됩니다.
+// InitChain is called once upon genesis.
 func (app *PoliticianApp) InitChain(_ context.Context, req *types.RequestInitChain) (*types.ResponseInitChain, error) {
 	app.logger.Info("Initializing chain from genesis", "chain_id", req.ChainId, "app_state_bytes", len(req.AppStateBytes))
 	var genesisState ptypes.GenesisState
@@ -72,7 +70,7 @@ func (app *PoliticianApp) InitChain(_ context.Context, req *types.RequestInitCha
 	return &types.ResponseInitChain{}, nil
 }
 
-// FinalizeBlock은 블록에 포함된 모든 트랜잭션을 실행하고, 상태 해시를 계산하여 반환합니다.
+// FinalizeBlock executes all transactions in a block and returns the new app hash.
 func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
 	app.logger.Info("Finalizing block", "height", req.Height, "num_txs", len(req.Txs))
 	respTxs := make([]*types.ExecTxResult, len(req.Txs))
@@ -102,17 +100,16 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 		}
 	}
 
-	app.hashState() // 모든 트랜잭션 처리 후 상태 해시 업데이트
+	app.hashState() // Update app hash after all transactions
 	app.logger.Debug("Finalized block state", "appHash", fmt.Sprintf("%X", app.appHash))
 
-	// `Commit`이 이어서 호출되어 변경사항을 DB에 최종 저장합니다.
 	return &types.ResponseFinalizeBlock{
 		TxResults: respTxs,
 		AppHash:   app.appHash,
 	}, nil
 }
 
-// --- 핸들러 함수들 ---
+// --- Handler Functions ---
 func (app *PoliticianApp) handleCreateProfile(txData *ptypes.TxData) *types.ExecTxResult {
 	if _, exists := app.accounts[txData.UserID]; exists {
 		logMsg := "User ID already exists"
@@ -178,16 +175,13 @@ func (app *PoliticianApp) handleVoteOnProposal(txData *ptypes.TxData) *types.Exe
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
-// --- ABCI++ 필수 메서드 (기본 구현) ---
+// --- Required ABCI++ Methods (basic implementation) ---
 func (app *PoliticianApp) PrepareProposal(_ context.Context, req *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
 	return &types.ResponsePrepareProposal{Txs: req.Txs}, nil
 }
 func (app *PoliticianApp) ProcessProposal(_ context.Context, req *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
 	return &types.ResponseProcessProposal{Status: types.ResponseProcessProposal_ACCEPT}, nil
 }
-
-// 아래 메서드들은 ABCI++에서 필수로 요구하는 메서드들입니다.
-// 현재 앱에서는 특별한 로직이 필요 없으므로 기본 응답을 반환합니다.
 func (app *PoliticianApp) ExtendVote(_ context.Context, req *types.RequestExtendVote) (*types.ResponseExtendVote, error) {
 	return &types.ResponseExtendVote{}, nil
 }
