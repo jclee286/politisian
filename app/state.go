@@ -3,6 +3,7 @@ package app
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 
 	dbm "github.com/cometbft/cometbft-db"
 	ptypes "politisian/pkg/types"
@@ -34,6 +35,7 @@ func (app *PoliticianApp) saveState() error {
 	if err != nil {
 		return err
 	}
+	app.logger.Debug("Saving state", "height", state.Height, "appHash", fmt.Sprintf("%X", state.AppHash))
 	return app.db.SetSync(stateKey, stateBytes)
 }
 
@@ -41,13 +43,14 @@ func (app *PoliticianApp) saveState() error {
 func (app *PoliticianApp) loadState() error {
 	stateBytes, err := app.db.Get(stateKey)
 	if err != nil {
-		if err == dbm.ErrKeyNotFound { // DB에 아직 상태가 없으면 초기 상태로 시작
-			return nil
-		}
+		// Get에서 발생한 다른 모든 에러는 심각한 문제로 간주합니다.
 		return err
 	}
+	// DB에 키가 없는 경우 Get 메서드는 (nil, nil)을 반환합니다.
+	// 따라서 stateBytes의 길이로 존재 여부를 확인하는 것이 가장 안전합니다.
 	if len(stateBytes) == 0 {
-		return nil // 데이터가 비어있어도 초기 상태
+		app.logger.Info("Initial state, no data to load")
+		return nil // 데이터가 비어있으면 초기 상태로 시작
 	}
 
 	var state AppState
@@ -60,6 +63,8 @@ func (app *PoliticianApp) loadState() error {
 	app.accounts = state.Accounts
 	app.proposals = state.Proposals
 	app.politicians = state.Politicians
+
+	app.logger.Info("Loaded state from DB", "height", app.height, "appHash", fmt.Sprintf("%X", app.appHash))
 	return nil
 }
 

@@ -12,6 +12,7 @@ import (
 
 // Info는 CometBFT가 노드 시작/재시작 시 앱의 마지막 상태를 질의하기 위해 호출합니다.
 func (app *PoliticianApp) Info(req *types.RequestInfo) (*types.ResponseInfo, error) {
+	app.logger.Info("Received Info request", "last_height", app.height, "last_app_hash", fmt.Sprintf("%X", app.appHash))
 	return &types.ResponseInfo{
 		LastBlockHeight: app.height,
 		LastBlockAppHash: app.appHash,
@@ -20,6 +21,7 @@ func (app *PoliticianApp) Info(req *types.RequestInfo) (*types.ResponseInfo, err
 
 // Query는 애플리케이션의 상태를 조회합니다.
 func (app *PoliticianApp) Query(req *types.RequestQuery) (*types.ResponseQuery, error) {
+	app.logger.Info("Received Query", "path", req.Path, "data", string(req.Data))
 	switch req.Path {
 	case "/politisian/list":
 		res, err := json.Marshal(app.politicians)
@@ -34,6 +36,7 @@ func (app *PoliticianApp) Query(req *types.RequestQuery) (*types.ResponseQuery, 
 
 // CheckTx는 트랜잭션이 유효한지 기본적인 검사를 수행합니다.
 func (app *PoliticianApp) CheckTx(req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+	app.logger.Debug("Received CheckTx", "tx", string(req.Tx))
 	return &types.ResponseCheckTx{Code: types.CodeTypeOK}, nil
 }
 
@@ -41,38 +44,47 @@ func (app *PoliticianApp) CheckTx(req *types.RequestCheckTx) (*types.ResponseChe
 func (app *PoliticianApp) Commit() (*types.ResponseCommit, error) {
 	app.height++
 	if err := app.saveState(); err != nil {
-		log.Printf("CRITICAL: Failed to save state: %v", err)
+		app.logger.Error("Failed to save state on Commit", "error", err)
 		// 여기서 패닉을 발생시켜 노드를 안전하게 중지시킬 수 있습니다.
 		panic(err)
 	}
+	app.logger.Info("Committed state", "height", app.height, "appHash", fmt.Sprintf("%X", app.appHash))
 	return &types.ResponseCommit{}, nil
 }
 
 // InitChain은 블록체인이 처음 시작될 때 한 번만 호출됩니다.
 func (app *PoliticianApp) InitChain(req *types.RequestInitChain) (*types.ResponseInitChain, error) {
+	app.logger.Info("Initializing chain from genesis", "chain_id", req.ChainId, "app_state_bytes", len(req.AppStateBytes))
 	var genesisState ptypes.GenesisState
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
+		app.logger.Error("Failed to parse genesis app state", "error", err)
 		return nil, fmt.Errorf("failed to parse genesis state: %w", err)
 	}
 	if genesisState.Politicians != nil {
 		app.politicians = genesisState.Politicians
+		app.logger.Info("Loaded politicians from genesis", "count", len(app.politicians))
 	}
 	if genesisState.Accounts != nil {
 		app.accounts = genesisState.Accounts
+		app.logger.Info("Loaded accounts from genesis", "count", len(app.accounts))
 	}
 	return &types.ResponseInitChain{}, nil
 }
 
 // FinalizeBlock은 블록에 포함된 모든 트랜잭션을 실행하고, 상태 해시를 계산하여 반환합니다.
 func (app *PoliticianApp) FinalizeBlock(req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+	app.logger.Info("Finalizing block", "height", req.Height, "num_txs", len(req.Txs))
 	respTxs := make([]*types.ExecTxResult, len(req.Txs))
 	for i, tx := range req.Txs {
 		var txData ptypes.TxData
 		if err := json.Unmarshal(tx, &txData); err != nil {
-			respTxs[i] = &types.ExecTxResult{Code: 1, Log: "failed to parse transaction data"}
+			logMsg := "Failed to parse transaction data"
+			app.logger.Error(logMsg, "tx_raw", string(tx), "error", err)
+			respTxs[i] = &types.ExecTxResult{Code: 1, Log: logMsg}
 			continue
 		}
 
+		app.logger.Info("Processing tx", "action", txData.Action, "user_id", txData.UserID)
 		switch txData.Action {
 		case "create_profile":
 			respTxs[i] = app.handleCreateProfile(&txData)
@@ -83,11 +95,14 @@ func (app *PoliticianApp) FinalizeBlock(req *types.RequestFinalizeBlock) (*types
 		case "vote_on_proposal":
 			respTxs[i] = app.handleVoteOnProposal(&txData)
 		default:
-			respTxs[i] = &types.ExecTxResult{Code: 10, Log: "unknown action"}
+			logMsg := "Unknown action"
+			app.logger.Error(logMsg, "action", txData.Action)
+			respTxs[i] = &types.ExecTxResult{Code: 10, Log: logMsg}
 		}
 	}
 
 	app.hashState() // 모든 트랜잭션 처리 후 상태 해시 업데이트
+	app.logger.Debug("Finalized block state", "appHash", fmt.Sprintf("%X", app.appHash))
 
 	// `Commit`이 이어서 호출되어 변경사항을 DB에 최종 저장합니다.
 	return &types.ResponseFinalizeBlock{
@@ -99,18 +114,26 @@ func (app *PoliticianApp) FinalizeBlock(req *types.RequestFinalizeBlock) (*types
 // --- 핸들러 함수들 ---
 func (app *PoliticianApp) handleCreateProfile(txData *ptypes.TxData) *types.ExecTxResult {
 	if _, exists := app.accounts[txData.UserID]; exists {
-		return &types.ExecTxResult{Code: 2, Log: "user ID already exists"}
+		logMsg := "User ID already exists"
+		app.logger.Info(logMsg, "user_id", txData.UserID)
+		return &types.ExecTxResult{Code: 2, Log: logMsg}
 	}
 	app.accounts[txData.UserID] = &ptypes.Account{
 		Address: txData.UserID, Email: txData.Email, Politicians: txData.Politicians,
 	}
+	app.logger.Info("Created profile", "user_id", txData.UserID)
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
 func (app *PoliticianApp) updateSupporters(txData *ptypes.TxData) *types.ExecTxResult {
 	account, exists := app.accounts[txData.UserID]
-	if !exists { return &types.ExecTxResult{Code: 30, Log: "account not found"} }
+	if !exists {
+		logMsg := "Account not found for update"
+		app.logger.Warn(logMsg, "user_id", txData.UserID)
+		return &types.ExecTxResult{Code: 30, Log: logMsg}
+	}
 	account.Politicians = txData.Politicians
+	app.logger.Info("Updated supporters", "user_id", txData.UserID, "politician_count", len(txData.Politicians))
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
@@ -121,22 +144,35 @@ func (app *PoliticianApp) proposePolitician(txData *ptypes.TxData) *types.ExecTx
 			Name: txData.PoliticianName, Region: txData.Region, Party: txData.Party,
 		}, Proposer: txData.UserID, Votes: make(map[string]bool),
 	}
+	app.logger.Info("Proposed new politician", "proposer", txData.UserID, "politician_name", txData.PoliticianName, "proposal_id", proposalID)
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
 func (app *PoliticianApp) handleVoteOnProposal(txData *ptypes.TxData) *types.ExecTxResult {
 	proposal, exists := app.proposals[txData.ProposalID]
-	if !exists { return &types.ExecTxResult{Code: 40, Log: "proposal not found"} }
+	if !exists {
+		logMsg := "Proposal not found for vote"
+		app.logger.Warn(logMsg, "proposal_id", txData.ProposalID)
+		return &types.ExecTxResult{Code: 40, Log: logMsg}
+	}
 	if _, alreadyVoted := proposal.Votes[txData.UserID]; alreadyVoted {
-		return &types.ExecTxResult{Code: 41, Log: "user has already voted"}
+		logMsg := "User has already voted"
+		app.logger.Info(logMsg, "user_id", txData.UserID, "proposal_id", txData.ProposalID)
+		return &types.ExecTxResult{Code: 41, Log: logMsg}
 	}
 	proposal.Votes[txData.UserID] = txData.Vote
-	if txData.Vote { proposal.YesVotes++ } else { proposal.NoVotes++ }
+	if txData.Vote {
+		proposal.YesVotes++
+	} else {
+		proposal.NoVotes++
+	}
+	app.logger.Info("Vote cast", "user_id", txData.UserID, "proposal_id", txData.ProposalID, "vote", txData.Vote, "yes_votes", proposal.YesVotes, "no_votes", proposal.NoVotes)
 
 	if proposal.YesVotes >= 10 {
 		newPolitician := &proposal.Politician
 		app.politicians[newPolitician.Name] = newPolitician
 		delete(app.proposals, txData.ProposalID)
+		app.logger.Info("Proposal approved and politician added", "proposal_id", txData.ProposalID, "politician_name", newPolitician.Name)
 	}
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
