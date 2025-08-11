@@ -22,6 +22,7 @@
         <div id="status-message"></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@web3auth/modal/dist/modal.umd.min.js"></script>
     <script>
         let web3auth = null;
         const clientId = "BGP_2gJo4g3sZTE01A69s4z_GZgR-S2a-ft2-aI8qT4a4a4a4a4a4a4a4a4a4a4a4a4a"; // Web3Auth 대시보드에서 발급받은 클라이언트 ID
@@ -95,9 +96,7 @@
                 statusMessage.textContent = "로그인 중 오류가 발생했습니다.";
             }
         }
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@web3auth/modal/dist/modal.umd.min.js"></script>
-    <script>
+
         document.addEventListener('DOMContentLoaded', initWeb3Auth);
     </script>
 </body>
