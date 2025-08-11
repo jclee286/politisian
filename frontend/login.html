@@ -22,14 +22,13 @@
         <div id="status-message"></div>
     </div>
 
-    <script src="/js/web3auth-modal.umd.min.js"></script>
     <script>
         let web3auth = null;
         const clientId = "BGP_2gJo4g3sZTE01A69s4z_GZgR-S2a-ft2-aI8qT4a4a4a4a4a4a4a4a4a4a4a4a4a"; // Web3Auth 대시보드에서 발급받은 클라이언트 ID
 
-        document.addEventListener("DOMContentLoaded", async () => {
+        async function initWeb3Auth() {
             try {
-                web3auth = new window.Web3Auth.Web3AuthModal({
+                web3auth = new window.Web3Auth.Web3Auth({
                     clientId,
                     web3AuthNetwork: "sapphire_devnet", // 또는 "sapphire_mainnet"
                     chainConfig: {
@@ -54,7 +53,7 @@
                 console.error("Web3Auth initialization failed:", error);
                 document.getElementById("status-message").textContent = "로그인 모듈 초기화에 실패했습니다.";
             }
-        });
+        }
 
         async function handleLogin() {
             const statusMessage = document.getElementById('status-message');
@@ -96,6 +95,10 @@
                 statusMessage.textContent = "로그인 중 오류가 발생했습니다.";
             }
         }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@web3auth/modal/dist/modal.umd.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', initWeb3Auth);
     </script>
 </body>
 </html>
