@@ -16,9 +16,6 @@
 </head>
 <body>
     <div class="login-container">
-        <h1>정치인 공화국</h1>
-        <p>참여를 통해 만들어가는 새로운 디지털 국가</p>
-        <button id="login-button" class="login-btn">시작하기</button>
         <div id="status-message"></div>
     </div>
 
@@ -30,7 +27,6 @@
         function initPrivy() {
             console.log("Privy SDK loaded from CDN. Initializing Privy app...");
             const appId = 'clwzrqkno01g11g5a43a05sjp';
-            const loginButton = document.getElementById('login-button');
             const statusMessage = document.getElementById('status-message');
 
             if (!window.Privy) {
@@ -102,7 +98,6 @@
                 }
             };
 
-            loginButton.addEventListener('click', startLoginProcess);
             startLoginProcess();
         }
     </script>

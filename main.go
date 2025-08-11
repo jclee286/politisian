@@ -31,6 +31,7 @@ func main() {
 }
 
 func run(logger log.Logger) error {
+	logger.Info("Starting Politician application run function")
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get user home directory: %w", err)
@@ -129,4 +130,4 @@ func run(logger log.Logger) error {
 	cometNode.Wait()
 
 	return nil
-} 
+}
