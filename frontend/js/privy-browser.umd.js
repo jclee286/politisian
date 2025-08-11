@@ -1,1 +1,0 @@
-Redirecting to /@privy-io/privy-browser@0.0.3/dist/privy-browser.umd.js
