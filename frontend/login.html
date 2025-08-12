@@ -15,21 +15,19 @@
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <h1>정치인 공화국</h1>
-        <p>참여를 통해 만들어가는 새로운 디지털 국가</p>
-        <button id="login-button" class="login-btn">시작하기</button>
-        <div id="status-message"></div>
-    </div>
+    <div id="status-message" style="display: none;"></div>
+    <!-- Removed login-container as per user request -->
 
-    <script src="https://cdn.jsdelivr.net/npm/@web3auth/modal/dist/modal.umd.min.js"></script>
     <script>
         let web3auth = null;
-        const clientId = "BGP_2gJo4g3sZTE01A69s4z_GZgR-S2a-ft2-aI8qT4a4a4a4a4a4a4a4a4a4a4a4a4a"; // Web3Auth 대시보드에서 발급받은 클라이언트 ID
+        // Web3Auth 대시보드에서 발급받은 클라이언트 ID
+        const clientId = "BKQkCcvERmw1_BoRMJ8frnhBV5snPap95qvfgzhfo1QLF4RHW2TwMqT1YxS_3PavJA6eOYJoO5W81-RO4J2CMNY"; 
 
+        // 1. initWeb3Auth 함수를 Web3Auth 라이브러리 로드 전에 정의합니다.
         async function initWeb3Auth() {
             try {
-                web3auth = new window.Web3Auth.Web3Auth({
+                // 2. UMD 모듈에서 노출된 `Modal` 클래스를 사용합니다.
+                web3auth = new window.Modal.Web3Auth({
                     clientId,
                     web3AuthNetwork: "sapphire_devnet", // 또는 "sapphire_mainnet"
                     chainConfig: {
@@ -45,11 +43,11 @@
 
                 await web3auth.initModal();
                 console.log("Web3Auth Initialized");
-                document.getElementById("status-message").textContent = "로그인할 준비가 되었습니다.";
+                document.getElementById("status-message").textContent = "Web3Auth 초기화 중...";
                 
-                const loginButton = document.getElementById('login-button');
-                loginButton.addEventListener('click', handleLogin);
-
+                // Directly call handleLogin to show the modal immediately
+                await handleLogin();
+                
             } catch (error) {
                 console.error("Web3Auth initialization failed:", error);
                 document.getElementById("status-message").textContent = "로그인 모듈 초기화에 실패했습니다.";
@@ -57,7 +55,7 @@
         }
 
         async function handleLogin() {
-            const statusMessage = document.getElementById('status-message');
+            const statusMessage = document.getElementById("status-message");
             if (!web3auth) {
                 statusMessage.textContent = "Web3Auth가 초기화되지 않았습니다.";
                 console.log("Web3Auth not initialized");
@@ -73,22 +71,22 @@
                     const userAddress = user.eoa;
                     statusMessage.textContent = "로그인 정보 확인 중...";
 
-                    const response = await fetch('/api/auth/wallet/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                    const response = await fetch("/api/auth/wallet/login", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ address: userAddress })
                     });
 
                     if (response.ok) {
-                        statusMessage.textContent = '로그인 성공! 프로필 페이지로 이동합니다.';
-                        window.location.href = '/profile.html';
+                        statusMessage.textContent = "로그인 성공! 프로필 페이지로 이동합니다.";
+                        window.location.href = "/profile.html";
                     } else {
                         const errorText = await response.text();
                         statusMessage.textContent = `로그인 실패: ${errorText}`;
                         await web3auth.logout();
                     }
                 } else {
-                     statusMessage.textContent = '지갑 정보를 찾을 수 없습니다.';
+                     statusMessage.textContent = "지갑 정보를 찾을 수 없습니다.";
                      await web3auth.logout();
                 }
             } catch (error) {
@@ -96,8 +94,12 @@
                 statusMessage.textContent = "로그인 중 오류가 발생했습니다.";
             }
         }
-
-        document.addEventListener('DOMContentLoaded', initWeb3Auth);
+        
+        
     </script>
+    
+    <!-- 3. initWeb3Auth가 정의된 후에 라이브러리를 로드하고 onload 콜백을 실행합니다. -->
+    <script src="https://cdn.jsdelivr.net/npm/@web3auth/modal@7.3.2/dist/modal.umd.min.js" onload="initWeb3Auth()"></script>
+
 </body>
 </html>

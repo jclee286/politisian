@@ -49,6 +49,7 @@ func StartServer(node *node.Node) {
 // rootFileHandler는 서버 사이드에서 인증을 확인하고 파일을 서빙하는 똑똑한 핸들러입니다.
 func rootFileHandler(fs http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		
 		// API 요청은 이미 위에서 처리되었으므로 여기로 오지 않습니다.
 		
 		// login.html, favicon.ico 등 인증이 필요 없는 파일들은 그냥 보여줍니다.
