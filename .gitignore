@@ -18,6 +18,12 @@ server.log
 .DS_Store
 Thumbs.db
 
+#  터미널에 서버작동여부를 확인하는 방법
+#   ssh root@134.209.214.151
+#   cd /root/politisian
+#   docker-compose logs -f app
+
+
 
 
 

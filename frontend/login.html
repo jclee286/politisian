@@ -101,5 +101,12 @@
     <!-- 3. initWeb3Auth가 정의된 후에 라이브러리를 로드하고 onload 콜백을 실행합니다. -->
     <script src="https://cdn.jsdelivr.net/npm/@web3auth/modal@7.3.2/dist/modal.umd.min.js" onload="initWeb3Auth()"></script>
 
+    <!-- 3. crypto polyfill을 위해 web3.js와 buffer를 먼저 로드합니다. -->
+    <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/dist/buffer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@4.9.0/dist/web3.min.js"></script>
+    
+    <!-- 4. initWeb3Auth가 정의된 후에 Web3Auth 라이브러리를 로드하고 onload 콜백을 실행합니다. -->
+    <script src="https://cdn.jsdelivr.net/npm/@web3auth/modal@7.3.2/dist/modal.umd.min.js" onload="initWeb3Auth()"></script>
+
 </body>
 </html>
