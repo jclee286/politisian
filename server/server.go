@@ -40,6 +40,7 @@ func StartServer(node *node.Node) {
 
 	// 1. API 핸들러들을 CORS 미들웨어로 감싸서 등록합니다.
 	mux.Handle("/api/auth/wallet/login", corsMiddleware(http.HandlerFunc(handleWalletLogin)))
+	mux.Handle("/api/auth/login", corsMiddleware(http.HandlerFunc(handleSocialLogin)))
 	mux.Handle("/api/user/profile", corsMiddleware(authMiddleware(http.HandlerFunc(handleUserProfile))))
 	mux.Handle("/api/profile/save", corsMiddleware(authMiddleware(http.HandlerFunc(handleProfileSave))))
 	mux.Handle("/api/politisian/list", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetPolitisians))))
