@@ -20,93 +20,209 @@
 
     <script>
         let web3auth = null;
-        // Web3Auth 대시보드에서 발급받은 클라이언트 ID
         const clientId = "BKQkCcvERmw1_BoRMJ8frnhBV5snPap95qvfgzhfo1QLF4RHW2TwMqT1YxS_3PavJA6eOYJoO5W81-RO4J2CMNY"; 
 
-        // 1. initWeb3Auth 함수를 Web3Auth 라이브러리 로드 전에 정의합니다.
+        // 🧹 초기화 시 모든 캐시 클리어
+        localStorage.clear();
+        sessionStorage.clear();
+        console.log("🧹 모든 캐시 클리어됨");
+        
+        // 🎯 최소 설정으로 Web3Auth 초기화
         async function initWeb3Auth() {
             try {
-                // 2. UMD 모듈에서 노출된 `Modal` 클래스를 사용합니다.
+                console.log("🚀 최소 설정으로 Web3Auth 초기화...");
+                
                 web3auth = new window.Modal.Web3Auth({
                     clientId,
-                    web3AuthNetwork: "sapphire_devnet", // 또는 "sapphire_mainnet"
-                    chainConfig: {
-                        chainNamespace: "eip155",
-                        chainId: "0x1",
-                        rpcTarget: "https://rpc.ankr.com/eth",
-                        displayName: "Ethereum Mainnet",
-                        blockExplorer: "https://etherscan.io",
-                        ticker: "ETH",
-                        tickerName: "Ethereum",
-                    },
+                    web3AuthNetwork: "sapphire_devnet"
+                    // chainConfig 없이 기본값 사용
                 });
 
                 await web3auth.initModal();
-                console.log("Web3Auth Initialized");
-                document.getElementById("status-message").textContent = "Web3Auth 초기화 중...";
+                console.log("✅ Web3Auth 초기화 성공!");
                 
-                // Directly call handleLogin to show the modal immediately
-                await handleLogin();
+                document.getElementById("status-message").textContent = "준비 완료! 클릭하여 로그인";
+                document.getElementById("status-message").style.display = "block";
+                document.getElementById("status-message").onclick = handleLogin;
+                document.getElementById("status-message").style.cursor = "pointer";
+                document.getElementById("status-message").style.backgroundColor = "#4CAF50";
+                document.getElementById("status-message").style.color = "white";
+                document.getElementById("status-message").style.padding = "15px";
+                document.getElementById("status-message").style.borderRadius = "8px";
                 
             } catch (error) {
-                console.error("Web3Auth initialization failed:", error);
-                document.getElementById("status-message").textContent = "로그인 모듈 초기화에 실패했습니다.";
+                console.error("❌ 초기화 실패:", error);
+                document.getElementById("status-message").textContent = `초기화 실패: ${error.message}`;
+                document.getElementById("status-message").style.display = "block";
+            }
+        }
+        
+        // 1. initWeb3Auth 함수를 Web3Auth 라이브러리 로드 전에 정의합니다.
+        async function initWeb3Auth() {
+            if (isInitialized || initPromise) {
+                console.log("⏩ Web3Auth already initialized or initializing, skipping...");
+                return initPromise;
+            }
+            
+            initPromise = (async () => {
+                try {
+                    console.log("🚀 Starting Web3Auth initialization...");
+                    isInitialized = true;
+                
+                // RPC 연결 테스트
+                const workingRPC = await testRPCConnection();
+                const rpcTarget = workingRPC || "https://rpc.ankr.com/eth_goerli";
+                
+                console.log(`🔗 사용할 RPC: ${rpcTarget}`);
+                
+                // 2. UMD 모듈에서 노출된 `Modal` 클래스를 사용합니다.
+                // 테스트넷으로 변경하여 네트워크 충돌 해결
+                const config = {
+                    clientId,
+                    web3AuthNetwork: "sapphire_devnet",
+                    chainConfig: {
+                        chainNamespace: "eip155",
+                        chainId: "0x5", // Goerli Testnet (devnet과 호환)
+                        rpcTarget: "https://rpc.ankr.com/eth_goerli",
+                        displayName: "Ethereum Goerli Testnet",
+                        blockExplorer: "https://goerli.etherscan.io",
+                        ticker: "GoerliETH",
+                        tickerName: "Goerli Ethereum",
+                    },
+                    // 추가 옵션들로 에러 방지
+                    enableLogging: true,
+                    storageKey: "local",
+                };
+                
+                console.log("📋 Web3Auth 설정:", config);
+                web3auth = new window.Modal.Web3Auth(config);
+
+                console.log("⏳ initModal 시작...");
+                await web3auth.initModal();
+                console.log("✅ Web3Auth Initialized Successfully");
+                
+                document.getElementById("status-message").textContent = "로그인 준비 완료. 클릭하여 로그인하세요.";
+                document.getElementById("status-message").style.display = "block";
+                
+                // 버튼 클릭으로 로그인하도록 변경
+                document.getElementById("status-message").onclick = handleLogin;
+                document.getElementById("status-message").style.cursor = "pointer";
+                document.getElementById("status-message").style.backgroundColor = "#6a4bff";
+                document.getElementById("status-message").style.color = "white";
+                document.getElementById("status-message").style.padding = "10px 20px";
+                document.getElementById("status-message").style.borderRadius = "8px";
+                
+            } catch (error) {
+                console.error("❌ Web3Auth initialization failed:", error);
+                console.error("❌ Error details:", {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                });
+                document.getElementById("status-message").textContent = `초기화 실패: ${error.message}`;
+                isInitialized = false;
             }
         }
 
         async function handleLogin() {
             const statusMessage = document.getElementById("status-message");
             if (!web3auth) {
+                console.error("❌ Web3Auth not initialized");
                 statusMessage.textContent = "Web3Auth가 초기화되지 않았습니다.";
-                console.log("Web3Auth not initialized");
+                statusMessage.style.display = "block";
                 return;
             }
 
             try {
-                statusMessage.textContent = "로그인을 시도합니다...";
-                const provider = await web3auth.connect();
-                const user = await web3auth.getUserInfo();
+                console.log("🔐 로그인 프로세스 시작...");
+                statusMessage.textContent = "로그인 모달을 열고 있습니다...";
+                statusMessage.style.display = "block";
                 
-                if (user && user.eoa) {
-                    const userAddress = user.eoa;
-                    statusMessage.textContent = "로그인 정보 확인 중...";
+                // Web3Auth connect 호출 전 상태 확인
+                console.log("📊 Web3Auth 상태:", {
+                    ready: web3auth.ready,
+                    connected: web3auth.connected,
+                    provider: web3auth.provider
+                });
+                
+                console.log("🎯 web3auth.connect() 호출 중...");
+                const provider = await web3auth.connect();
+                console.log("✅ Provider 수신:", provider);
+                
+                if (provider) {
+                    statusMessage.textContent = "연결 성공! 사용자 정보를 가져오는 중...";
+                    console.log("👤 getUserInfo() 호출 중...");
+                    
+                    const user = await web3auth.getUserInfo();
+                    console.log("📝 사용자 정보:", user);
+                    
+                    if (user && user.eoa) {
+                        console.log(`🎉 로그인 성공! 주소: ${user.eoa}`);
+                        statusMessage.textContent = `로그인 성공! 주소: ${user.eoa.substring(0, 6)}...${user.eoa.substring(-4)}`;
+                        
+                        // 백엔드 서버(포트 8080)에 로그인 요청
+                        try {
+                            console.log("🌐 백엔드 서버 로그인 시도...");
+                            const response = await fetch("http://localhost:8080/api/auth/wallet/login", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ address: user.eoa })
+                            });
 
-                    const response = await fetch("/api/auth/wallet/login", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ address: userAddress })
-                    });
+                            console.log("📡 백엔드 응답:", response.status, response.statusText);
 
-                    if (response.ok) {
-                        statusMessage.textContent = "로그인 성공! 프로필 페이지로 이동합니다.";
-                        window.location.href = "/profile.html";
+                            if (response.ok) {
+                                statusMessage.textContent = "백엔드 로그인 성공! 대시보드로 이동합니다.";
+                                setTimeout(() => {
+                                    window.location.href = "http://localhost:8080/";
+                                }, 1000);
+                            } else {
+                                const errorText = await response.text();
+                                console.error("❌ 백엔드 로그인 실패:", errorText);
+                                statusMessage.textContent = `백엔드 로그인 실패: ${errorText}`;
+                            }
+                        } catch (backendError) {
+                            console.log("⚠️ 백엔드 연동 실패, 로컬 테스트만 진행:", backendError);
+                            setTimeout(() => {
+                                alert(`로컬 Web3Auth 테스트 성공!\n주소: ${user.eoa}\n이메일: ${user.email || 'N/A'}\n이름: ${user.name || 'N/A'}`);
+                            }, 1000);
+                        }
+                        
                     } else {
-                        const errorText = await response.text();
-                        statusMessage.textContent = `로그인 실패: ${errorText}`;
-                        await web3auth.logout();
+                        console.error("❌ 사용자 정보 또는 EOA 없음:", user);
+                        statusMessage.textContent = "지갑 정보를 찾을 수 없습니다.";
                     }
                 } else {
-                     statusMessage.textContent = "지갑 정보를 찾을 수 없습니다.";
-                     await web3auth.logout();
+                    console.log("⚠️ Provider 없음 - 사용자가 연결 취소");
+                    statusMessage.textContent = "연결이 취소되었습니다.";
                 }
             } catch (error) {
-                console.error("Login failed:", error);
-                statusMessage.textContent = "로그인 중 오류가 발생했습니다.";
+                console.error("❌ 로그인 실패:", error);
+                console.error("❌ 오류 상세:", {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack,
+                    code: error.code
+                });
+                
+                // JSON-RPC 에러인 경우 추가 정보 출력
+                if (error.message.includes('JSON-RPC')) {
+                    console.error("🔍 JSON-RPC 에러 분석:");
+                    console.error("- RPC 서버 연결 문제일 가능성");
+                    console.error("- 네트워크 설정 확인 필요");
+                    console.error("- 방화벽 또는 CORS 문제 가능성");
+                }
+                
+                statusMessage.textContent = `로그인 오류: ${error.message}`;
+                statusMessage.style.display = "block";
             }
         }
         
         
     </script>
     
-    <!-- 3. initWeb3Auth가 정의된 후에 라이브러리를 로드하고 onload 콜백을 실행합니다. -->
-    <script src="https://cdn.jsdelivr.net/npm/@web3auth/modal@7.3.2/dist/modal.umd.min.js" onload="initWeb3Auth()"></script>
-
-    <!-- 3. crypto polyfill을 위해 web3.js와 buffer를 먼저 로드합니다. -->
-    <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/dist/buffer.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/web3@4.9.0/dist/web3.min.js"></script>
-    
-    <!-- 4. initWeb3Auth가 정의된 후에 Web3Auth 라이브러리를 로드하고 onload 콜백을 실행합니다. -->
-    <script src="https://cdn.jsdelivr.net/npm/@web3auth/modal@7.3.2/dist/modal.umd.min.js" onload="initWeb3Auth()"></script>
+    <!-- 3. 로컬 Web3Auth 파일 사용 (CDN 문제 해결) -->
+    <script src="/js/web3auth-modal.umd.min.js" onload="initWeb3Auth()"></script>
 
 </body>
 </html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Web3Auth Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 600px; 
+            margin: 50px auto; 
+            padding: 20px; 
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #45a049; }
+        #status {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Web3Auth 간단 테스트</h1>
+    <button onclick="testLogin()">로그인 테스트</button>
+    <button onclick="clearAll()">모든 데이터 클리어</button>
+    
+    <div id="status">준비 중...</div>
+
+    <script>
+        let web3auth = null;
+        const clientId = "BKQkCcvERmw1_BoRMJ8frnhBV5snPap95qvfgzhfo1QLF4RHW2TwMqT1YxS_3PavJA6eOYJoO5W81-RO4J2CMNY";
+
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML = message;
+            console.log(message);
+        }
+
+        function clearAll() {
+            localStorage.clear();
+            sessionStorage.clear();
+            updateStatus("모든 데이터 클리어됨. 페이지를 새로고침하세요.");
+        }
+
+        async function initWeb3Auth() {
+            try {
+                updateStatus("Web3Auth 초기화 중...");
+                
+                web3auth = new window.Modal.Web3Auth({
+                    clientId,
+                    web3AuthNetwork: "sapphire_devnet",
+                    chainConfig: {
+                        chainNamespace: "eip155",
+                        chainId: "0x5", // Goerli
+                        rpcTarget: "https://rpc.ankr.com/eth_goerli",
+                        displayName: "Ethereum Goerli",
+                        blockExplorer: "https://goerli.etherscan.io",
+                        ticker: "ETH",
+                        tickerName: "Ethereum",
+                    }
+                });
+
+                await web3auth.initModal();
+                updateStatus("✅ Web3Auth 초기화 완료! 로그인 버튼을 클릭하세요.");
+                
+            } catch (error) {
+                updateStatus(`❌ 초기화 실패: ${error.message}`);
+                console.error("Full error:", error);
+            }
+        }
+
+        async function testLogin() {
+            if (!web3auth) {
+                updateStatus("먼저 Web3Auth를 초기화해주세요.");
+                return;
+            }
+
+            try {
+                updateStatus("🔐 로그인 시도 중...");
+                
+                const provider = await web3auth.connect();
+                
+                if (provider) {
+                    const user = await web3auth.getUserInfo();
+                    updateStatus(`🎉 로그인 성공!<br>
+                        주소: ${user.eoa}<br>
+                        이메일: ${user.email || 'N/A'}<br>
+                        이름: ${user.name || 'N/A'}`);
+                } else {
+                    updateStatus("로그인이 취소되었습니다.");
+                }
+                
+            } catch (error) {
+                updateStatus(`❌ 로그인 실패: ${error.message}`);
+                console.error("Login error details:", error);
+            }
+        }
+
+        // 페이지 로드 시 자동 초기화
+        window.addEventListener('load', () => {
+            setTimeout(initWeb3Auth, 1000);
+        });
+    </script>
+
+    <!-- CDN으로 Web3Auth 로드 -->
+    <script src="https://cdn.jsdelivr.net/npm/@web3auth/modal@7.3.2/dist/modal.umd.min.js"></script>
+</body>
+</html>

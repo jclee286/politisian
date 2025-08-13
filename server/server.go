@@ -12,17 +12,38 @@ import (
 
 var blockchainClient *local.Local
 
+// corsMiddleware는 모든 API 요청에 CORS 헤더를 추가합니다.
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 모든 도메인에서의 요청을 허용합니다. 로컬 테스트 환경이므로 "*"를 사용합니다.
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		// 허용할 HTTP 메소드를 지정합니다.
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		// 허용할 HTTP 헤더를 지정합니다.
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+
+		// Pre-flight 요청 (OPTIONS)에 대한 응답을 처리합니다.
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// 다음 핸들러를 호출합니다.
+		next.ServeHTTP(w, r)
+	})
+}
+
 func StartServer(node *node.Node) {
 	blockchainClient = local.New(node)
 
 	mux := http.NewServeMux()
 
-	// 1. API 핸들러들을 먼저 명확하게 등록합니다.
-	mux.HandleFunc("/api/auth/wallet/login", handleWalletLogin)
-	mux.Handle("/api/user/profile", authMiddleware(http.HandlerFunc(handleUserProfile)))
-	mux.Handle("/api/profile/save", authMiddleware(http.HandlerFunc(handleProfileSave)))
-	mux.Handle("/api/politisian/list", authMiddleware(http.HandlerFunc(handleGetPolitisians)))
-	mux.Handle("/api/politisian/propose", authMiddleware(http.HandlerFunc(handleProposePolitician)))
+	// 1. API 핸들러들을 CORS 미들웨어로 감싸서 등록합니다.
+	mux.Handle("/api/auth/wallet/login", corsMiddleware(http.HandlerFunc(handleWalletLogin)))
+	mux.Handle("/api/user/profile", corsMiddleware(authMiddleware(http.HandlerFunc(handleUserProfile))))
+	mux.Handle("/api/profile/save", corsMiddleware(authMiddleware(http.HandlerFunc(handleProfileSave))))
+	mux.Handle("/api/politisian/list", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetPolitisians))))
+	mux.Handle("/api/politisian/propose", corsMiddleware(authMiddleware(http.HandlerFunc(handleProposePolitician))))
 	// 나중에 추가될 API 핸들러들...
 
 	// 2. 정적 파일 핸들러 (CSS, JS 등)를 등록합니다. 이 요청들은 인증을 거치지 않습니다.

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3Auth 최소 테스트</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 600px; 
+            margin: 50px auto; 
+            padding: 20px; 
+            text-align: center;
+        }
+        #status {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #status:hover { background: #e9e9e9; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Web3Auth 로컬 파일 테스트</h1>
+    <div id="status">초기화 중...</div>
+
+    <script>
+        let web3auth = null;
+        // 🆕 새 DEVNET Client ID (최신)
+        const clientId = "BOWvLKV2m2Qu4VFAlD7oe2s_vzisF_SbyVceojTtQitL9l6UXROy3a2prheIWKWDS0w-mr2Z8NAqymjWEkRvlBs";
+
+        // 🧹 캐시 클리어
+        localStorage.clear();
+        sessionStorage.clear();
+        console.log("🧹 캐시 클리어됨");
+
+        function updateStatus(message, isClickable = false) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = message;
+            if (isClickable) {
+                statusDiv.style.backgroundColor = "#4CAF50";
+                statusDiv.style.color = "white";
+                statusDiv.onclick = handleLogin;
+            }
+            console.log(message);
+        }
+
+        async function initWeb3Auth() {
+            try {
+                updateStatus("🚀 Web3Auth 초기화 중...");
+                
+                // 🔧 chainNamespace 포함한 필수 설정
+                web3auth = new window.Modal.Web3Auth({
+                    clientId,
+                    web3AuthNetwork: "testnet",
+                    chainConfig: {
+                        chainNamespace: "eip155",
+                        chainId: "0x5", // Goerli testnet
+                        rpcTarget: "https://rpc.ankr.com/eth_goerli"
+                    }
+                });
+
+                await web3auth.initModal();
+                updateStatus("✅ 초기화 완료! 클릭하여 로그인", true);
+                
+            } catch (error) {
+                updateStatus(`❌ 초기화 실패: ${error.message}`);
+                console.error("전체 에러:", error);
+            }
+        }
+
+        async function handleLogin() {
+            try {
+                updateStatus("🔐 로그인 시도 중...");
+                console.log("🔍 디버깅: 로그인 시작");
+                
+                const provider = await web3auth.connect();
+                console.log("🔍 디버깅: provider 연결됨:", !!provider);
+                
+                if (provider) {
+                    console.log("🔍 디버깅: 사용자 정보 요청 중...");
+                    const user = await web3auth.getUserInfo();
+                    console.log("🔍 디버깅: 사용자 정보:", user);
+                    
+                    updateStatus(`🎉 로그인 성공!<br>
+                        이름: ${user.name || 'N/A'}<br>
+                        이메일: ${user.email || 'N/A'}<br>
+                        프로필: ${user.profileImage ? '🖼️' : '❌'}`);
+                    
+                    console.log("✅ 로그인 성공 - 전체 사용자 정보:", user);
+                } else {
+                    updateStatus("❌ 로그인 취소됨");
+                    console.log("🔍 디버깅: provider가 null/undefined");
+                }
+                
+            } catch (error) {
+                console.error("🔍 디버깅: 전체 에러 객체:", error);
+                console.error("🔍 디버깅: 에러 메시지:", error.message);
+                console.error("🔍 디버깅: 에러 스택:", error.stack);
+                
+                // RPC 에러인 경우 대안 시도
+                if (error.message.includes('403') || error.message.includes('Non-200')) {
+                    updateStatus("🔄 RPC 엔드포인트 문제 - 다른 설정 시도 중...");
+                    await tryAlternativeRPC();
+                } else {
+                    updateStatus(`❌ 로그인 실패: ${error.message}`);
+                }
+            }
+        }
+
+        async function tryAlternativeRPC() {
+            try {
+                updateStatus("🔄 대안 RPC로 재시도 중...");
+                
+                // 더 단순한 설정으로 재초기화
+                web3auth = new window.Modal.Web3Auth({
+                    clientId,
+                    web3AuthNetwork: "testnet",
+                    chainConfig: {
+                        chainNamespace: "eip155",
+                        chainId: "0x1", // Mainnet으로 변경
+                        rpcTarget: "https://eth-mainnet.g.alchemy.com/v2/demo"
+                    }
+                });
+                
+                await web3auth.initModal();
+                updateStatus("🔄 대안 설정으로 재시도...", true);
+                
+            } catch (error) {
+                console.error("🔍 대안 시도 실패:", error);
+                updateStatus(`❌ 대안도 실패: ${error.message}`);
+            }
+        }
+
+        // 페이지 로드 시 초기화
+        window.addEventListener('load', () => {
+            // 라이브러리 로딩 확인
+            console.log("🔍 window.Modal:", typeof window.Modal);
+            console.log("🔍 window.Modal.Web3Auth:", typeof window.Modal?.Web3Auth);
+            
+            if (typeof window.Modal === 'undefined') {
+                updateStatus("❌ Web3Auth 라이브러리가 로드되지 않음");
+                return;
+            }
+            
+            setTimeout(initWeb3Auth, 1000);
+        });
+    </script>
+
+    <!-- Web3Auth 로컬 파일 사용 -->
+    <script src="/frontend/js/web3auth-modal.umd.min.js"></script>
+</body>
+</html>
