@@ -83,19 +83,26 @@ func rootFileHandler(fs http.Handler) http.HandlerFunc {
 		}
 
 		// 그 외의 모든 페이지 요청(예: /, /index.html, /profile.html)은 인증을 확인합니다.
+		log.Printf("페이지 요청 인증 확인: %s", r.URL.Path)
 		sessionCookie, err := r.Cookie("session_token")
 		if err != nil {
+			log.Printf("세션 쿠키 없음 - 로그인 페이지로 리다이렉트: %s", r.URL.Path)
 			// 쿠키가 없으면 로그인 페이지로 리다이렉트합니다.
 			http.Redirect(w, r, "/login.html", http.StatusFound)
 			return
 		}
 
-		if _, exists := sessionStore.Get(sessionCookie.Value); !exists {
+		log.Printf("세션 토큰 확인 중: %s", sessionCookie.Value)
+		userID, exists := sessionStore.Get(sessionCookie.Value)
+		if !exists {
+			log.Printf("유효하지 않은 세션 토큰 - 로그인 페이지로 리다이렉트: %s -> %s", sessionCookie.Value, r.URL.Path)
 			// 유효하지 않은 세션이면 쿠키를 삭제하고 로그인 페이지로 리다이렉트합니다.
 			http.SetCookie(w, &http.Cookie{Name: "session_token", Value: "", Path: "/", MaxAge: -1})
 			http.Redirect(w, r, "/login.html", http.StatusFound)
 			return
 		}
+		
+		log.Printf("페이지 접근 허용: %s (사용자: %s)", r.URL.Path, userID)
 
 		// 인증된 사용자입니다. 요청한 파일을 보여줍니다.
 		// 단, 경로가 / 이면 /index.html을 보여줍니다.

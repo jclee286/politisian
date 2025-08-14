@@ -72,8 +72,8 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 func handleUserProfileFromSession(w http.ResponseWriter, r *http.Request, userID string) {
 	log.Printf("Attempting to get profile from session for user %s", userID)
 	
-	// 쿠키에서 세션 ID 가져오기
-	cookie, err := r.Cookie("session_id")
+	// 쿠키에서 세션 토큰 가져오기 (session_token으로 통일)
+	cookie, err := r.Cookie("session_token")
 	if err != nil {
 		log.Printf("No session cookie found for user %s", userID)
 		http.Error(w, "세션을 찾을 수 없습니다", http.StatusUnauthorized)
