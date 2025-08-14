@@ -227,13 +227,18 @@
             }
 
             // 대시보드 데이터를 가져오는 함수
-            function fetchDashboardData() {
+            function fetchDashboardData(skipAuthRedirect = false) {
                 return fetch('/api/user/profile') // 수정: 올바른 대시보드 API 엔드포인트
                     .then(response => {
                         if (response.status === 401) {
-                            // 인증되지 않았으므로 로그인 페이지로 즉시 이동시킵니다.
-                            window.location.href = '/login.html';
-                            throw new Error('인증이 필요합니다. 로그인 페이지로 이동합니다.');
+                            if (!skipAuthRedirect) {
+                                // 인증되지 않았으므로 로그인 페이지로 즉시 이동시킵니다.
+                                window.location.href = '/login.html';
+                                throw new Error('인증이 필요합니다. 로그인 페이지로 이동합니다.');
+                            } else {
+                                // 프로필 처리 중일 수 있으므로 에러만 던지고 리다이렉션 하지 않음
+                                throw new Error('프로필이 아직 처리 중입니다...');
+                            }
                         }
                         if (!response.ok) {
                             throw new Error('대시보드 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.');
@@ -245,7 +250,9 @@
             // 데이터가 완전히 기록될 때까지 폴링하는 함수
             function pollForDashboardData(maxAttempts = 15, delay = 2000, attempt = 1) {
                 console.log(`대시보드 데이터 조회 시도 #${attempt}`);
-                fetchDashboardData()
+                // 처음 10번 시도에서는 인증 리다이렉션을 스킵 (프로필 처리 시간 고려)
+                const skipAuthRedirect = attempt <= 10;
+                fetchDashboardData(skipAuthRedirect)
                     .then(data => {
                         console.log('대시보드 데이터 수신:', data);
                         updateDashboardUI(data); // 일단 UI를 업데이트합니다.
@@ -266,6 +273,15 @@
                     })
                     .catch(error => {
                         console.error('Error fetching dashboard data:', error);
+                        
+                        // 프로필 처리 중인 경우 계속 재시도
+                        if (error.message.includes('프로필이 아직 처리 중입니다') && attempt < maxAttempts) {
+                            console.log('프로필 처리 중, 계속 재시도합니다...');
+                            setTimeout(() => pollForDashboardData(maxAttempts, delay, attempt + 1), delay);
+                            return;
+                        }
+                        
+                        // 최종 오류 처리
                         welcomeMessage.textContent = '정보를 불러올 수 없습니다. 로그인이 필요할 수 있습니다.';
                         walletAddressElem.textContent = '오류';
                         politisianListElem.innerHTML = `<li>${error.message}</li>`;
