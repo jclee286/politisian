@@ -87,7 +87,7 @@
                 birthYearSelect.appendChild(option);
             }
 
-            fetch('http://localhost:8080/api/user/profile')
+            fetch('/api/user/profile')
                 .then(response => {
                     if (response.status === 404) {
                         return null; // 새 사용자는 프로필이 없으므로 null 반환
@@ -107,7 +107,7 @@
                 });
 
             // 1. 전체 정치인 목록을 불러와서 select 옵션을 채웁니다.
-            fetch('http://localhost:8080/api/politisian/list')
+            fetch('/api/politisian/list')
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('정치인 목록을 불러오는데 실패했습니다.');
@@ -131,7 +131,7 @@
                     });
 
                     // 2. 현재 사용자의 프로필 정보를 불러와서 폼에 채웁니다.
-                    return fetch('http://localhost:8080/api/user/profile');
+                    return fetch('/api/user/profile');
                 })
                 .then(response => {
                     if (response.status === 404) {
@@ -203,7 +203,7 @@
             };
 
             // ### '진실을 비추는 거울' 수정 지점 ###
-            fetch('http://localhost:8080/api/profile/save', {
+            fetch('/api/profile/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(profileData)
