@@ -257,12 +257,12 @@
                 statusMessage.className = 'status-message success';
                 form.querySelector('button').disabled = true;
                 
-                console.log('✅ 프로필 저장 완료, 처리 페이지로 이동합니다...');
-                console.log('🔄 안전한 대시보드 이동을 위해 처리 페이지를 거칩니다...');
+                console.log('✅ 프로필 저장 완료, 성공 페이지로 이동합니다...');
+                console.log('🔄 무한 리다이렉트 방지를 위해 성공 페이지를 거칩니다...');
                 setTimeout(() => {
-                    console.log('🚀 처리 페이지로 이동 중...');
-                    window.location.href = '/processing.html';
-                }, 3000); // 3초 후 처리 페이지로
+                    console.log('🚀 성공 페이지로 이동 중...');
+                    window.location.href = '/success.html';
+                }, 3000); // 3초 후 성공 페이지로
             })
             .catch(error => {
                 console.log('❌ 프로필 저장 실패:', error); // 디버깅
