@@ -257,10 +257,10 @@
                 statusMessage.className = 'status-message success';
                 form.querySelector('button').disabled = true;
                 
-                console.log('✅ 프로필 저장 완료, 5초 후 대시보드로 이동합니다...');
+                console.log('✅ 프로필 저장 완료, 처리 페이지로 이동합니다...');
                 setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 5000); // 2초 → 5초로 연장
+                    window.location.href = '/processing.html';
+                }, 2000); // 처리 페이지로 이동
             })
             .catch(error => {
                 console.log('❌ 프로필 저장 실패:', error); // 디버깅

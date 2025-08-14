@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나의 공화국 - 프로필 처리 중</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .processing-container {
+            background: white;
+            padding: 50px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        .processing-container h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message {
+            color: #666;
+            margin: 20px 0;
+            line-height: 1.6;
+        }
+        .progress {
+            background: #f0f0f0;
+            border-radius: 25px;
+            padding: 3px;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 20px;
+            border-radius: 20px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .status {
+            color: #28a745;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="processing-container">
+        <h1>🎉 프로필 저장 완료!</h1>
+        <div class="spinner"></div>
+        <div class="message">
+            블록체인에 프로필 정보를 기록하고 있습니다.<br>
+            잠시만 기다려주세요...
+        </div>
+        <div class="progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="status" id="statusMessage">처리 중... (1/3)</div>
+    </div>
+
+    <script>
+        let progress = 0;
+        let attempt = 1;
+        const maxAttempts = 20;
+        
+        const progressBar = document.getElementById('progressBar');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // 진행률 업데이트 함수
+        function updateProgress() {
+            progress = (attempt / maxAttempts) * 100;
+            progressBar.style.width = progress + '%';
+            statusMessage.textContent = `처리 중... (${attempt}/${maxAttempts})`;
+        }
+
+        // 프로필 처리 완료 확인 함수
+        function checkProfileReady() {
+            console.log(`프로필 처리 확인 시도 #${attempt}`);
+            updateProgress();
+
+            fetch('/api/user/profile')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else if (response.status === 401) {
+                        throw new Error('아직 처리 중입니다...');
+                    } else {
+                        throw new Error('처리 중 오류가 발생했습니다.');
+                    }
+                })
+                .then(data => {
+                    console.log('✅ 프로필 처리 완료:', data);
+                    statusMessage.textContent = '✅ 처리 완료! 대시보드로 이동합니다...';
+                    progressBar.style.width = '100%';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 2000);
+                })
+                .catch(error => {
+                    console.log(`❌ 시도 #${attempt} 실패:`, error.message);
+                    
+                    if (attempt < maxAttempts) {
+                        attempt++;
+                        setTimeout(checkProfileReady, 3000); // 3초마다 재시도
+                    } else {
+                        statusMessage.textContent = '⏰ 처리 시간이 오래 걸리고 있습니다. 수동으로 대시보드로 이동하세요.';
+                        setTimeout(() => {
+                            window.location.href = '/index.html';
+                        }, 5000);
+                    }
+                });
+        }
+
+        // 페이지 로드 시 즉시 확인 시작
+        checkProfileReady();
+    </script>
+</body>
+</html>

@@ -44,22 +44,59 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 	res, err := blockchainClient.ABCIQuery(context.Background(), queryPath, nil)
 	if err != nil {
 		log.Printf("Error querying ABCI for user profile: %v", err)
-		http.Error(w, "프로필 정보 조회 실패", http.StatusInternalServerError)
+		// 블록체인에서 조회 실패 시 세션 데이터로 대체 시도
+		handleUserProfileFromSession(w, r, userID)
 		return
 	}
 	if res.Response.Code != 0 {
-		http.Error(w, "계정을 찾을 수 없습니다.", http.StatusNotFound)
+		log.Printf("Account not found in blockchain for user %s, trying session data", userID)
+		// 블록체인에 계정이 없으면 세션 데이터로 대체 시도
+		handleUserProfileFromSession(w, r, userID)
 		return
 	}
 
 	var account ptypes.Account
 	if err := json.Unmarshal(res.Response.Value, &account); err != nil {
 		log.Printf("Error unmarshalling user profile: %v", err)
-		http.Error(w, "프로필 정보 파싱 실패", http.StatusInternalServerError)
+		// 파싱 실패 시 세션 데이터로 대체 시도
+		handleUserProfileFromSession(w, r, userID)
 		return
 	}
 	
 	log.Printf("Successfully fetched and sending profile for user %s", userID)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(account)
+}
+
+// 세션 데이터로 프로필 정보를 반환하는 함수
+func handleUserProfileFromSession(w http.ResponseWriter, r *http.Request, userID string) {
+	log.Printf("Attempting to get profile from session for user %s", userID)
+	
+	// 쿠키에서 세션 ID 가져오기
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		log.Printf("No session cookie found for user %s", userID)
+		http.Error(w, "세션을 찾을 수 없습니다", http.StatusUnauthorized)
+		return
+	}
+
+	// 세션 데이터 가져오기
+	sessionData, exists := sessionStore.GetSessionData(cookie.Value)
+	if !exists {
+		log.Printf("No session data found for user %s", userID)
+		http.Error(w, "세션 데이터를 찾을 수 없습니다", http.StatusUnauthorized)
+		return
+	}
+
+	// 세션 데이터를 Account 형태로 변환
+	account := ptypes.Account{
+		Address:     userID,
+		Email:       sessionData.Email,
+		Wallet:      sessionData.WalletAddress,
+		Politicians: []string{}, // 세션에는 정치인 정보가 없으므로 빈 배열
+	}
+
+	log.Printf("Successfully returning session-based profile for user %s", userID)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(account)
 }
