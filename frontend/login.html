@@ -233,6 +233,18 @@
                 🔐 구글 로그인 (수동)
             </button>
             
+            <!-- 도메인 인증 안내 -->
+            <div id="domainNotice" class="notice" style="display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; color: #856404;">
+                <h4 style="margin-top: 0;">⚠️ 도메인 인증 필요</h4>
+                <p>현재 <strong>politisian.org</strong> 도메인이 Google OAuth에서 승인되지 않은 상태입니다.</p>
+                <p><strong>Google Cloud Console</strong>에서 다음 도메인을 <em>"승인된 JavaScript 출처"</em>에 추가해주세요:</p>
+                <ul>
+                    <li><code>https://politisian.org</code></li>
+                    <li><code>http://politisian.org</code> (필요시)</li>
+                </ul>
+                <p><small>Google Cloud Console → APIs 및 서비스 → 사용자 인증 정보 → OAuth 2.0 클라이언트 ID 편집</small></p>
+            </div>
+            
             <!-- 테스트용 로그인 버튼 -->
             <button class="btn" onclick="testLogin()" style="margin-top: 10px; background: #28a745;">
                 🧪 테스트 로그인 (임시)
@@ -330,30 +342,60 @@
         // 구글 OAuth 초기화
         function initGoogleOAuth() {
             debugLog('=== 구글 OAuth 초기화 ===');
+            debugLog(`현재 도메인: ${window.location.origin}`);
+            debugLog(`클라이언트 ID: ${GOOGLE_CLIENT_ID}`);
             
             if (typeof google !== 'undefined') {
-                google.accounts.id.initialize({
-                    client_id: GOOGLE_CLIENT_ID,
-                    callback: handleGoogleResponse
-                });
-                
-                // 구글 로그인 버튼 렌더링
-                google.accounts.id.renderButton(
-                    document.getElementById("google-signin-button"),
-                    { 
-                        theme: "outline", 
-                        size: "large",
-                        width: "300",
-                        text: "signin_with",
-                        locale: "ko"
+                try {
+                    google.accounts.id.initialize({
+                        client_id: GOOGLE_CLIENT_ID,
+                        callback: handleGoogleResponse,
+                        error_callback: handleGoogleError
+                    });
+                    
+                    // 구글 로그인 버튼 렌더링
+                    google.accounts.id.renderButton(
+                        document.getElementById("google-signin-button"),
+                        { 
+                            theme: "outline", 
+                            size: "large",
+                            width: "300",
+                            text: "signin_with",
+                            locale: "ko"
+                        }
+                    );
+                    
+                    debugLog('구글 OAuth 초기화 완료', 'success');
+                    updateStatus('구글 로그인 버튼을 클릭하세요', 'success');
+                    
+                } catch (error) {
+                    debugLog('구글 OAuth 초기화 오류: ' + error.message, 'error');
+                    if (error.message.includes('origin') || error.message.includes('client ID')) {
+                        updateStatus('⚠️ 도메인 인증 문제: 아래 안내를 참조하세요', 'error');
+                        document.getElementById('domainNotice').style.display = 'block';
+                    } else {
+                        updateStatus('구글 OAuth 초기화 실패', 'error');
                     }
-                );
-                
-                debugLog('구글 OAuth 초기화 완료', 'success');
-                updateStatus('구글 로그인 버튼을 클릭하세요', 'success');
+                }
             } else {
                 debugLog('구글 라이브러리 로딩 실패', 'error');
                 updateStatus('구글 로그인 라이브러리 로딩 실패', 'error');
+            }
+        }
+
+        // 구글 OAuth 오류 처리
+        function handleGoogleError(error) {
+            debugLog('=== 구글 OAuth 오류 ===', 'error');
+            debugLog('오류 내용: ' + JSON.stringify(error), 'error');
+            
+            if (error && error.type === 'popup_closed') {
+                updateStatus('로그인 팝업이 닫혔습니다. 다시 시도해주세요.', 'warning');
+            } else if (error && (error.type === 'invalid_client' || error.message?.includes('origin'))) {
+                updateStatus('⚠️ 도메인 인증 문제: 아래 안내를 참조하세요', 'error');
+                debugLog('도메인이 Google OAuth 승인 목록에 없습니다', 'error');
+                document.getElementById('domainNotice').style.display = 'block';
+            } else {
+                updateStatus('구글 로그인 중 오류가 발생했습니다', 'error');
             }
         }
 
@@ -558,6 +600,16 @@
         window.addEventListener('load', function() {
             debugLog('=== 정리된 로그인 페이지 로딩 완료 ===');
             updateStatus('구글 OAuth 초기화 중...');
+            
+            // 도메인 확인 (politisian.org인 경우 미리 안내 표시)
+            if (window.location.hostname === 'politisian.org') {
+                debugLog('politisian.org 도메인 감지 - Google OAuth 설정 확인 필요할 수 있음', 'warning');
+                setTimeout(() => {
+                    if (document.getElementById('status').className.includes('error')) {
+                        document.getElementById('domainNotice').style.display = 'block';
+                    }
+                }, 3000); // 3초 후 오류가 있으면 안내 표시
+            }
             
             // 구글 라이브러리 로딩 대기
             if (typeof google !== 'undefined') {
