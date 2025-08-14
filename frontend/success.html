@@ -104,15 +104,60 @@
                 
                 console.log('🚀 대시보드로 이동 시작');
                 
-                // 충분한 시간을 기다린 후 대시보드로 이동
-                setTimeout(() => {
-                    // 히스토리 리플레이스 사용으로 뒤로가기 방지
-                    window.location.replace('/index.html');
-                }, 1000);
+                // 세션과 프로필이 모두 준비될 때까지 확인
+                checkSessionAndProfile();
             }
         }, 1000);
         
+        // 세션과 프로필 상태를 체크하는 함수
+        function checkSessionAndProfile(maxAttempts = 10, attempt = 1) {
+            console.log(`🔍 세션 및 프로필 체크 시도 #${attempt}/${maxAttempts}`);
+            
+            // 먼저 세션 체크
+            fetch('/api/user/session-info')
+                .then(response => {
+                    console.log('📋 세션 체크 응답:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`세션 체크 실패: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(sessionData => {
+                    console.log('✅ 세션 데이터:', sessionData);
+                    
+                    // 세션이 유효하면 프로필도 체크
+                    return fetch('/api/user/profile');
+                })
+                .then(response => {
+                    console.log('📄 프로필 체크 응답:', response.status);
+                    if (response.ok) {
+                        console.log('🎉 세션과 프로필이 모두 준비됨, 대시보드로 이동');
+                        setTimeout(() => {
+                            window.location.replace('/index.html');
+                        }, 500);
+                    } else if (response.status === 401) {
+                        throw new Error('프로필 인증 실패');
+                    } else {
+                        throw new Error(`프로필 체크 실패: ${response.status}`);
+                    }
+                })
+                .catch(error => {
+                    console.error(`❌ 체크 실패 (시도 ${attempt}):`, error);
+                    
+                    if (attempt < maxAttempts) {
+                        console.log(`⏳ 2초 후 다시 시도... (${attempt + 1}/${maxAttempts})`);
+                        setTimeout(() => {
+                            checkSessionAndProfile(maxAttempts, attempt + 1);
+                        }, 2000);
+                    } else {
+                        console.error('🚨 최대 시도 횟수 도달, 로그인 페이지로 이동');
+                        window.location.replace('/login.html');
+                    }
+                });
+        }
+        
         console.log('✅ 프로필 저장 완료 페이지 로드됨');
+        console.log('🍪 현재 쿠키:', document.cookie);
     </script>
 </body>
 </html>
