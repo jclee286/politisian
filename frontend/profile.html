@@ -195,7 +195,19 @@
             console.log('💾 프로필 저장 시작'); // 디버깅
             
             const form = event.target;
+            const submitButton = form.querySelector('button[type="submit"]');
             const statusMessage = document.getElementById('statusMessage');
+            
+            // 중복 클릭 방지
+            if (submitButton.disabled) {
+                console.log('🚫 이미 저장 중입니다. 중복 클릭 방지');
+                return;
+            }
+            
+            // 버튼 비활성화
+            submitButton.disabled = true;
+            submitButton.textContent = '저장 중...';
+            
             statusMessage.textContent = '프로필을 저장하는 중...';
             statusMessage.className = 'status-message';
 
@@ -254,6 +266,10 @@
                 // error.message는 위에서 throw한 서버의 실제 오류 메시지가 됩니다.
                 statusMessage.textContent = '저장 실패: ' + error.message;
                 statusMessage.className = 'status-message error';
+                
+                // 실패 시 버튼 다시 활성화
+                submitButton.disabled = false;
+                submitButton.textContent = '프로필 작성';
             });
         });
 

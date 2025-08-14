@@ -2,6 +2,7 @@ package types
 
 // TxData는 클라이언트가 전송하는 트랜잭션의 표준 구조입니다.
 type TxData struct {
+	TxID           string   `json:"tx_id,omitempty"`        // 트랜잭션 중복 방지용 고유 ID
 	Action         string   `json:"action"` // "create_profile", "update_supporters", "propose_politician", "vote_on_proposal"
 	UserID         string   `json:"user_id,omitempty"`
 	Email          string   `json:"email,omitempty"`

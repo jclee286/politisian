@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	ptypes "politisian/pkg/types"
 
@@ -82,31 +84,60 @@ func handleGetPolitisians(w http.ResponseWriter, r *http.Request) {
 	w.Write(res.Response.Value)
 }
 
-// handleProfileSave는 사용자의 프로필(지지 정치인)을 저장하는 요청을 처리합니다.
+// handleProfileSave는 사용자의 프로필을 저장하는 요청을 처리합니다.
 func handleProfileSave(w http.ResponseWriter, r *http.Request) {
 	log.Println("Attempting to handle /api/profile/save request")
 	userID, _ := r.Context().Value("userID").(string)
-	var reqBody struct {
-		Politicians []string `json:"politicians"`
-	}
+	email, _ := r.Context().Value("email").(string)
+	walletAddress, _ := r.Context().Value("walletAddress").(string)
+	
+	var reqBody ptypes.ProfileSaveRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		log.Printf("Error decoding profile save request: %v", err)
 		http.Error(w, "잘못된 요청", http.StatusBadRequest)
 		return
 	}
-	log.Printf("User %s is saving profile with politicians: %v", userID, reqBody.Politicians)
+	log.Printf("User %s is saving profile - nickname: %s, politicians: %v", userID, reqBody.Nickname, reqBody.Politisians)
+
+	// 먼저 기존 계정이 있는지 확인
+	queryPath := fmt.Sprintf("/account?address=%s", userID)
+	res, err := blockchainClient.ABCIQuery(context.Background(), queryPath, nil)
+	
+	var action string
+	if err != nil || res.Response.Code != 0 {
+		// 계정이 없으면 새로 생성
+		action = "create_profile"
+		log.Printf("Creating new profile for user %s", userID)
+	} else {
+		// 계정이 있으면 업데이트
+		action = "update_supporters"
+		log.Printf("Updating existing profile for user %s", userID)
+	}
+	
+	// 고유한 트랜잭션 ID 생성 (타임스탬프 + 사용자ID + 랜덤요소)
+	randBytes := make([]byte, 4)
+	rand.Read(randBytes)
+	txID := fmt.Sprintf("%s-%d-%x", userID, time.Now().UnixNano(), randBytes)
 
 	txData := ptypes.TxData{
-		Action:      "update_supporters",
-		UserID:      userID,
-		Politicians: reqBody.Politicians,
+		TxID:          txID,
+		Action:        action,
+		UserID:        userID,
+		Email:         email,
+		WalletAddress: walletAddress,
+		Politicians:   reqBody.Politisians,
 	}
 	txBytes, _ := json.Marshal(txData)
 
 	if err := broadcastAndCheckTx(r.Context(), txBytes); err != nil {
+		log.Printf("Error broadcasting profile save transaction: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	
+	log.Printf("Profile save successful for user %s", userID)
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("프로필이 성공적으로 저장되었습니다"))
 }
 
 
