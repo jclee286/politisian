@@ -83,7 +83,7 @@
     <script>
         let progress = 0;
         let attempt = 1;
-        const maxAttempts = 20;
+        const maxAttempts = 30; // 30회로 증가 (90초)
         
         const progressBar = document.getElementById('progressBar');
         const statusMessage = document.getElementById('statusMessage');
@@ -92,32 +92,46 @@
         function updateProgress() {
             progress = (attempt / maxAttempts) * 100;
             progressBar.style.width = progress + '%';
-            statusMessage.textContent = `처리 중... (${attempt}/${maxAttempts})`;
+            statusMessage.textContent = `블록체인 처리 중... (${attempt}/${maxAttempts})`;
         }
 
         // 프로필 처리 완료 확인 함수
         function checkProfileReady() {
-            console.log(`프로필 처리 확인 시도 #${attempt}`);
+            console.log(`🔍 프로필 처리 확인 시도 #${attempt}`);
             updateProgress();
 
             fetch('/api/user/profile')
                 .then(response => {
+                    console.log(`📡 서버 응답: ${response.status} ${response.statusText}`);
                     if (response.ok) {
                         return response.json();
                     } else if (response.status === 401) {
-                        throw new Error('아직 처리 중입니다...');
+                        throw new Error('세션 인증 대기 중...');
+                    } else if (response.status === 502) {
+                        throw new Error('서버 일시적 문제 - 재시도 중...');
                     } else {
-                        throw new Error('처리 중 오류가 발생했습니다.');
+                        throw new Error(`서버 오류 ${response.status} - 재시도 중...`);
                     }
                 })
                 .then(data => {
                     console.log('✅ 프로필 처리 완료:', data);
+                    
+                    // 최소 5초는 기다렸는지 확인 (너무 빨리 이동 방지)
+                    if (attempt < 3) {
+                        console.log('⏰ 최소 대기 시간 미충족, 조금 더 기다립니다...');
+                        attempt++;
+                        setTimeout(checkProfileReady, 3000);
+                        return;
+                    }
+                    
                     statusMessage.textContent = '✅ 처리 완료! 대시보드로 이동합니다...';
                     progressBar.style.width = '100%';
                     
+                    // 추가 안전 대기
                     setTimeout(() => {
-                        window.location.href = '/index.html';
-                    }, 2000);
+                        console.log('🚀 대시보드로 최종 이동');
+                        window.location.replace('/index.html'); // replace로 히스토리 스택 방지
+                    }, 3000);
                 })
                 .catch(error => {
                     console.log(`❌ 시도 #${attempt} 실패:`, error.message);
@@ -126,10 +140,12 @@
                         attempt++;
                         setTimeout(checkProfileReady, 3000); // 3초마다 재시도
                     } else {
-                        statusMessage.textContent = '⏰ 처리 시간이 오래 걸리고 있습니다. 수동으로 대시보드로 이동하세요.';
+                        console.log('⏰ 최대 시도 횟수 도달, 강제 이동');
+                        statusMessage.textContent = '⏰ 처리 완료 추정, 대시보드로 이동합니다...';
+                        progressBar.style.width = '100%';
                         setTimeout(() => {
-                            window.location.href = '/index.html';
-                        }, 5000);
+                            window.location.replace('/index.html');
+                        }, 3000);
                     }
                 });
         }

@@ -263,10 +263,11 @@
             }
 
             // 데이터가 완전히 기록될 때까지 폴링하는 함수
-            function pollForDashboardData(maxAttempts = 15, delay = 2000, attempt = 1) {
-                console.log(`대시보드 데이터 조회 시도 #${attempt}`);
-                // 처음 10번 시도에서는 인증 리다이렉션을 스킵 (프로필 처리 시간 고려)
-                const skipAuthRedirect = attempt <= 10;
+            function pollForDashboardData(maxAttempts = 20, delay = 2000, attempt = 1) {
+                console.log(`🏠 대시보드 데이터 조회 시도 #${attempt}/${maxAttempts}`);
+                // 처음 15번 시도에서는 인증 리다이렉션을 스킵 (프로필 처리 시간 고려)
+                const skipAuthRedirect = attempt <= 15;
+                console.log(`🔒 인증 리다이렉션 스킵 여부: ${skipAuthRedirect}`);
                 fetchDashboardData(skipAuthRedirect)
                     .then(data => {
                         console.log('대시보드 데이터 수신:', data);
