@@ -195,12 +195,6 @@ func handleSessionInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, exists := sessionStore.Get(cookie.Value)
-	if !exists {
-		http.Error(w, "유효하지 않은 세션입니다", http.StatusUnauthorized)
-		return
-	}
-
 	// 세션 스토어에서 사용자 정보 가져오기
 	sessionData, exists := sessionStore.GetSessionData(cookie.Value)
 	if !exists {
@@ -226,12 +220,6 @@ func handleGenerateWallet(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
 		http.Error(w, "세션 토큰이 없습니다", http.StatusUnauthorized)
-		return
-	}
-
-	userID, exists := sessionStore.Get(cookie.Value)
-	if !exists {
-		http.Error(w, "유효하지 않은 세션입니다", http.StatusUnauthorized)
 		return
 	}
 
