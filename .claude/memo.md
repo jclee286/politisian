@@ -18,3 +18,29 @@ docker-compose logs -f app
 mcp desktop command---mcp들을 연결해주는것 같음.그리고 깃허브의 프로그램 주소를 알려주면 자동으로 설치,연결해주는 역할
 
 http://politisian.org/login.html
+
+
+  터미널에 다음을 순서대로 입력하세요:
+
+  # 1. 서버에 접속
+  ssh root@134.209.214.151
+
+  # 2. 프로젝트 디렉토리로 이동
+  cd /root/politisian
+
+  # 3. 최신 코드 가져오기
+  git pull origin main
+
+  # 4. 기존 컨테이너 중지하고 새로 시작
+  docker-compose down && docker-compose up -d
+
+  # 5. 서버 로그 확인 (문제 없는지 체크)
+  docker-compose logs -f app
+
+  📋 단계별 설명
+
+  1. ssh root@134.209.214.151 - 서버에 접속
+  2. cd /root/politisian - 프로젝트 폴더로 이동
+  3. git pull origin main - 새로 수정한 코드 다운로드
+  4. docker-compose down && docker-compose up -d - 서버 재시작
+  5. docker-compose logs -f app - 서버가 정상 작동하는지 확인
