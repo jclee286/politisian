@@ -131,10 +131,10 @@
                 .then(response => {
                     console.log('📄 프로필 체크 응답:', response.status);
                     if (response.ok) {
-                        console.log('🎉 세션과 프로필이 모두 준비됨, 새로운 안전한 대시보드로 이동');
+                        console.log('🎉 세션과 프로필이 모두 준비됨, 간단한 대시보드로 이동 (디버깅용)');
                         setTimeout(() => {
-                            // 새로운 안전한 대시보드로 이동
-                            window.location.replace('/index.html');
+                            // 일단 간단한 대시보드로 이동해서 문제 격리
+                            window.location.replace('/dashboard-simple.html');
                         }, 500);
                     } else if (response.status === 401) {
                         throw new Error('프로필 인증 실패');
