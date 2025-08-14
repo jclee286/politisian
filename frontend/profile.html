@@ -192,10 +192,15 @@
         document.getElementById('profileForm').addEventListener('submit', function(event) {
             event.preventDefault();
             
+            console.log('💾 프로필 저장 시작'); // 디버깅
+            
             const form = event.target;
             const statusMessage = document.getElementById('statusMessage');
             statusMessage.textContent = '프로필을 저장하는 중...';
             statusMessage.className = 'status-message';
+
+            // URLSearchParams 정의 추가
+            const urlParams = new URLSearchParams(window.location.search);
 
             const selectedPolitisian = [
                 document.getElementById('politisian1').value,
@@ -203,14 +208,18 @@
                 document.getElementById('politisian3').value
             ].filter(Boolean); // 선택 안한 것 (빈 문자열)은 제외
 
+            console.log('선택된 정치인들:', selectedPolitisian); // 디버깅
+
             const profileData = {
                 nickname: document.getElementById('nickname').value,
                 country: document.getElementById('country').value,
                 gender: document.querySelector('input[name="gender"]:checked').value,
                 birthYear: parseInt(document.getElementById('birthYear').value, 10),
-                politisian: selectedPolitisian,
+                politisians: selectedPolitisian, // 백엔드와 맞추기 위해 "politisians"로 수정
                 referrer: urlParams.get('ref') || null
             };
+            
+            console.log('💾 전송할 프로필 데이터:', profileData); // 디버깅
 
             // ### '진실을 비추는 거울' 수정 지점 ###
             fetch('/api/profile/save', {
@@ -219,9 +228,11 @@
                 body: JSON.stringify(profileData)
             })
             .then(response => {
+                console.log('🌐 서버 응답 상태:', response.status, response.statusText); // 디버깅
                 if (!response.ok) {
                     // 서버가 보내주는 텍스트 에러 메시지를 그대로 사용합니다.
                     return response.text().then(text => { 
+                        console.log('❌ 서버 에러 응답:', text); // 디버깅
                         // 서버가 텍스트를 보내지 않았을 경우를 대비한 기본 메시지
                         throw new Error(text || '알 수 없는 서버 오류가 발생했습니다.') 
                     });
@@ -229,6 +240,7 @@
                 return response.text();
             })
             .then(data => {
+                console.log('✅ 프로필 저장 성공:', data); // 디버깅
                 statusMessage.textContent = "프로필이 성공적으로 블록체인에 저장되었습니다!";
                 statusMessage.className = 'status-message success';
                 form.querySelector('button').disabled = true;
@@ -238,6 +250,7 @@
                 }, 2000);
             })
             .catch(error => {
+                console.log('❌ 프로필 저장 실패:', error); // 디버깅
                 // error.message는 위에서 throw한 서버의 실제 오류 메시지가 됩니다.
                 statusMessage.textContent = '저장 실패: ' + error.message;
                 statusMessage.className = 'status-message error';
