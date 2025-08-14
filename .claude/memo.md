@@ -16,3 +16,5 @@ docker-compose logs -f app
 ./politisian_server  로컬서버시작
 
 mcp desktop command---mcp들을 연결해주는것 같음.그리고 깃허브의 프로그램 주소를 알려주면 자동으로 설치,연결해주는 역할
+
+http://politisian.org/login.html
