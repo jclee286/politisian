@@ -17,9 +17,7 @@ services:
     volumes:
       - ./data/politisian/.cometbft:/root/politisian/.cometbft
     # 컨테이너에 환경 변수를 설정합니다.
-    # 이 값들은 GitHub Secrets에서 자동으로 주입됩니다.
     environment:
-      - PRIVY_APP_ID=${PRIVY_APP_ID}
-      - PRIVY_APP_SECRET=${PRIVY_APP_SECRET}
+      - WALLET_SALT=${WALLET_SALT:-default_salt_2025}
     # 항상 컨테이너가 재시작되도록 설정하여, 서버가 재부팅되거나 예기치 않게 종료되어도 자동으로 서비스를 복구합니다.
     restart: always 

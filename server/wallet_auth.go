@@ -1,12 +1,19 @@
 package server
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	ptypes "politisian/pkg/types"
 )
 
 // SessionStore는 이제 세션 토큰과 '지갑 주소'를 매핑합니다.
@@ -59,7 +66,7 @@ func handleWalletLogin(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
 		Value:    sessionToken,
-		Expires:  time.Now().Add(24 * time.Hour),
+		Expires:  time.Now().Add(1 * time.Hour),  // 1시간으로 변경
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
@@ -69,14 +76,15 @@ func handleWalletLogin(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 }
 
-// handleSocialLogin은 Web3Auth 소셜 로그인 데이터를 받아 로그인을 처리하고 세션 쿠키를 발급합니다.
+// handleSocialLogin은 구글 OAuth 로그인 데이터를 받아 로그인을 처리하고 세션 쿠키를 발급합니다.
 func handleSocialLogin(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Name         string `json:"name"`
-		Email        string `json:"email"`
-		Provider     string `json:"provider"`
-		UserId       string `json:"userId"`
-		ProfileImage string `json:"profileImage"`
+		Name          string `json:"name"`
+		Email         string `json:"email"`
+		Provider      string `json:"provider"`
+		UserId        string `json:"userId"`
+		ProfileImage  string `json:"profileImage"`
+		PIN           string `json:"pin"`  // 6자리 PIN 번호
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -96,11 +104,29 @@ func handleSocialLogin(w http.ResponseWriter, r *http.Request) {
 	sessionToken := uuid.New().String()
 	sessionStore.Set(sessionToken, userID)
 
+	// PIN을 이용한 지갑 주소 생성 및 블록체인 계정 생성
+	walletAddress, err := generateWalletFromPin(req.Email, req.PIN)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("지갑 생성 실패: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// 블록체인에 계정 생성 (존재하지 않는 경우에만)
+	if err := createBlockchainAccount(userID, req.Email, walletAddress); err != nil {
+		// 계정 생성에 실패해도 로그인은 허용 (이미 존재하는 경우일 수 있음)
+		// 하지만 로그는 남김
+		json.NewEncoder(w).Encode(map[string]string{
+			"status": "login_success_but_account_creation_failed",
+			"error":  err.Error(),
+		})
+		return
+	}
+
 	// 세션 쿠키 설정
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
 		Value:    sessionToken,
-		Expires:  time.Now().Add(24 * time.Hour),
+		Expires:  time.Now().Add(1 * time.Hour),  // 1시간으로 변경
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
@@ -110,11 +136,12 @@ func handleSocialLogin(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"status": "success",
 		"user": map[string]string{
-			"name":         req.Name,
-			"email":        req.Email,
-			"provider":     req.Provider,
-			"userId":       req.UserId,
-			"profileImage": req.ProfileImage,
+			"name":          req.Name,
+			"email":         req.Email,
+			"provider":      req.Provider,
+			"userId":        req.UserId,
+			"profileImage":  req.ProfileImage,
+			"walletAddress": walletAddress,
 		},
 		"sessionToken": sessionToken,
 		"isNewUser":    true, // TODO: 실제로는 DB에서 사용자 존재 여부 확인
@@ -123,4 +150,69 @@ func handleSocialLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
-} 
+}
+
+// createBlockchainAccount은 블록체인에 새로운 사용자 계정을 생성합니다.
+func createBlockchainAccount(userID, email, walletAddress string) error {
+	// 먼저 계정이 이미 존재하는지 확인
+	queryPath := fmt.Sprintf("/account?address=%s", userID)
+	res, err := blockchainClient.ABCIQuery(context.Background(), queryPath, nil)
+	if err != nil {
+		log.Printf("Error checking existing account: %v", err)
+		// 쿼리 에러는 무시하고 계정 생성 시도
+	} else if res.Response.Code == 0 {
+		// 계정이 이미 존재함
+		log.Printf("Account already exists for user: %s", userID)
+		return nil
+	}
+
+	// 계정 생성 트랜잭션 생성
+	txData := ptypes.TxData{
+		Action:        "create_profile",
+		UserID:        userID,
+		Email:         email,
+		WalletAddress: walletAddress,
+	}
+	txBytes, err := json.Marshal(txData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal tx data: %v", err)
+	}
+
+	// 트랜잭션 전송
+	if err := broadcastAndCheckTx(context.Background(), txBytes); err != nil {
+		return fmt.Errorf("failed to create blockchain account: %v", err)
+	}
+
+	log.Printf("Successfully created blockchain account for user: %s", userID)
+	return nil
+}
+
+// generateWalletFromPin은 이메일과 PIN을 조합하여 지갑 주소를 생성합니다.
+func generateWalletFromPin(email, pin string) (string, error) {
+	// PIN 검증 (6자리 숫자)
+	if len(pin) != 6 {
+		return "", fmt.Errorf("PIN must be 6 digits")
+	}
+	for _, r := range pin {
+		if r < '0' || r > '9' {
+			return "", fmt.Errorf("PIN must contain only numbers")
+		}
+	}
+
+	// 환경변수에서 솔트 가져오기
+	baseSalt := os.Getenv("WALLET_SALT")
+	if baseSalt == "" {
+		baseSalt = "default_salt_2025" // 기본값 (프로덕션에서는 반드시 환경변수 설정)
+	}
+
+	// 앱 고유 식별자
+	appSalt := "정치인공화국_wallet"
+
+	// 솔트 + 이메일 + PIN 조합으로 지갑 주소 생성
+	combined := email + baseSalt + pin + appSalt
+	hash := sha256.Sum256([]byte(combined))
+	walletAddress := hex.EncodeToString(hash[:])
+
+	log.Printf("Generated wallet address for user %s: %s", email, walletAddress[:20]+"...")
+	return walletAddress, nil
+}

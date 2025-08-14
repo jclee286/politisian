@@ -5,6 +5,7 @@ type TxData struct {
 	Action         string   `json:"action"` // "create_profile", "update_supporters", "propose_politician", "vote_on_proposal"
 	UserID         string   `json:"user_id,omitempty"`
 	Email          string   `json:"email,omitempty"`
+	WalletAddress  string   `json:"wallet_address,omitempty"`  // Web3Auth에서 생성된 실제 지갑 주소
 	PoliticianName string   `json:"politician_name,omitempty"`
 	Region         string   `json:"region,omitempty"`
 	Party          string   `json:"party,omitempty"`
@@ -41,6 +42,7 @@ type ProfileSaveRequest struct {
 type Account struct {
 	Address     string   `json:"address"`
 	Email       string   `json:"email,omitempty"`
+	Wallet      string   `json:"wallet,omitempty"`  // PIN 기반으로 생성된 지갑 주소  
 	Politicians []string `json:"politicians"`
 }
 

@@ -30,6 +30,29 @@ func (app *PoliticianApp) Query(_ context.Context, req *types.RequestQuery) (*ty
 		}
 		return &types.ResponseQuery{Value: res}, nil
 	default:
+		// Handle account queries with pattern /account?address=...
+		if len(req.Path) >= 8 && req.Path[:8] == "/account" {
+			// Extract address from query string
+			address := ""
+			if len(req.Path) > 16 && req.Path[8:16] == "?address" {
+				address = req.Path[17:] // Skip "?address="
+			}
+			
+			if address == "" {
+				return &types.ResponseQuery{Code: 2, Log: "address parameter required"}, nil
+			}
+			
+			account, exists := app.accounts[address]
+			if !exists {
+				return &types.ResponseQuery{Code: 3, Log: "account not found"}, nil
+			}
+			
+			res, err := json.Marshal(account)
+			if err != nil {
+				return &types.ResponseQuery{Code: 4, Log: "failed to marshal account"}, nil
+			}
+			return &types.ResponseQuery{Value: res}, nil
+		}
 		return &types.ResponseQuery{Code: 1, Log: "unknown query path"}, nil
 	}
 }
@@ -117,9 +140,12 @@ func (app *PoliticianApp) handleCreateProfile(txData *ptypes.TxData) *types.Exec
 		return &types.ExecTxResult{Code: 2, Log: logMsg}
 	}
 	app.accounts[txData.UserID] = &ptypes.Account{
-		Address: txData.UserID, Email: txData.Email, Politicians: txData.Politicians,
+		Address:     txData.UserID,
+		Email:       txData.Email,
+		Wallet:      txData.WalletAddress,  // PIN 기반 지갑 주소
+		Politicians: txData.Politicians,
 	}
-	app.logger.Info("Created profile", "user_id", txData.UserID)
+	app.logger.Info("Created profile", "user_id", txData.UserID, "wallet_address", txData.WalletAddress)
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 

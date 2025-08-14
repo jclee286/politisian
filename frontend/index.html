@@ -228,7 +228,7 @@
 
             // 대시보드 데이터를 가져오는 함수
             function fetchDashboardData() {
-                return fetch('/api/user/profile') // 수정: 올바른 대시보드 API 엔드포인트
+                return fetch('http://localhost:8080/api/user/profile') // 수정: 올바른 대시보드 API 엔드포인트
                     .then(response => {
                         if (response.status === 401) {
                             // 인증되지 않았으므로 로그인 페이지로 즉시 이동시킵니다.
@@ -291,7 +291,7 @@
                 claimStatus.textContent = '보상 요청 중...';
                 claimRewardButton.disabled = true;
 
-                fetch('/api/rewards/claim', { // 참고: 이 API는 아직 백엔드에 구현 필요
+                fetch('http://localhost:8080/api/rewards/claim', { // 참고: 이 API는 아직 백엔드에 구현 필요
                     method: 'POST',
                 })
                 .then(response => {
@@ -323,7 +323,7 @@
                     party: document.getElementById('party').value,
                 };
 
-                fetch('/api/politisian/propose', { // 수정: 올바른 발의 API 엔드포인트
+                fetch('http://localhost:8080/api/politisian/propose', { // 수정: 올바른 발의 API 엔드포인트
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(politisianData)
@@ -349,7 +349,7 @@
 
             function fetchProposals() {
                 proposalsListElem.innerHTML = '<li class="loading">목록을 불러오는 중...</li>';
-                fetch('/api/politisian/list') // 수정: 올바른 제안 목록 API 엔드포인트
+                fetch('http://localhost:8080/api/politisian/list') // 수정: 올바른 제안 목록 API 엔드포인트
                     .then(response => {
                         if (response.status === 401) {
                             // 여기서도 인증 오류 발생 시 로그인 페이지로 이동시킵니다.
@@ -392,7 +392,7 @@
                     
                     event.target.parentElement.querySelectorAll('.vote-button').forEach(btn => btn.disabled = true);
 
-                    fetch(`/api/proposals/${proposalId}/vote`, { // 참고: 이 API는 아직 백엔드에 구현 필요
+                    fetch(`http://localhost:8080/api/proposals/${proposalId}/vote`, { // 참고: 이 API는 아직 백엔드에 구현 필요
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ vote: vote })
