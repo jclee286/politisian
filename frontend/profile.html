@@ -119,7 +119,8 @@
                     }
                     return response.json();
                 })
-                .then(politisian => {
+                .then(politisianData => {
+                    console.log('정치인 데이터:', politisianData); // 디버깅용
                     const politisianSelectors = [
                         document.getElementById('politisian1'),
                         document.getElementById('politisian2'),
@@ -127,11 +128,15 @@
                     ];
                     politisianSelectors.forEach(select => {
                         select.innerHTML = '<option value="">선택 안함</option>'; // 기본 옵션
-                        for (const name in politisian) {
-                            const option = document.createElement('option');
-                            option.value = name;
-                            option.textContent = name;
-                            select.appendChild(option);
+                        
+                        // 정치인 데이터가 객체 형태인 경우
+                        if (politisianData && typeof politisianData === 'object') {
+                            for (const [politicianId, politician] of Object.entries(politisianData)) {
+                                const option = document.createElement('option');
+                                option.value = politicianId;
+                                option.textContent = `${politician.name} (${politician.party}, ${politician.region})`;
+                                select.appendChild(option);
+                            }
                         }
                     });
 

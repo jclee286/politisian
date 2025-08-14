@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none">
+    <title>정치인 관리 시스템 - 로그인</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 500px; 
+            margin: 50px auto; 
+            padding: 20px; 
+            text-align: center;
+            background: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            color: #1565c0;
+            font-size: 14px;
+        }
+        .status.error {
+            background: #ffebee;
+            border-color: #ef9a9a;
+            color: #c62828;
+        }
+        .status.success {
+            background: #e8f5e8;
+            border-color: #a5d6a7;
+            color: #2e7d32;
+        }
+        .debug {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            text-align: left;
+            color: #666;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .google { background: #4285f4; color: white; }
+        .facebook { background: #1877f2; color: white; }
+        .twitter { background: #1da1f2; color: white; }
+        .discord { background: #5865f2; color: white; }
+        .github { background: #333; color: white; }
+        .user-info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e8f5e8;
+            border-radius: 8px;
+            display: none;
+            text-align: left;
+        }
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+        .hidden { display: none; }
+        #debugLog { 
+            margin-top: 20px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏛️ 정치인 관리 시스템</h1>
+        <p class="subtitle">소셜 계정으로 간편하게 로그인하세요</p>
+        
+        <div id="status" class="status">시스템 초기화 중...</div>
+        
+        <div id="login-buttons" class="hidden">
+            <p>Web3Auth 모달이 자동으로 열립니다...</p>
+            <button class="btn" onclick="retryLogin()" style="background: #6c757d; color: white;">다시 로그인 시도</button>
+        </div>
+        
+        <div id="user-info" class="user-info">
+            <h3>✅ 로그인 성공!</h3>
+            <div id="user-details"></div>
+            <button class="logout-btn" onclick="logout()">로그아웃</button>
+        </div>
+        
+        <div id="debugLog">
+            <h4>🔍 디버깅 로그</h4>
+            <div id="debugMessages" class="debug"></div>
+        </div>
+    </div>
+
+    <!-- 구글 OAuth 라이브러리 -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <script>
+        // 구글 OAuth 클라이언트 ID (나중에 설정)
+        const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
+        
+        // 디버깅 함수들
+        function debugLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugMessages');
+            const logMsg = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            
+            logElement.innerHTML += logMsg + '\n';
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            console.log(logMsg);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            
+            debugLog(`Status: ${message}`, type);
+        }
+
+        function showElement(id) {
+            document.getElementById(id).classList.remove('hidden');
+            debugLog(`Element shown: ${id}`);
+        }
+
+        function hideElement(id) {
+            document.getElementById(id).classList.add('hidden');
+            debugLog(`Element hidden: ${id}`);
+        }
+
+        // 구글 로그인 초기화
+        function initGoogleLogin() {
+            debugLog('=== 구글 로그인 초기화 시작 ===');
+            updateStatus('구글 로그인 준비 중...');
+            
+            // 구글 로그인 버튼 표시
+            showElement('login-buttons');
+        }
+
+        // 구글 로그인 처리 함수 (임시)
+        function handleGoogleLogin() {
+            debugLog('=== 구글 로그인 시작 ===');
+            updateStatus('구글 로그인 중...');
+            
+            // TODO: 실제 구글 OAuth 구현 예정
+            alert('구글 OAuth 구현 예정입니다.');
+        }
+        
+        // 자동 로그인 함수 (페이지 로드시 모달 자동 열기)
+        async function autoLogin() {
+            try {
+                debugLog('=== 자동 로그인 시작 ===');
+                updateStatus('Web3Auth 모달을 엽니다...', 'info');
+                
+                if (!web3AuthInstance) {
+                    throw new Error('Web3Auth가 초기화되지 않음');
+                }
+                
+                // 이미 로그인된 사용자인지 체크
+                if (web3AuthInstance.connected) {
+                    debugLog('이미 로그인된 사용자 발견');
+                    const user = await web3AuthInstance.getUserInfo();
+                    showUserInfo(user);
+                    return;
+                }
+                
+                debugLog('Web3Auth 모달 열기...');
+                await web3AuthInstance.connect();
+                
+                debugLog('사용자 정보 가져오기...');
+                const user = await web3AuthInstance.getUserInfo();
+                debugLog(`사용자 정보: ${JSON.stringify(user, null, 2)}`);
+                
+                // Web3Auth 지갑 정보 가져오기
+                debugLog('지갑 정보 가져오기...');
+                const provider = web3AuthInstance.provider;
+                if (provider) {
+                    // Ethereum 주소 가져오기
+                    const web3 = new Web3(provider);
+                    const accounts = await web3.eth.getAccounts();
+                    if (accounts.length > 0) {
+                        user.walletAddress = accounts[0];
+                        debugLog(`지갑 주소: ${accounts[0]}`);
+                    }
+                } else {
+                    debugLog('프로바이더를 찾을 수 없음', 'error');
+                }
+                
+                showUserInfo(user);
+                
+            } catch (error) {
+                debugLog(`❌ 자동 로그인 실패: ${error.message}`, 'error');
+                debugLog(`에러 이름: ${error.name}`, 'error');
+                debugLog(`에러 코드: ${error.code || 'N/A'}`, 'error');
+                debugLog(`전체 에러 객체: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`, 'error');
+                
+                // 에러 타입별 메시지 개선
+                let userMessage = '';
+                if (error.message.includes('Dapp logo')) {
+                    userMessage = '앱 로고 설정 오류입니다. 관리자에게 문의하세요.';
+                } else if (error.message.includes('Cross-Origin')) {
+                    userMessage = '브라우저 보안 정책으로 인한 오류입니다. 다시 시도해주세요.';
+                } else if (error.message.includes('localhost')) {
+                    userMessage = '개발 환경 관련 경고입니다. 다시 시도해주세요.';
+                } else if (error.message.includes('cancelled') || error.message.includes('canceled')) {
+                    userMessage = '사용자가 로그인을 취소했습니다.';
+                } else {
+                    userMessage = `로그인 실패: ${error.message}`;
+                }
+                
+                updateStatus(userMessage, 'error');
+                showElement('login-buttons'); // 재시도 버튼 표시
+            }
+        }
+        
+        // 수동 재시도 함수
+        function retryLogin() {
+            debugLog('사용자가 재시도 요청');
+            hideElement('login-buttons');
+            autoLogin();
+        }
+        
+        // 로그인 함수 (공식 문서 기반) - 더 이상 사용하지 않음
+        async function login(provider) {
+            try {
+                debugLog(`=== ${provider} 로그인 시작 ===`);
+                updateStatus(`${provider} 로그인 중...`);
+                
+                if (!web3AuthInstance) {
+                    throw new Error('Web3Auth가 초기화되지 않음');
+                }
+                
+                debugLog('connect() 호출 중...');
+                await web3AuthInstance.connect();
+                
+                debugLog('getUserInfo() 호출 중...');
+                const user = await web3AuthInstance.getUserInfo();
+                debugLog(`사용자 정보: ${JSON.stringify(user, null, 2)}`);
+                
+                showUserInfo(user);
+                
+            } catch (error) {
+                debugLog(`❌ ${provider} 로그인 실패: ${error.message}`, 'error');
+                debugLog(`에러 스택: ${error.stack}`, 'error');
+                updateStatus(`${provider} 로그인 실패: ${error.message}`, 'error');
+            }
+        }
+        
+        function showUserInfo(user) {
+            debugLog('=== 사용자 정보 표시 ===');
+            
+            const userDetails = document.getElementById('user-details');
+            userDetails.innerHTML = `
+                <p><strong>이름:</strong> ${user.name || 'N/A'}</p>
+                <p><strong>이메일:</strong> ${user.email || 'N/A'}</p>
+                <p><strong>사용자 ID:</strong> ${user.verifierId || 'N/A'}</p>
+                <p><strong>로그인 방식:</strong> ${user.typeOfLogin || 'N/A'}</p>
+            `;
+            
+            hideElement('login-buttons');
+            showElement('user-info');
+            updateStatus('로그인 성공!', 'success');
+            
+            debugLog('사용자 정보 표시 완료', 'success');
+            
+            // 백엔드로 전송
+            sendUserDataToBackend(user);
+        }
+        
+        async function sendUserDataToBackend(user) {
+            try {
+                debugLog('=== 백엔드 전송 시작 ===');
+                
+                const userData = {
+                    name: user.name,
+                    email: user.email,
+                    provider: user.typeOfLogin,
+                    userId: user.verifierId,
+                    profileImage: user.profileImage,
+                    walletAddress: user.walletAddress
+                };
+                
+                debugLog(`전송 데이터: ${JSON.stringify(userData, null, 2)}`);
+                
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                debugLog(`백엔드 응답 상태: ${response.status}`);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    debugLog(`백엔드 응답: ${JSON.stringify(result, null, 2)}`, 'success');
+                    
+                    // 로그인 성공 후 리다이렉션
+                    if (result.status === 'success') {
+                        debugLog('로그인 성공! 리다이렉션 준비 중...', 'success');
+                        
+                        // 2초 후 리다이렉션 (사용자가 성공 메시지를 볼 시간 제공)
+                        setTimeout(() => {
+                            if (result.isNewUser) {
+                                debugLog('신규 사용자 → 프로필 작성 페이지로 이동', 'info');
+                                window.location.href = '/profile.html';
+                            } else {
+                                debugLog('기존 사용자 → 대시보드로 이동', 'info');
+                                window.location.href = '/';
+                            }
+                        }, 2000);
+                    }
+                } else {
+                    debugLog(`백엔드 전송 실패: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                debugLog(`백엔드 연동 에러: ${error.message}`, 'error');
+            }
+        }
+        
+        async function logout() {
+            try {
+                debugLog('=== 로그아웃 시작 ===');
+                
+                if (web3AuthInstance) {
+                    await web3AuthInstance.logout();
+                    debugLog('Web3Auth 로그아웃 완료');
+                }
+                
+                hideElement('user-info');
+                showElement('login-buttons');
+                updateStatus('로그아웃 완료. 다시 로그인하세요', 'success');
+                
+                debugLog('=== 로그아웃 성공 ===', 'success');
+            } catch (error) {
+                debugLog(`로그아웃 에러: ${error.message}`, 'error');
+            }
+        }
+        
+        // 페이지 로드시 초기화
+        window.addEventListener('load', function() {
+            debugLog('=== 페이지 로딩 완료 ===');
+            debugLog(`User Agent: ${navigator.userAgent}`);
+            debugLog(`현재 시간: ${new Date().toISOString()}`);
+            
+            // CDN 로딩을 충분히 기다린 후 초기화
+            setTimeout(function() {
+                debugLog('초기화 시작 (2초 지연 후)');
+                init();
+            }, 2000);
+        });
+
+        // DOM 로딩 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog('✅ DOM 로딩 완료', 'success');
+        });
+
+        // 전역 에러 핸들러
+        window.addEventListener('error', function(e) {
+            debugLog(`전역 에러: ${e.message} (${e.filename}:${e.lineno})`, 'error');
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            debugLog(`처리되지 않은 Promise 거부: ${e.reason}`, 'error');
+        });
+    </script>
+</body>
+</html>
