@@ -99,7 +99,12 @@
                     return response.json();
                 })
                 .then(data => {
-                    document.getElementById('walletAddress').value = data.wallet || '주소 없음';
+                    if (data && data.wallet) {
+                        document.getElementById('walletAddress').value = data.wallet;
+                    } else {
+                        // 새 사용자이거나 지갑 정보가 없는 경우, 세션에서 지갑 정보 가져오기
+                        loadWalletFromSession();
+                    }
                 })
                 .catch(error => {
                     document.getElementById('statusMessage').textContent = error.message;
@@ -233,6 +238,53 @@
                 statusMessage.className = 'status-message error';
             });
         });
+
+        // 세션에서 지갑 정보를 가져오는 함수
+        function loadWalletFromSession() {
+            fetch('/api/user/session-info')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('세션 정보를 불러올 수 없습니다.');
+                })
+                .then(sessionData => {
+                    if (sessionData && sessionData.walletAddress) {
+                        document.getElementById('walletAddress').value = sessionData.walletAddress;
+                    } else {
+                        document.getElementById('walletAddress').value = '지갑 생성 중...';
+                        // 지갑 정보가 없다면 새로 생성
+                        generateWallet();
+                    }
+                })
+                .catch(error => {
+                    console.log('세션 정보 로드 실패:', error);
+                    document.getElementById('walletAddress').value = '지갑 정보 로드 실패';
+                });
+        }
+
+        // 지갑 생성 함수 (백업용)
+        function generateWallet() {
+            fetch('/api/auth/generate-wallet', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('지갑 생성 실패');
+            })
+            .then(data => {
+                if (data && data.walletAddress) {
+                    document.getElementById('walletAddress').value = data.walletAddress;
+                }
+            })
+            .catch(error => {
+                console.log('지갑 생성 실패:', error);
+                document.getElementById('walletAddress').value = '지갑 생성 실패';
+            });
+        }
     </script>
 </body>
 </html>

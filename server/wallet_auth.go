@@ -16,27 +16,55 @@ import (
 	ptypes "politisian/pkg/types"
 )
 
-// SessionStore는 이제 세션 토큰과 '지갑 주소'를 매핑합니다.
-type SessionStore struct {
-	mu       sync.RWMutex
-	sessions map[string]string // key: sessionToken, value: walletAddress
+// SessionData는 세션에 저장할 사용자 정보를 정의합니다.
+type SessionData struct {
+	UserID        string
+	Email         string
+	WalletAddress string
+	Name          string
+	ProfileImage  string
 }
 
-func (s *SessionStore) Set(token, address string) {
+// SessionStore는 세션 토큰과 사용자 정보를 매핑합니다.
+type SessionStore struct {
+	mu       sync.RWMutex
+	sessions map[string]*SessionData
+}
+
+func (s *SessionStore) Set(token string, data *SessionData) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.sessions[token] = address
+	s.sessions[token] = data
+}
+
+func (s *SessionStore) SetUserID(token, userID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if data, exists := s.sessions[token]; exists {
+		data.UserID = userID
+	} else {
+		s.sessions[token] = &SessionData{UserID: userID}
+	}
 }
 
 func (s *SessionStore) Get(token string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	address, exists := s.sessions[token]
-	return address, exists
+	if data, exists := s.sessions[token]; exists {
+		return data.UserID, true
+	}
+	return "", false
+}
+
+func (s *SessionStore) GetSessionData(token string) (*SessionData, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	data, exists := s.sessions[token]
+	return data, exists
 }
 
 var sessionStore = &SessionStore{
-	sessions: make(map[string]string),
+	sessions: make(map[string]*SessionData),
 }
 
 type contextKey string
@@ -61,7 +89,7 @@ func handleWalletLogin(w http.ResponseWriter, r *http.Request) {
 
 	// 로그인 요청이 오면, 항상 새로운 세션 토큰을 발급합니다.
 	sessionToken := uuid.New().String()
-	sessionStore.Set(sessionToken, userAddress)
+	sessionStore.SetUserID(sessionToken, userAddress)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
@@ -100,16 +128,22 @@ func handleSocialLogin(w http.ResponseWriter, r *http.Request) {
 	// 소셜 로그인의 경우 이메일을 사용자 ID로 사용
 	userID := req.Email
 
-	// 새로운 세션 토큰 발급
-	sessionToken := uuid.New().String()
-	sessionStore.Set(sessionToken, userID)
-
 	// PIN을 이용한 지갑 주소 생성 및 블록체인 계정 생성
 	walletAddress, err := generateWalletFromPin(req.Email, req.PIN)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("지갑 생성 실패: %v", err), http.StatusInternalServerError)
 		return
 	}
+
+	// 새로운 세션 토큰 발급
+	sessionToken := uuid.New().String()
+	sessionStore.Set(sessionToken, &SessionData{
+		UserID:        userID,
+		Email:         req.Email,
+		WalletAddress: walletAddress,
+		Name:          req.Name,
+		ProfileImage:  req.ProfileImage,
+	})
 
 	// 블록체인에 계정 생성 (존재하지 않는 경우에만)
 	if err := createBlockchainAccount(userID, req.Email, walletAddress); err != nil {
@@ -149,6 +183,73 @@ func handleSocialLogin(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleSessionInfo는 현재 세션의 사용자 정보와 지갑 주소를 반환합니다.
+func handleSessionInfo(w http.ResponseWriter, r *http.Request) {
+	// 세션 토큰 확인
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		http.Error(w, "세션 토큰이 없습니다", http.StatusUnauthorized)
+		return
+	}
+
+	userID, exists := sessionStore.Get(cookie.Value)
+	if !exists {
+		http.Error(w, "유효하지 않은 세션입니다", http.StatusUnauthorized)
+		return
+	}
+
+	// 세션 스토어에서 사용자 정보 가져오기
+	sessionData, exists := sessionStore.GetSessionData(cookie.Value)
+	if !exists {
+		http.Error(w, "세션 데이터를 찾을 수 없습니다", http.StatusNotFound)
+		return
+	}
+
+	response := map[string]interface{}{
+		"userId":        sessionData.UserID,
+		"email":         sessionData.Email,
+		"walletAddress": sessionData.WalletAddress,
+		"name":          sessionData.Name,
+		"profileImage":  sessionData.ProfileImage,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleGenerateWallet은 현재 세션 사용자를 위한 지갑을 생성합니다.
+func handleGenerateWallet(w http.ResponseWriter, r *http.Request) {
+	// 세션 토큰 확인
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		http.Error(w, "세션 토큰이 없습니다", http.StatusUnauthorized)
+		return
+	}
+
+	userID, exists := sessionStore.Get(cookie.Value)
+	if !exists {
+		http.Error(w, "유효하지 않은 세션입니다", http.StatusUnauthorized)
+		return
+	}
+
+	// 세션에서 사용자 정보 가져오기
+	sessionData, exists := sessionStore.GetSessionData(cookie.Value)
+	if !exists {
+		http.Error(w, "세션 데이터를 찾을 수 없습니다", http.StatusNotFound)
+		return
+	}
+
+	walletAddress := sessionData.WalletAddress
+
+	response := map[string]interface{}{
+		"walletAddress": walletAddress,
+		"status": "success",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
