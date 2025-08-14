@@ -137,7 +137,7 @@ func handleSocialLogin(w http.ResponseWriter, r *http.Request) {
 
 	// 새로운 세션 토큰 발급
 	sessionToken := uuid.New().String()
-	log.Printf("소셜 로그인: 사용자 %s를 위한 세션 토큰 생성: %s", userID, sessionToken)
+	log.Printf("소셜 로그인: 사용자 %s를 위한 세션 토큰 생성", userID)
 	
 	sessionData := &SessionData{
 		UserID:        userID,
@@ -148,7 +148,7 @@ func handleSocialLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	sessionStore.Set(sessionToken, sessionData)
 	
-	log.Printf("세션 저장 완료: %s -> %+v", sessionToken, sessionData)
+	log.Printf("세션 저장 완료 - 사용자: %s", userID)
 
 	// 블록체인에 계정 생성 (존재하지 않는 경우에만)
 	if err := createBlockchainAccount(userID, req.Email, walletAddress); err != nil {
@@ -171,7 +171,7 @@ func handleSocialLogin(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, cookie)
-	log.Printf("세션 쿠키 설정: %s=%s (만료: %v)", cookie.Name, cookie.Value, cookie.Expires)
+	log.Printf("세션 쿠키 설정 완료 - 사용자: %s", userID)
 
 	// 성공 응답과 함께 사용자 정보 반환
 	response := map[string]interface{}{
