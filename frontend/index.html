@@ -237,8 +237,12 @@
                         if (response.status === 401) {
                             console.log('🔒 401 인증 오류 발생');
                             if (!skipAuthRedirect) {
-                                console.log('🔄 로그인 페이지로 리다이렉션...');
-                                window.location.href = '/login.html';
+                                console.log('🔄 안전한 리다이렉션 준비 중...');
+                                // 즉시 리다이렉트하지 않고 약간의 지연 후 리다이렉트
+                                setTimeout(() => {
+                                    console.log('🚪 로그인 페이지로 리다이렉션');
+                                    window.location.replace('/login.html');
+                                }, 1000);
                                 throw new Error('인증이 필요합니다. 로그인 페이지로 이동합니다.');
                             } else {
                                 console.log('⏸️ 리다이렉션 스킵, 재시도 대기...');
@@ -263,10 +267,10 @@
             }
 
             // 데이터가 완전히 기록될 때까지 폴링하는 함수
-            function pollForDashboardData(maxAttempts = 20, delay = 2000, attempt = 1) {
+            function pollForDashboardData(maxAttempts = 15, delay = 3000, attempt = 1) {
                 console.log(`🏠 대시보드 데이터 조회 시도 #${attempt}/${maxAttempts}`);
-                // 처음 15번 시도에서는 인증 리다이렉션을 스킵 (프로필 처리 시간 고려)
-                const skipAuthRedirect = attempt <= 15;
+                // 폴링 중에는 항상 인증 리다이렉션을 스킵 (success.html에서 이미 검증됨)
+                const skipAuthRedirect = true;
                 console.log(`🔒 인증 리다이렉션 스킵 여부: ${skipAuthRedirect}`);
                 fetchDashboardData(skipAuthRedirect)
                     .then(data => {
@@ -308,10 +312,55 @@
                     });
             }
 
-            // 페이지 로드 시 폴링 시작
-            pollForDashboardData();
+            // 안전한 초기 로드 함수
+            function safeInitialLoad(maxAttempts = 3, attempt = 1) {
+                console.log(`🔄 안전한 초기 로드 시도 #${attempt}/${maxAttempts}`);
+                
+                // 먼저 한 번만 시도해서 상태 확인
+                fetchDashboardData(true) // skipAuthRedirect = true
+                    .then(data => {
+                        console.log('✅ 초기 데이터 로드 성공:', data);
+                        updateDashboardUI(data);
+                        
+                        // 데이터가 완전한지 확인
+                        if (data && data.wallet && data.wallet !== '주소 없음' && data.wallet.trim() !== '') {
+                            console.log('🎉 완전한 프로필 데이터 확인됨');
+                            // 프로필 데이터가 완전한 경우에만 제안 목록 로드
+                            setTimeout(() => {
+                                console.log('📋 제안 목록 로드 시작');
+                                fetchProposals();
+                            }, 1000);
+                        } else {
+                            console.log('⚠️ 불완전한 데이터, 폴링 시작');
+                            // 불완전한 데이터인 경우에만 폴링 시작
+                            setTimeout(() => pollForDashboardData(), 2000);
+                        }
+                    })
+                    .catch(error => {
+                        console.error(`❌ 초기 로드 실패 (시도 ${attempt}):`, error);
+                        
+                        if (attempt < maxAttempts) {
+                            console.log(`⏳ 3초 후 다시 시도... (${attempt + 1}/${maxAttempts})`);
+                            setTimeout(() => {
+                                safeInitialLoad(maxAttempts, attempt + 1);
+                            }, 3000);
+                        } else {
+                            console.error('🚨 초기 로드 최대 시도 횟수 도달');
+                            welcomeMessage.textContent = '데이터를 불러올 수 없습니다. 페이지를 새로고침해주세요.';
+                            walletAddressElem.textContent = '오류';
+                            politisianListElem.innerHTML = '<li>정보를 불러올 수 없습니다.</li>';
+                            loginButton.style.display = 'block';
+                        }
+                    });
+            }
+
+            // 페이지 로드 시 안전한 방식으로 데이터 로드 시작
+            console.log('🏠 대시보드 페이지 로드됨');
             
-            fetchProposals();
+            // success.html에서 온 경우를 고려하여 초기 로드 시도
+            setTimeout(() => {
+                safeInitialLoad();
+            }, 1000); // 1초 대기 후 시작
 
             copyButton.addEventListener('click', function() {
                 referralLinkInput.select();
@@ -387,8 +436,12 @@
                 fetch('/api/politisian/list') // 수정: 올바른 제안 목록 API 엔드포인트
                     .then(response => {
                         if (response.status === 401) {
-                            // 여기서도 인증 오류 발생 시 로그인 페이지로 이동시킵니다.
-                            window.location.href = '/login.html';
+                            // 안전한 리다이렉트 (즉시 실행하지 않음)
+                            console.log('🔒 제안 목록에서 401 오류, 안전한 리다이렉트 준비');
+                            setTimeout(() => {
+                                console.log('🚪 제안 목록 401 오류로 인한 로그인 페이지 리다이렉트');
+                                window.location.replace('/login.html');
+                            }, 2000);
                             throw new Error('인증이 필요합니다. 로그인 페이지로 이동합니다.');
                         }
                         if (!response.ok) {
