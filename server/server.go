@@ -76,8 +76,8 @@ func rootFileHandler(fs http.Handler) http.HandlerFunc {
 		
 		// API 요청은 이미 위에서 처리되었으므로 여기로 오지 않습니다.
 		
-		// login.html, success.html, processing.html, dashboard-simple.html, favicon.ico 등 인증이 필요 없는 파일들은 그냥 보여줍니다.
-		if r.URL.Path == "/login.html" || r.URL.Path == "/success.html" || r.URL.Path == "/processing.html" || r.URL.Path == "/dashboard-simple.html" || r.URL.Path == "/favicon.ico" {
+		// login.html, success.html, processing.html, dashboard-simple.html, index.html, favicon.ico 등 인증이 필요 없는 파일들은 그냥 보여줍니다.
+		if r.URL.Path == "/login.html" || r.URL.Path == "/success.html" || r.URL.Path == "/processing.html" || r.URL.Path == "/dashboard-simple.html" || r.URL.Path == "/index.html" || r.URL.Path == "/" || r.URL.Path == "/favicon.ico" {
 			fs.ServeHTTP(w, r)
 			return
 		}
