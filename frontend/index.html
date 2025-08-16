@@ -10,25 +10,34 @@
             background-color: #f4f4f9;
             margin: 0;
             padding: 20px;
+        }
+        .header {
             text-align: center;
+            margin-bottom: 40px;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .success {
-            color: #28a745;
-            font-size: 2em;
-            margin-bottom: 20px;
-        }
-        .info {
+        .header h1 {
             color: #333;
-            font-size: 1.2em;
-            line-height: 1.6;
+        }
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .card h2 {
+            color: #333;
+            border-bottom: 2px solid #28a745;
+            padding-bottom: 10px;
+            margin-top: 0;
         }
         .wallet-address {
             font-family: monospace;
@@ -36,69 +45,413 @@
             padding: 10px;
             border-radius: 4px;
             word-break: break-all;
+        }
+        .referral-container {
+            display: flex;
+            align-items: center;
+        }
+        #referral-link {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .copy-button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .copy-button:hover {
+            background-color: #0056b3;
+        }
+        .politisian-list {
+            list-style: none;
+            padding: 0;
+        }
+        .politisian-list li {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .loading {
+            color: #888;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .button {
+             padding: 10px 15px;
+             color: white;
+             border: none;
+             border-radius: 4px;
+             cursor: pointer;
+        }
+        .propose-button { background-color: #17a2b8; }
+        .propose-button:hover { background-color: #138496; }
+        .vote-button {
+            margin-left: 10px;
+            padding: 5px 10px;
+        }
+        .approve { background-color: #28a745; }
+        .reject { background-color: #dc3545; }
+        .error-message {
+            color: red;
+            margin: 10px 0;
+        }
+        .success-message {
+            color: green;
             margin: 10px 0;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="success">🎉 나의 공화국 대시보드</div>
-        <div class="info">
-            <p id="welcome-message">사용자님, 환영합니다!</p>
+
+    <div class="header">
+        <h1>나의 공화국</h1>
+        <p id="welcome-message">사용자님, 환영합니다!</p>
+        <button id="login-button" style="display: none;">로그인</button>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="card">
+            <h2>나의 지갑 정보</h2>
+            <p><strong>지갑 주소:</strong></p>
+            <div id="wallet-address" class="wallet-address loading">
+                불러오는 중...
+            </div>
+        </div>
+        <div class="card">
+            <h2>친구 초대 및 보상</h2>
+            <p>친구에게 아래 링크를 공유하고, 친구가 가입하면 보상 크레딧을 받습니다.</p>
+            <div class="referral-container" style="margin-bottom: 20px;">
+                <input type="text" id="referral-link" class="wallet-address" readonly>
+                <button id="copy-button" class="copy-button">복사</button>
+            </div>
+            <p id="copy-status" style="height: 1em; color: green;"></p>
             
-            <h3>나의 지갑 정보</h3>
-            <div id="wallet-info">불러오는 중...</div>
-            
-            <h3>지지하는 정치인</h3>
-            <div id="politician-info">불러오는 중...</div>
+            <hr style="margin: 20px 0;">
+
+            <p>사용 가능한 추천 크레딧: <strong id="referral-credits" style="font-size: 1.2em;">0</strong> 개</p>
+            <button id="claim-reward-button" class="button" disabled>크레딧 사용 (지지 정치인 추가 & 100 코인 받기)</button>
+            <p id="claim-status" style="height: 1em; color: green;"></p>
+        </div>
+        <div class="card">
+            <h2>내가 지지하는 정치인</h2>
+            <ul id="politisian-list" class="politisian-list">
+                <li class="loading">목록을 불러오는 중...</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="dashboard-container" style="margin-top: 20px;">
+        <div class="card">
+            <h2>새로운 정치인 발의</h2>
+            <form id="propose-form">
+                <div class="form-group">
+                    <label for="name">이름</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="region">지역구</label>
+                    <input type="text" id="region" required>
+                </div>
+                <div class="form-group">
+                    <label for="party">소속정당</label>
+                    <input type="text" id="party" required>
+                </div>
+                <button type="submit" class="button propose-button">발의하기</button>
+            </form>
+            <p id="propose-status" style="height: 1em; color: green;"></p>
+        </div>
+        <div class="card">
+            <h2>진행중인 발의 목록</h2>
+            <ul id="proposals-list" class="politisian-list">
+                <li class="loading">목록을 불러오는 중...</li>
+            </ul>
         </div>
     </div>
 
     <script>
-        console.log('🏠 최소 대시보드 로드됨');
-        console.log('🍪 현재 쿠키:', document.cookie);
-        
-        // 무한 리다이렉트를 방지하기 위해 모든 자동 API 호출을 제거
-        // 수동으로만 데이터를 로드
-        
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('✅ DOM 로드 완료');
+            console.log('🏠 완전한 대시보드 페이지 로드됨');
             
-            // 5초 후에 안전하게 데이터 로드 시도
-            setTimeout(() => {
-                console.log('🔄 5초 후 안전한 데이터 로드 시작');
-                loadUserData();
-            }, 5000);
-        });
+            const welcomeMessage = document.getElementById('welcome-message');
+            const walletAddressElem = document.getElementById('wallet-address');
+            const politisianListElem = document.getElementById('politisian-list');
+            const loginButton = document.getElementById('login-button');
+            const referralLinkInput = document.getElementById('referral-link');
+            const copyButton = document.getElementById('copy-button');
+            const copyStatus = document.getElementById('copy-status');
+            const referralCreditsSpan = document.getElementById('referral-credits');
+            const claimRewardButton = document.getElementById('claim-reward-button');
+            const claimStatus = document.getElementById('claim-status');
+            const proposalsListElem = document.getElementById('proposals-list');
+            const proposeForm = document.getElementById('propose-form');
+            const proposeStatus = document.getElementById('propose-status');
 
-        function loadUserData() {
-            console.log('📡 사용자 데이터 로드 시작');
-            
-            // 세션 정보만 로드 (가장 안전한 API)
-            fetch('/api/user/session-info')
-                .then(response => {
-                    console.log('📋 세션 응답:', response.status);
-                    if (response.ok) {
+            console.log('🍪 현재 쿠키:', document.cookie);
+
+            // 안전한 데이터 로드 함수 (무한 리다이렉트 방지)
+            function loadUserProfile() {
+                console.log('👤 사용자 프로필 로드 시작');
+                
+                fetch('/api/user/profile')
+                    .then(response => {
+                        console.log('📡 프로필 API 응답:', response.status);
+                        
+                        if (response.status === 401) {
+                            console.log('🔒 401 인증 오류 - 세션 정보로 대체');
+                            loadSessionInfo();
+                            return null;
+                        }
+                        
+                        if (!response.ok) {
+                            throw new Error(`프로필 로드 실패: ${response.status}`);
+                        }
+                        
                         return response.json();
-                    }
-                    throw new Error('세션 로드 실패');
+                    })
+                    .then(data => {
+                        if (data) {
+                            console.log('✅ 프로필 데이터 로드 성공:', data);
+                            updateDashboardUI(data);
+                            loadProposals(); // 프로필 로드 성공 후에만 제안 목록 로드
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ 프로필 로드 실패:', error);
+                        loadSessionInfo(); // 실패 시 세션 정보로 대체
+                    });
+            }
+
+            // 세션 정보로 대체 로드
+            function loadSessionInfo() {
+                console.log('🔑 세션 정보로 대체 로드 시도');
+                
+                fetch('/api/user/session-info')
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        throw new Error('세션 정보 로드 실패');
+                    })
+                    .then(sessionData => {
+                        console.log('✅ 세션 데이터 로드 성공:', sessionData);
+                        
+                        // 세션 데이터를 기반으로 기본 UI 업데이트
+                        welcomeMessage.textContent = `${sessionData.name}님, 환영합니다!`;
+                        walletAddressElem.textContent = sessionData.walletAddress;
+                        referralLinkInput.value = `${window.location.origin}/login.html?ref=${sessionData.walletAddress}`;
+                        politisianListElem.innerHTML = '<li>프로필 정보를 완전히 불러오지 못했습니다.</li>';
+                        
+                        // 세션 정보로도 제안 목록 시도
+                        setTimeout(() => loadProposals(), 2000);
+                    })
+                    .catch(error => {
+                        console.error('❌ 세션 정보도 로드 실패:', error);
+                        showError('사용자 정보를 불러올 수 없습니다.');
+                        loginButton.style.display = 'block';
+                    });
+            }
+
+            // UI 업데이트 함수
+            function updateDashboardUI(data) {
+                console.log('🎨 UI 업데이트 시작');
+                
+                welcomeMessage.textContent = `${data.nickname || '사용자'}님, 환영합니다!`;
+                walletAddressElem.textContent = data.wallet || '주소 없음';
+                referralLinkInput.value = `${window.location.origin}/login.html?ref=${data.wallet}`;
+                
+                referralCreditsSpan.textContent = data.referral_credits || 0;
+                if (data.referral_credits > 0) {
+                    claimRewardButton.disabled = false;
+                }
+
+                if (data.politisians && data.politisians.length > 0) {
+                    politisianListElem.innerHTML = '';
+                    data.politisians.forEach(p => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `${p} <span style="float: right; color: #28a745; font-weight: normal;">100 P-COIN</span>`;
+                        politisianListElem.appendChild(li);
+                    });
+                } else {
+                    politisianListElem.innerHTML = '<li>지지하는 정치인이 없습니다.</li>';
+                }
+            }
+
+            // 제안 목록 로드 (안전한 방식)
+            function loadProposals() {
+                console.log('📋 제안 목록 로드 시작');
+                
+                fetch('/api/politisian/list')
+                    .then(response => {
+                        if (response.status === 401) {
+                            console.log('🔒 제안 목록에서 401 오류 - 스킵');
+                            proposalsListElem.innerHTML = '<li>제안 목록을 불러오려면 다시 로그인해주세요.</li>';
+                            return null;
+                        }
+                        if (!response.ok) {
+                            throw new Error('제안 목록 로드 실패');
+                        }
+                        return response.json();
+                    })
+                    .then(proposals => {
+                        if (proposals) {
+                            console.log('✅ 제안 목록 로드 성공');
+                            proposalsListElem.innerHTML = '';
+                            if (Object.keys(proposals).length === 0) {
+                                proposalsListElem.innerHTML = '<li>진행중인 발의가 없습니다.</li>';
+                                return;
+                            }
+                            for (const id in proposals) {
+                                const p = proposals[id];
+                                const li = document.createElement('li');
+                                li.innerHTML = `
+                                    <strong>${p.politisian.name}</strong> (지역: ${p.politisian.region}, 정당: ${p.politisian.party})
+                                    <br>
+                                    <span>찬성: ${p.yes_votes} / 반대: ${p.no_votes}</span>
+                                    <button class="button vote-button approve" data-id="${p.id}" data-vote="true">찬성</button>
+                                    <button class="button vote-button reject" data-id="${p.id}" data-vote="false">반대</button>
+                                `;
+                                proposalsListElem.appendChild(li);
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ 제안 목록 로드 실패:', error);
+                        proposalsListElem.innerHTML = `<li>제안 목록을 불러오는데 실패했습니다: ${error.message}</li>`;
+                    });
+            }
+
+            // 오류 표시 함수
+            function showError(message) {
+                console.error('🚨 오류:', message);
+                welcomeMessage.innerHTML = `<span class="error-message">${message}</span>`;
+                walletAddressElem.textContent = '오류';
+                politisianListElem.innerHTML = `<li class="error-message">${message}</li>`;
+            }
+
+            // 이벤트 리스너들
+            loginButton.addEventListener('click', () => {
+                window.location.href = '/login.html';
+            });
+
+            copyButton.addEventListener('click', function() {
+                referralLinkInput.select();
+                document.execCommand('copy');
+                copyStatus.textContent = '복사되었습니다!';
+                setTimeout(() => {
+                    copyStatus.textContent = '';
+                }, 2000);
+            });
+
+            claimRewardButton.addEventListener('click', function() {
+                claimStatus.textContent = '보상 요청 중...';
+                claimRewardButton.disabled = true;
+
+                fetch('/api/rewards/claim', {
+                    method: 'POST',
                 })
-                .then(sessionData => {
-                    console.log('✅ 세션 데이터:', sessionData);
-                    
-                    document.getElementById('welcome-message').textContent = `${sessionData.name}님, 환영합니다!`;
-                    document.getElementById('wallet-info').innerHTML = `
-                        <div class="wallet-address">${sessionData.walletAddress}</div>
-                    `;
-                    document.getElementById('politician-info').textContent = '프로필 정보를 확인하려면 페이지를 새로고침하세요.';
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error(text) });
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    claimStatus.textContent = '보상이 지급되었습니다! 페이지를 새로고침합니다.';
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
                 })
                 .catch(error => {
-                    console.error('❌ 데이터 로드 실패:', error);
-                    document.getElementById('welcome-message').textContent = '데이터를 불러올 수 없습니다.';
-                    document.getElementById('wallet-info').textContent = '오류';
-                    document.getElementById('politician-info').textContent = '오류';
+                    console.error('보상 요청 실패:', error);
+                    claimStatus.textContent = `오류: ${error.message}`;
+                    claimRewardButton.disabled = false;
                 });
-        }
+            });
+
+            proposeForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                proposeStatus.textContent = '발의 요청 중...';
+
+                const politisianData = {
+                    name: document.getElementById('name').value,
+                    region: document.getElementById('region').value,
+                    party: document.getElementById('party').value,
+                };
+
+                fetch('/api/politisian/propose', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(politisianData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error(text || '발의 실패') });
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    proposeStatus.textContent = '발의 성공! 목록을 새로고침합니다.';
+                    proposeForm.reset();
+                    setTimeout(() => {
+                        proposeStatus.textContent = '';
+                        loadProposals();
+                    }, 2000);
+                })
+                .catch(error => {
+                    proposeStatus.textContent = `오류: ${error.message}`;
+                });
+            });
+
+            proposalsListElem.addEventListener('click', function(event) {
+                if (event.target.matches('.vote-button')) {
+                    const proposalId = event.target.dataset.id;
+                    const vote = event.target.dataset.vote === 'true';
+                    
+                    event.target.parentElement.querySelectorAll('.vote-button').forEach(btn => btn.disabled = true);
+
+                    fetch(`/api/proposals/${proposalId}/vote`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ vote: vote })
+                    })
+                    .then(response => {
+                         if (!response.ok) {
+                            return response.text().then(text => { throw new Error(text || '투표 실패') });
+                        }
+                        return response.text();
+                    })
+                    .then(data => {
+                        alert('투표가 반영되었습니다. 목록을 새로고침합니다.');
+                        loadProposals();
+                    })
+                    .catch(error => {
+                        alert(`오류: ${error.message}`);
+                        event.target.parentElement.querySelectorAll('.vote-button').forEach(btn => btn.disabled = false);
+                    });
+                }
+            });
+
+            // 안전한 데이터 로드 시작 (5초 지연으로 무한 리다이렉트 방지)
+            setTimeout(() => {
+                console.log('🚀 5초 후 안전한 데이터 로드 시작');
+                loadUserProfile();
+            }, 5000);
+        });
     </script>
 </body>
 </html>
