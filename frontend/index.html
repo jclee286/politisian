@@ -444,9 +444,11 @@
                     if (politisianListElem) {
                         if (data.politisians && data.politisians.length > 0) {
                             politisianListElem.innerHTML = '';
-                            data.politisians.forEach(p => {
+                            data.politisians.forEach(politicianId => {
                                 const li = document.createElement('li');
-                                li.innerHTML = `${p} <span style="float: right; color: #28a745; font-weight: normal;">100 P-COIN</span>`;
+                                // 정치인 ID에서 실제 이름을 찾아서 표시
+                                const politicianName = getPoliticianNameById(politicianId);
+                                li.innerHTML = `${politicianName} <span style="float: right; color: #28a745; font-weight: normal;">100 P-COIN</span>`;
                                 politisianListElem.appendChild(li);
                             });
                         } else {
@@ -604,6 +606,25 @@
                 displayPoliticians(filteredPoliticians);
             }
 
+            // 정치인 ID로 이름을 찾는 함수
+            function getPoliticianNameById(politicianId) {
+                if (!allPoliticiansData || !politicianId) {
+                    return politicianId || '알 수 없는 정치인';
+                }
+                
+                // 등록된 정치인 데이터에서 찾기
+                if (allPoliticiansData[politicianId]) {
+                    return allPoliticiansData[politicianId].name || politicianId;
+                }
+                
+                // ID에서 이름 부분 추출 (예: "이재명-경기 계양구 갑" -> "이재명")
+                if (politicianId.includes('-')) {
+                    return politicianId.split('-')[0];
+                }
+                
+                return politicianId;
+            }
+
             // 오류 표시 함수
             function showError(message) {
                 console.error('🚨 오류:', message);
@@ -680,13 +701,17 @@
                     return response.text();
                 })
                 .then(data => {
-                    proposeStatus.textContent = '발의 성공! 목록을 새로고침합니다.';
+                    proposeStatus.textContent = '발의 성공!';
                     proposeForm.reset();
+                    
+                    // 즉시 목록 새로고침
+                    loadProposals();
+                    loadRegisteredPoliticians();
+                    
+                    // 1초 후 상태 메시지 지우기
                     setTimeout(() => {
                         proposeStatus.textContent = '';
-                        loadProposals();
-                        loadRegisteredPoliticians();
-                    }, 2000);
+                    }, 1000);
                 })
                 .catch(error => {
                     proposeStatus.textContent = `오류: ${error.message}`;
