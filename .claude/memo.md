@@ -1,4 +1,4 @@
-http://localhost:8080/login.html
+
 
 Git으로 커밋(commit) 해줘..env는 커밋하지말고,메시지는 네가 작성해줘.
 
@@ -44,3 +44,23 @@ http://politisian.org/login.html
   3. git pull origin main - 새로 수정한 코드 다운로드
   4. docker-compose down && docker-compose up -d - 서버 재시작
   5. docker-compose logs -f app - 서버가 정상 작동하는지 확인
+
+
+
+   DigitalOcean Droplet (서버)에 SSH로 접속한 후, 다음 명령어를 터미널에 입력하여 politisian 관련
+  프로세스가 실행되고 있는지 확인할 수 있습니다.
+
+   1 ps aux | grep politisian
+
+  명령어 설명:
+
+   * ps aux: 현재 시스템에서 실행 중인 모든 프로세스를 자세히 보여줍니다.
+   * | (파이프): 왼쪽 명령어(ps aux)의 결과를 오른쪽 명령어(grep politisian)의 입력으로
+     전달합니다.
+   * grep politisian: 입력받은 내용에서 'politisian'이라는 단어가 포함된 라인만 필터링하여
+     보여줍니다.
+
+
+
+     claude code 에서 일일 사용량을 확인하는 터미널 명령어 
+     일별사용량    npx ccusage
