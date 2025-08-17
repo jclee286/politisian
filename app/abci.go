@@ -122,6 +122,8 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 			respTxs[i] = app.proposePolitician(&txData)
 		case "vote_on_proposal":
 			respTxs[i] = app.handleVoteOnProposal(&txData)
+		case "claim_referral_reward":
+			respTxs[i] = app.handleClaimReferralReward(&txData)
 		default:
 			logMsg := "Unknown action"
 			app.logger.Error(logMsg, "action", txData.Action)
@@ -145,13 +147,31 @@ func (app *PoliticianApp) handleCreateProfile(txData *ptypes.TxData) *types.Exec
 		app.logger.Info(logMsg, "user_id", txData.UserID)
 		return &types.ExecTxResult{Code: 2, Log: logMsg}
 	}
-	app.accounts[txData.UserID] = &ptypes.Account{
-		Address:     txData.UserID,
-		Email:       txData.Email,
-		Wallet:      txData.WalletAddress,  // PIN 기반 지갑 주소
-		Politicians: txData.Politicians,
+	
+	// 새 계정 생성
+	newAccount := &ptypes.Account{
+		Address:         txData.UserID,
+		Email:           txData.Email,
+		Wallet:          txData.WalletAddress,  // PIN 기반 지갑 주소
+		Politicians:     txData.Politicians,
+		ReferralCredits: 0, // 초기 크레딧은 0
 	}
-	app.logger.Info("Created profile", "user_id", txData.UserID, "wallet_address", txData.WalletAddress)
+	
+	// 추천인이 있는 경우 추천인에게 크레딧 지급
+	if txData.Referrer != "" && txData.Referrer != txData.UserID {
+		app.logger.Info("Processing referral", "new_user", txData.UserID, "referrer", txData.Referrer)
+		
+		// 추천인 계정 찾기
+		if referrerAccount, exists := app.accounts[txData.Referrer]; exists {
+			referrerAccount.ReferralCredits++
+			app.logger.Info("Referral credit granted", "referrer", txData.Referrer, "new_credits", referrerAccount.ReferralCredits)
+		} else {
+			app.logger.Warn("Referrer account not found", "referrer", txData.Referrer)
+		}
+	}
+	
+	app.accounts[txData.UserID] = newAccount
+	app.logger.Info("Created profile", "user_id", txData.UserID, "wallet_address", txData.WalletAddress, "referrer", txData.Referrer)
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
@@ -204,6 +224,32 @@ func (app *PoliticianApp) handleVoteOnProposal(txData *ptypes.TxData) *types.Exe
 		delete(app.proposals, txData.ProposalID)
 		app.logger.Info("Proposal approved and politician added", "proposal_id", txData.ProposalID, "politician_name", newPolitician.Name)
 	}
+	return &types.ExecTxResult{Code: types.CodeTypeOK}
+}
+
+// handleClaimReferralReward는 추천 크레딧을 사용하여 지지 정치인을 추가할 수 있는 권한을 부여합니다.
+func (app *PoliticianApp) handleClaimReferralReward(txData *ptypes.TxData) *types.ExecTxResult {
+	account, exists := app.accounts[txData.UserID]
+	if !exists {
+		logMsg := "Account not found for referral reward claim"
+		app.logger.Info(logMsg, "user_id", txData.UserID)
+		return &types.ExecTxResult{Code: 50, Log: logMsg}
+	}
+	
+	// 사용 가능한 크레딧이 있는지 확인
+	if account.ReferralCredits <= 0 {
+		logMsg := "No referral credits available"
+		app.logger.Info(logMsg, "user_id", txData.UserID, "credits", account.ReferralCredits)
+		return &types.ExecTxResult{Code: 51, Log: logMsg}
+	}
+	
+	// 크레딧 1개 차감
+	account.ReferralCredits--
+	
+	// 지지 정치인 슬롯을 추가하거나 100 P-COIN을 지급 (여기서는 간단히 크레딧만 차감)
+	// 실제로는 사용자가 추가 정치인을 선택할 수 있도록 하는 로직이 필요
+	
+	app.logger.Info("Referral reward claimed", "user_id", txData.UserID, "remaining_credits", account.ReferralCredits)
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 

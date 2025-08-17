@@ -48,3 +48,6 @@ http://politisian.org/login.html
   docker-compose down
   docker-compose up -d
   docker-compose logs -f app 
+
+
+  http://politisian.org/login.html

@@ -14,6 +14,7 @@ type TxData struct {
 	Politicians    []string `json:"politicians,omitempty"` // 지지하는 정치인 이름 목록
 	ProposalID     string   `json:"proposal_id,omitempty"`
 	Vote           bool     `json:"vote,omitempty"`
+	Referrer       string   `json:"referrer,omitempty"`    // 추천인 지갑 주소
 }
 
 // ProfileInfoResponse는 사용자 프로필 조회 시 반환되는 데이터 구조입니다.
@@ -42,10 +43,11 @@ type ProfileSaveRequest struct {
 
 // Account는 사용자의 계정 정보를 나타냅니다.
 type Account struct {
-	Address     string   `json:"address"`
-	Email       string   `json:"email,omitempty"`
-	Wallet      string   `json:"wallet,omitempty"`  // PIN 기반으로 생성된 지갑 주소  
-	Politicians []string `json:"politicians"`
+	Address         string   `json:"address"`
+	Email           string   `json:"email,omitempty"`
+	Wallet          string   `json:"wallet,omitempty"`  // PIN 기반으로 생성된 지갑 주소  
+	Politicians     []string `json:"politicians"`
+	ReferralCredits int      `json:"referral_credits"`
 }
 
 // Politician은 정치인의 정보를 나타냅니다.
