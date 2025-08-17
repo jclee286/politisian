@@ -449,6 +449,7 @@
             function updateDashboardUI(data) {
                 try {
                     console.log('🎨 UI 업데이트 시작');
+                    console.log('프로필 데이터 전체:', data);
                     
                     // 안전한 요소 접근
                     if (walletAddressElem) {
@@ -468,9 +469,13 @@
                     }
 
                     if (politisianListElem) {
-                        if (data.politisians && data.politisians.length > 0) {
+                        // 서버에서는 politicians 필드로 응답함 (대문자 P)
+                        const supportedPoliticians = data.politicians || data.politisians || [];
+                        console.log('지지하는 정치인 데이터:', supportedPoliticians);
+                        
+                        if (supportedPoliticians && supportedPoliticians.length > 0) {
                             politisianListElem.innerHTML = '';
-                            data.politisians.forEach(politicianId => {
+                            supportedPoliticians.forEach(politicianId => {
                                 const li = document.createElement('li');
                                 // 정치인 ID에서 실제 이름을 찾아서 표시
                                 const politicianName = getPoliticianNameById(politicianId);
