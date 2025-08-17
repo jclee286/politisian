@@ -166,7 +166,7 @@ func (app *PoliticianApp) handleCreateProfile(txData *ptypes.TxData) *types.Exec
 			referrerAccount.ReferralCredits++
 			app.logger.Info("Referral credit granted", "referrer", txData.Referrer, "new_credits", referrerAccount.ReferralCredits)
 		} else {
-			app.logger.Warn("Referrer account not found", "referrer", txData.Referrer)
+			app.logger.Info("Referrer account not found", "referrer", txData.Referrer)
 		}
 	}
 	

@@ -323,8 +323,8 @@ func handleClaimReward(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// 크레딧 사용 트랜잭션 생성
-	txData := ptypes.TransactionData{
-		Type:   "claim_referral_reward",
+	txData := ptypes.TxData{
+		Action: "claim_referral_reward",
 		UserID: userID,
 	}
 	txBytes, _ := json.Marshal(txData)
