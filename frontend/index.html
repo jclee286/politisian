@@ -80,6 +80,28 @@
             margin-bottom: 10px;
             font-weight: bold;
         }
+        .scrollable-politician-list {
+            max-height: 400px; /* 약 5명의 정치인이 보이는 높이 */
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 5px;
+            background-color: #f9f9f9;
+        }
+        .scrollable-politician-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scrollable-politician-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .scrollable-politician-list::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        .scrollable-politician-list::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
         .loading {
             color: #888;
         }
@@ -163,9 +185,11 @@
                 <input type="text" id="search-politicians" placeholder="정치인 이름, 지역구, 정당으로 검색..." 
                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
             </div>
-            <ul id="registered-politicians-list" class="politisian-list">
-                <li class="loading">목록을 불러오는 중...</li>
-            </ul>
+            <div class="scrollable-politician-list">
+                <ul id="registered-politicians-list" class="politisian-list" style="margin: 0;">
+                    <li class="loading">목록을 불러오는 중...</li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -195,9 +219,11 @@
         </div>
         <div class="card">
             <h2>진행중인 발의 목록</h2>
-            <ul id="proposals-list" class="politisian-list">
-                <li class="loading">목록을 불러오는 중...</li>
-            </ul>
+            <div class="scrollable-politician-list">
+                <ul id="proposals-list" class="politisian-list" style="margin: 0;">
+                    <li class="loading">목록을 불러오는 중...</li>
+                </ul>
+            </div>
         </div>
     </div>
 
