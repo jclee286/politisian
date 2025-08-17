@@ -151,14 +151,23 @@ func handleSocialLogin(w http.ResponseWriter, r *http.Request) {
 	log.Printf("세션 저장 완료 - 사용자: %s", userID)
 
 	// 블록체인에 계정 생성 (존재하지 않는 경우에만)
+	// 계정 생성 결과로 신규/기존 회원 여부를 판별
+	isNewUser := true
 	if err := createBlockchainAccount(userID, req.Email, walletAddress); err != nil {
-		// 계정 생성에 실패해도 로그인은 허용 (이미 존재하는 경우일 수 있음)
-		// 하지만 로그는 남김
-		json.NewEncoder(w).Encode(map[string]string{
-			"status": "login_success_but_account_creation_failed",
-			"error":  err.Error(),
-		})
-		return
+		// 이미 존재하는 계정인 경우 기존 회원으로 판단
+		if err.Error() == "account already exists" {
+			isNewUser = false
+			log.Printf("기존 회원 로그인: %s", userID)
+		} else {
+			// 실제 에러인 경우
+			json.NewEncoder(w).Encode(map[string]string{
+				"status": "login_success_but_account_creation_failed",
+				"error":  err.Error(),
+			})
+			return
+		}
+	} else {
+		log.Printf("신규 회원 가입: %s", userID)
 	}
 
 	// 세션 쿠키 설정
@@ -185,7 +194,7 @@ func handleSocialLogin(w http.ResponseWriter, r *http.Request) {
 			"walletAddress": walletAddress,
 		},
 		"sessionToken": sessionToken,
-		"isNewUser":    true, // TODO: 실제로는 DB에서 사용자 존재 여부 확인
+		"isNewUser":    isNewUser,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -259,7 +268,7 @@ func createBlockchainAccount(userID, email, walletAddress string) error {
 	} else if res.Response.Code == 0 {
 		// 계정이 이미 존재함
 		log.Printf("Account already exists for user: %s", userID)
-		return nil
+		return fmt.Errorf("account already exists")
 	}
 
 	// 계정 생성 트랜잭션 생성
