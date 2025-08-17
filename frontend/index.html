@@ -140,6 +140,36 @@
             color: green;
             margin: 10px 0;
         }
+        .share-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .share-button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: opacity 0.2s;
+        }
+        .share-button:hover {
+            opacity: 0.8;
+        }
+        .kakao { background-color: #FEE500; color: #3C1E1E; }
+        .facebook { background-color: #1877F2; }
+        .twitter { background-color: #1DA1F2; }
+        .telegram { background-color: #0088CC; }
+        .whatsapp { background-color: #25D366; }
+        .line { background-color: #00C300; }
+        .instagram { background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4); }
     </style>
 </head>
 <body>
@@ -165,6 +195,31 @@
                 <button id="copy-button" class="copy-button">복사</button>
             </div>
             <p id="copy-status" style="height: 1em; color: green;"></p>
+            
+            <!-- SNS 공유 버튼들 -->
+            <div class="share-buttons">
+                <button class="share-button kakao" onclick="shareToKakao()">
+                    💬 카카오톡
+                </button>
+                <button class="share-button facebook" onclick="shareToFacebook()">
+                    📘 페이스북
+                </button>
+                <button class="share-button twitter" onclick="shareToTwitter()">
+                    🐦 트위터
+                </button>
+                <button class="share-button telegram" onclick="shareToTelegram()">
+                    ✈️ 텔레그램
+                </button>
+                <button class="share-button whatsapp" onclick="shareToWhatsApp()">
+                    💚 왓츠앱
+                </button>
+                <button class="share-button line" onclick="shareToLine()">
+                    💚 라인
+                </button>
+                <button class="share-button instagram" onclick="shareToInstagram()">
+                    📷 인스타그램
+                </button>
+            </div>
             
             <hr style="margin: 20px 0;">
 
@@ -800,6 +855,64 @@
                 loadUserProfile();
             }, 5000);
         });
+
+        // SNS 공유 함수들
+        function getShareData() {
+            const referralLink = document.getElementById('referral-link').value;
+            const message = `정치인 공화국에 참여해보세요! 🏛️\n\n투표로 정치인을 등록하고 함께 정치를 만들어가요!\n\n초대 링크: ${referralLink}`;
+            return { link: referralLink, message: message };
+        }
+
+        function shareToKakao() {
+            const { link, message } = getShareData();
+            // 카카오톡 공유 (웹에서는 클립보드 복사 + 안내)
+            navigator.clipboard.writeText(message).then(() => {
+                alert('초대 메시지가 복사되었습니다!\n카카오톡에서 붙여넣기 해주세요.');
+            }).catch(() => {
+                prompt('아래 메시지를 복사해서 카카오톡에 공유해주세요:', message);
+            });
+        }
+
+        function shareToFacebook() {
+            const { link } = getShareData();
+            const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
+            window.open(url, '_blank', 'width=600,height=400');
+        }
+
+        function shareToTwitter() {
+            const { link, message } = getShareData();
+            const text = '정치인 공화국에 참여해보세요! 🏛️ 투표로 정치인을 등록하고 함께 정치를 만들어가요!';
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
+            window.open(url, '_blank', 'width=600,height=400');
+        }
+
+        function shareToTelegram() {
+            const { link, message } = getShareData();
+            const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank', 'width=600,height=400');
+        }
+
+        function shareToWhatsApp() {
+            const { message } = getShareData();
+            const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank', 'width=600,height=400');
+        }
+
+        function shareToLine() {
+            const { link, message } = getShareData();
+            const url = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(link)}&text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank', 'width=600,height=400');
+        }
+
+        function shareToInstagram() {
+            const { message } = getShareData();
+            // 인스타그램은 직접 링크 공유가 불가능하므로 클립보드 복사
+            navigator.clipboard.writeText(message).then(() => {
+                alert('초대 메시지가 복사되었습니다!\n인스타그램 스토리나 DM에서 붙여넣기 해주세요.');
+            }).catch(() => {
+                prompt('아래 메시지를 복사해서 인스타그램에 공유해주세요:', message);
+            });
+        }
     </script>
 </body>
 </html>
