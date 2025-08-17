@@ -44,6 +44,7 @@ func StartServer(node *node.Node) {
 	mux.Handle("/api/user/profile", corsMiddleware(authMiddleware(http.HandlerFunc(handleUserProfile))))
 	mux.Handle("/api/profile/save", corsMiddleware(authMiddleware(http.HandlerFunc(handleProfileSave))))
 	mux.Handle("/api/politisian/list", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetPolitisians))))
+	mux.Handle("/api/politisian/registered", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetRegisteredPoliticians))))
 	mux.Handle("/api/politisian/propose", corsMiddleware(authMiddleware(http.HandlerFunc(handleProposePolitician))))
 	mux.Handle("/api/user/session-info", corsMiddleware(http.HandlerFunc(handleSessionInfo)))
 	mux.Handle("/api/auth/generate-wallet", corsMiddleware(authMiddleware(http.HandlerFunc(handleGenerateWallet))))

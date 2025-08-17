@@ -156,6 +156,13 @@
                 <li class="loading">목록을 불러오는 중...</li>
             </ul>
         </div>
+        <div class="card">
+            <h2>등록된 정치인 목록</h2>
+            <p>투표를 통해 승인된 모든 정치인들을 확인할 수 있습니다.</p>
+            <ul id="registered-politicians-list" class="politisian-list">
+                <li class="loading">목록을 불러오는 중...</li>
+            </ul>
+        </div>
     </div>
 
     <div class="dashboard-container" style="margin-top: 20px;">
@@ -206,6 +213,7 @@
             const claimRewardButton = document.getElementById('claim-reward-button');
             const claimStatus = document.getElementById('claim-status');
             const proposalsListElem = document.getElementById('proposals-list');
+            const registeredPoliticiansListElem = document.getElementById('registered-politicians-list');
             const proposeForm = document.getElementById('propose-form');
             const proposeStatus = document.getElementById('propose-status');
 
@@ -246,6 +254,7 @@
                             
                             updateDashboardUI(data);
                             loadProposals(); // 프로필 로드 성공 후에만 제안 목록 로드
+                            loadRegisteredPoliticians(); // 등록된 정치인 목록 로드
                         }
                     })
                     .catch(error => {
@@ -285,7 +294,10 @@
                         politisianListElem.innerHTML = '<li>프로필 정보를 완전히 불러오지 못했습니다.</li>';
                         
                         // 세션 정보로도 제안 목록 시도
-                        setTimeout(() => loadProposals(), 2000);
+                        setTimeout(() => {
+                            loadProposals();
+                            loadRegisteredPoliticians();
+                        }, 2000);
                     })
                     .catch(error => {
                         console.error('❌ 세션 정보도 로드 실패:', error);
@@ -507,6 +519,51 @@
                     });
             }
 
+            // 등록된 정치인 목록 로드
+            function loadRegisteredPoliticians() {
+                console.log('🏛️ 등록된 정치인 목록 로드 시작');
+                
+                fetch('/api/politisian/registered')
+                    .then(response => {
+                        if (response.status === 401) {
+                            console.log('🔒 등록된 정치인 목록에서 401 오류 - 스킵');
+                            registeredPoliticiansListElem.innerHTML = '<li>등록된 정치인 목록을 불러오려면 다시 로그인해주세요.</li>';
+                            return null;
+                        }
+                        if (!response.ok) {
+                            throw new Error('등록된 정치인 목록 로드 실패');
+                        }
+                        return response.json();
+                    })
+                    .then(politicians => {
+                        if (politicians) {
+                            console.log('✅ 등록된 정치인 목록 로드 성공:', politicians);
+                            registeredPoliticiansListElem.innerHTML = '';
+                            
+                            if (Object.keys(politicians).length === 0) {
+                                registeredPoliticiansListElem.innerHTML = '<li>등록된 정치인이 없습니다.</li>';
+                                return;
+                            }
+                            
+                            for (const name in politicians) {
+                                const politician = politicians[name];
+                                const li = document.createElement('li');
+                                li.innerHTML = `
+                                    <strong>${politician.name || name}</strong>
+                                    <br>
+                                    <span style="color: #666;">지역: ${politician.region || '미지정'} | 정당: ${politician.party || '미지정'}</span>
+                                    ${politician.intro_url ? '<br><a href="' + politician.intro_url + '" target="_blank" style="color: #007bff;">소개 페이지 →</a>' : ''}
+                                `;
+                                registeredPoliticiansListElem.appendChild(li);
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ 등록된 정치인 목록 로드 실패:', error);
+                        registeredPoliticiansListElem.innerHTML = `<li>등록된 정치인 목록을 불러오는데 실패했습니다: ${error.message}</li>`;
+                    });
+            }
+
             // 오류 표시 함수
             function showError(message) {
                 console.error('🚨 오류:', message);
@@ -583,6 +640,7 @@
                     setTimeout(() => {
                         proposeStatus.textContent = '';
                         loadProposals();
+                        loadRegisteredPoliticians();
                     }, 2000);
                 })
                 .catch(error => {
@@ -611,6 +669,7 @@
                     .then(data => {
                         alert('투표가 반영되었습니다. 목록을 새로고침합니다.');
                         loadProposals();
+                        loadRegisteredPoliticians();
                     })
                     .catch(error => {
                         alert(`오류: ${error.message}`);

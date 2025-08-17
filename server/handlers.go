@@ -121,6 +121,27 @@ func handleGetPolitisians(w http.ResponseWriter, r *http.Request) {
 	w.Write(res.Response.Value)
 }
 
+// handleGetRegisteredPoliticians는 등록된 정치인 목록을 조회합니다.
+func handleGetRegisteredPoliticians(w http.ResponseWriter, r *http.Request) {
+	log.Println("Attempting to handle /api/politisian/registered request")
+	res, err := blockchainClient.ABCIQuery(context.Background(), "/politisian/list", nil)
+	if err != nil {
+		log.Printf("Error querying for politicians list: %v", err)
+		http.Error(w, fmt.Sprintf("블록체인 쿼리 실패: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if res.Response.Code != 0 {
+		log.Printf("Failed to get politicians list from app. Code: %d, Log: %s", res.Response.Code, res.Response.Log)
+		http.Error(w, "등록된 정치인 목록 조회에 실패했습니다.", http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("Successfully fetched registered politicians list.")
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(res.Response.Value)
+}
+
 // handleProfileSave는 사용자의 프로필을 저장하는 요청을 처리합니다.
 func handleProfileSave(w http.ResponseWriter, r *http.Request) {
 	log.Println("Attempting to handle /api/profile/save request")
