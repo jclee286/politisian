@@ -60,6 +60,10 @@
             <div class="form-group">
                 <label>지지 정치인 선택</label>
                 <p>관심 있는 정치인을 최대 3명까지 선택해주세요.</p>
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="search-politicians-profile" placeholder="정치인 이름, 지역구, 정당으로 검색..." 
+                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                </div>
                 <div>
                     <label for="politisian1">정치인 1:</label>
                     <select id="politisian1" name="politisian1"></select>
@@ -124,23 +128,17 @@
                 })
                 .then(politisianData => {
                     console.log('정치인 데이터:', politisianData); // 디버깅용
-                    const politisianSelectors = [
-                        document.getElementById('politisian1'),
-                        document.getElementById('politisian2'),
-                        document.getElementById('politisian3')
-                    ];
-                    politisianSelectors.forEach(select => {
-                        select.innerHTML = '<option value="">선택 안함</option>'; // 기본 옵션
-                        
-                        // 정치인 데이터가 객체 형태인 경우
-                        if (politisianData && typeof politisianData === 'object') {
-                            for (const [politicianId, politician] of Object.entries(politisianData)) {
-                                const option = document.createElement('option');
-                                option.value = politicianId;
-                                option.textContent = `${politician.name} (${politician.party}, ${politician.region})`;
-                                select.appendChild(option);
-                            }
-                        }
+                    
+                    // 전역 변수에 저장
+                    window.allPoliticiansData = politisianData;
+                    
+                    // 정치인 선택 드롭다운 초기화
+                    updatePoliticianSelectors(politisianData);
+                    
+                    // 검색 기능 추가
+                    const searchInput = document.getElementById('search-politicians-profile');
+                    searchInput.addEventListener('input', function(e) {
+                        filterPoliticians(e.target.value);
                     });
 
                     // 2. 현재 사용자의 프로필 정보를 불러와서 폼에 채웁니다.
@@ -191,6 +189,52 @@
                 document.getElementById('profileForm').appendChild(referrerInput);
             }
         });
+
+        // 정치인 선택 드롭다운 업데이트 함수
+        function updatePoliticianSelectors(politisianData) {
+            const politisianSelectors = [
+                document.getElementById('politisian1'),
+                document.getElementById('politisian2'),
+                document.getElementById('politisian3')
+            ];
+            
+            politisianSelectors.forEach(select => {
+                select.innerHTML = '<option value="">선택 안함</option>'; // 기본 옵션
+                
+                // 정치인 데이터가 객체 형태인 경우
+                if (politisianData && typeof politisianData === 'object') {
+                    for (const [politicianId, politician] of Object.entries(politisianData)) {
+                        const option = document.createElement('option');
+                        option.value = politicianId;
+                        option.textContent = `${politician.name} (${politician.party}, ${politician.region})`;
+                        select.appendChild(option);
+                    }
+                }
+            });
+        }
+
+        // 정치인 필터링 함수
+        function filterPoliticians(searchTerm) {
+            if (!window.allPoliticiansData) return;
+            
+            if (!searchTerm.trim()) {
+                updatePoliticianSelectors(window.allPoliticiansData);
+                return;
+            }
+            
+            const filteredData = {};
+            searchTerm = searchTerm.toLowerCase();
+            
+            for (const [politicianId, politician] of Object.entries(window.allPoliticiansData)) {
+                const searchableText = `${politician.name} ${politician.region} ${politician.party}`.toLowerCase();
+                
+                if (searchableText.includes(searchTerm)) {
+                    filteredData[politicianId] = politician;
+                }
+            }
+            
+            updatePoliticianSelectors(filteredData);
+        }
 
         document.getElementById('profileForm').addEventListener('submit', function(event) {
             event.preventDefault();

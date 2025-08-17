@@ -159,6 +159,10 @@
         <div class="card">
             <h2>등록된 정치인 목록</h2>
             <p>투표를 통해 승인된 모든 정치인들을 확인할 수 있습니다.</p>
+            <div class="search-container" style="margin-bottom: 15px;">
+                <input type="text" id="search-politicians" placeholder="정치인 이름, 지역구, 정당으로 검색..." 
+                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+            </div>
             <ul id="registered-politicians-list" class="politisian-list">
                 <li class="loading">목록을 불러오는 중...</li>
             </ul>
@@ -214,8 +218,12 @@
             const claimStatus = document.getElementById('claim-status');
             const proposalsListElem = document.getElementById('proposals-list');
             const registeredPoliticiansListElem = document.getElementById('registered-politicians-list');
+            const searchPoliticiansInput = document.getElementById('search-politicians');
             const proposeForm = document.getElementById('propose-form');
             const proposeStatus = document.getElementById('propose-status');
+            
+            // 전역 정치인 데이터 저장
+            let allPoliticiansData = {};
 
             console.log('🍪 현재 쿠키:', document.cookie);
 
@@ -538,30 +546,62 @@
                     .then(politicians => {
                         if (politicians) {
                             console.log('✅ 등록된 정치인 목록 로드 성공:', politicians);
-                            registeredPoliticiansListElem.innerHTML = '';
                             
-                            if (Object.keys(politicians).length === 0) {
-                                registeredPoliticiansListElem.innerHTML = '<li>등록된 정치인이 없습니다.</li>';
-                                return;
-                            }
+                            // 전역 변수에 데이터 저장
+                            allPoliticiansData = politicians;
                             
-                            for (const name in politicians) {
-                                const politician = politicians[name];
-                                const li = document.createElement('li');
-                                li.innerHTML = `
-                                    <strong>${politician.name || name}</strong>
-                                    <br>
-                                    <span style="color: #666;">지역: ${politician.region || '미지정'} | 정당: ${politician.party || '미지정'}</span>
-                                    ${politician.intro_url ? '<br><a href="' + politician.intro_url + '" target="_blank" style="color: #007bff;">소개 페이지 →</a>' : ''}
-                                `;
-                                registeredPoliticiansListElem.appendChild(li);
-                            }
+                            // 목록 표시
+                            displayPoliticians(politicians);
                         }
                     })
                     .catch(error => {
                         console.error('❌ 등록된 정치인 목록 로드 실패:', error);
                         registeredPoliticiansListElem.innerHTML = `<li>등록된 정치인 목록을 불러오는데 실패했습니다: ${error.message}</li>`;
                     });
+            }
+
+            // 정치인 목록 표시 함수
+            function displayPoliticians(politicians) {
+                registeredPoliticiansListElem.innerHTML = '';
+                
+                if (Object.keys(politicians).length === 0) {
+                    registeredPoliticiansListElem.innerHTML = '<li>등록된 정치인이 없습니다.</li>';
+                    return;
+                }
+                
+                for (const name in politicians) {
+                    const politician = politicians[name];
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <strong>${politician.name || name}</strong>
+                        <br>
+                        <span style="color: #666;">지역: ${politician.region || '미지정'} | 정당: ${politician.party || '미지정'}</span>
+                        ${politician.intro_url ? '<br><a href="' + politician.intro_url + '" target="_blank" style="color: #007bff;">소개 페이지 →</a>' : ''}
+                    `;
+                    registeredPoliticiansListElem.appendChild(li);
+                }
+            }
+
+            // 정치인 검색 함수
+            function searchPoliticians(searchTerm) {
+                if (!searchTerm.trim()) {
+                    displayPoliticians(allPoliticiansData);
+                    return;
+                }
+                
+                const filteredPoliticians = {};
+                searchTerm = searchTerm.toLowerCase();
+                
+                for (const name in allPoliticiansData) {
+                    const politician = allPoliticiansData[name];
+                    const searchableText = `${politician.name || name} ${politician.region || ''} ${politician.party || ''}`.toLowerCase();
+                    
+                    if (searchableText.includes(searchTerm)) {
+                        filteredPoliticians[name] = politician;
+                    }
+                }
+                
+                displayPoliticians(filteredPoliticians);
             }
 
             // 오류 표시 함수
@@ -575,6 +615,11 @@
             // 이벤트 리스너들
             loginButton.addEventListener('click', () => {
                 window.location.href = '/login.html';
+            });
+
+            // 정치인 검색 이벤트 리스너
+            searchPoliticiansInput.addEventListener('input', function(e) {
+                searchPoliticians(e.target.value);
             });
 
             copyButton.addEventListener('click', function() {
