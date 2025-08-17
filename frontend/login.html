@@ -7,10 +7,12 @@
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 500px; 
-            margin: 50px auto; 
-            padding: 20px; 
-            text-align: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             background: #f8f9fa;
         }
         .container {
@@ -29,13 +31,17 @@
             font-size: 14px;
         }
         .status {
-            margin: 20px 0;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             padding: 15px;
             border-radius: 8px;
             background: #e3f2fd;
             border: 1px solid #90caf9;
             color: #1565c0;
             font-size: 14px;
+            z-index: 1000;
         }
         .status.error {
             background: #ffebee;
@@ -67,6 +73,32 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
         }
         .hidden { display: none; }
+        
+        /* 구글 로그인 버튼 완전 가운데 정렬 */
+        #google-signin-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* 구글 버튼 내부 요소도 가운데 정렬 */
+        #google-signin-button > div,
+        #google-signin-button > div > div,
+        #google-signin-button iframe {
+            margin: 0 auto !important;
+        }
+        
+        /* 모바일 화면에서 버튼 크기 조정 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px 15px;
+                margin: 30px auto;
+            }
+            #google-signin-button > div {
+                max-width: 100% !important;
+                width: auto !important;
+            }
+        }
         
         /* PIN 모달 스타일 */
         .modal {
@@ -205,15 +237,10 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>정치를 바꾸자</h1>
-        
-        <div id="status" class="status" style="display: none;">구글 로그인 준비 완료</div>
-        
-        <div id="login-buttons">
-            <!-- 구글 공식 로그인 버튼이 여기에 렌더링됩니다 -->
-            <div id="google-signin-button"></div>
-        </div>
+    <!-- 구글 공식 로그인 버튼이 여기에 렌더링됩니다 -->
+    <div id="google-signin-button"></div>
+    
+    <div id="status" class="status" style="display: none;">구글 로그인 준비 완료</div>
         
         <!-- PIN 입력 모달 -->
         <div id="pin-modal" class="modal" style="display: none;">
@@ -254,8 +281,6 @@
                 </div>
             </div>
         </div>
-        
-    </div>
 
     <!-- 구글 OAuth 라이브러리 -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -297,13 +322,13 @@
                         error_callback: handleGoogleError
                     });
                     
-                    // 구글 로그인 버튼 렌더링
+                    // 구글 로그인 버튼 렌더링 (모바일 최적화)
                     google.accounts.id.renderButton(
                         document.getElementById("google-signin-button"),
                         { 
                             theme: "outline", 
-                            size: "large",
-                            width: "300",
+                            size: "medium",
+                            width: "200",
                             text: "signin_with",
                             locale: "ko"
                         }

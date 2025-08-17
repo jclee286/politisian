@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>나의 공화국 - 대시보드</title>
     <style>
         body {
@@ -189,9 +192,10 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🏠 완전한 대시보드 페이지 로드됨');
+            console.log('🏠 완전한 대시보드 페이지 로드됨 (v2.0)');
             
-            const welcomeMessage = document.getElementById('welcome-message');
+            // 완전히 안전한 요소 참조
+            const welcomeMessage = null; // 완전 제거
             const walletAddressElem = document.getElementById('wallet-address');
             const politisianListElem = document.getElementById('politisian-list');
             const loginButton = document.getElementById('login-button');
@@ -397,26 +401,42 @@
 
             // UI 업데이트 함수
             function updateDashboardUI(data) {
-                console.log('🎨 UI 업데이트 시작');
-                
-                welcomeMessage.textContent = `${data.nickname || '사용자'}님, 환영합니다!`;
-                walletAddressElem.textContent = data.wallet || '주소 없음';
-                referralLinkInput.value = `${window.location.origin}/login.html?ref=${data.wallet}`;
-                
-                referralCreditsSpan.textContent = data.referral_credits || 0;
-                if (data.referral_credits > 0) {
-                    claimRewardButton.disabled = false;
-                }
+                try {
+                    console.log('🎨 UI 업데이트 시작');
+                    
+                    // 안전한 요소 접근
+                    if (walletAddressElem) {
+                        walletAddressElem.textContent = data.wallet || '주소 없음';
+                    }
+                    
+                    if (referralLinkInput) {
+                        referralLinkInput.value = `${window.location.origin}/login.html?ref=${data.wallet}`;
+                    }
+                    
+                    if (referralCreditsSpan) {
+                        referralCreditsSpan.textContent = data.referral_credits || 0;
+                    }
+                    
+                    if (claimRewardButton && data.referral_credits > 0) {
+                        claimRewardButton.disabled = false;
+                    }
 
-                if (data.politisians && data.politisians.length > 0) {
-                    politisianListElem.innerHTML = '';
-                    data.politisians.forEach(p => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `${p} <span style="float: right; color: #28a745; font-weight: normal;">100 P-COIN</span>`;
-                        politisianListElem.appendChild(li);
-                    });
-                } else {
-                    politisianListElem.innerHTML = '<li>지지하는 정치인이 없습니다.</li>';
+                    if (politisianListElem) {
+                        if (data.politisians && data.politisians.length > 0) {
+                            politisianListElem.innerHTML = '';
+                            data.politisians.forEach(p => {
+                                const li = document.createElement('li');
+                                li.innerHTML = `${p} <span style="float: right; color: #28a745; font-weight: normal;">100 P-COIN</span>`;
+                                politisianListElem.appendChild(li);
+                            });
+                        } else {
+                            politisianListElem.innerHTML = '<li>지지하는 정치인이 없습니다.</li>';
+                        }
+                    }
+                    
+                    console.log('✅ UI 업데이트 완료');
+                } catch (error) {
+                    console.error('❌ updateDashboardUI 오류:', error);
                 }
             }
 
@@ -438,19 +458,42 @@
                     })
                     .then(proposals => {
                         if (proposals) {
-                            console.log('✅ 제안 목록 로드 성공');
+                            console.log('✅ 제안 목록 로드 성공:', proposals);
+                            console.log('proposals 타입:', typeof proposals, 'keys:', Object.keys(proposals));
                             proposalsListElem.innerHTML = '';
+                            
+                            // proposals가 객체인지 확인
+                            if (typeof proposals !== 'object' || proposals === null) {
+                                proposalsListElem.innerHTML = '<li>제안 데이터 형식 오류</li>';
+                                return;
+                            }
+                            
                             if (Object.keys(proposals).length === 0) {
                                 proposalsListElem.innerHTML = '<li>진행중인 발의가 없습니다.</li>';
                                 return;
                             }
+                            
                             for (const id in proposals) {
                                 const p = proposals[id];
+                                console.log('제안 데이터:', id, p);
+                                
+                                // 안전한 데이터 검증
+                                if (!p || typeof p !== 'object') {
+                                    console.warn('Invalid proposal object:', p);
+                                    continue;
+                                }
+                                
+                                if (!p.politician || typeof p.politician !== 'object') {
+                                    console.warn('Invalid politician data:', p.politician);
+                                    continue;
+                                }
+                                
                                 const li = document.createElement('li');
                                 li.innerHTML = `
-                                    <strong>${p.politisian.name}</strong> (지역: ${p.politisian.region}, 정당: ${p.politisian.party})
+                                    <strong>${p.politician.name || '이름 없음'}</strong> (지역: ${p.politician.region || '미지정'}, 정당: ${p.politician.party || '미지정'})
+                                    ${p.politician.intro_url ? '<br><a href="' + p.politician.intro_url + '" target="_blank">소개 페이지</a>' : ''}
                                     <br>
-                                    <span>찬성: ${p.yes_votes} / 반대: ${p.no_votes}</span>
+                                    <span>찬성: ${p.yes_votes || 0} / 반대: ${p.no_votes || 0}</span>
                                     <button class="button vote-button approve" data-id="${p.id}" data-vote="true">찬성</button>
                                     <button class="button vote-button reject" data-id="${p.id}" data-vote="false">반대</button>
                                 `;
@@ -467,7 +510,7 @@
             // 오류 표시 함수
             function showError(message) {
                 console.error('🚨 오류:', message);
-                welcomeMessage.innerHTML = `<span class="error-message">${message}</span>`;
+                // welcomeMessage는 제거된 요소이므로 스킵
                 walletAddressElem.textContent = '오류';
                 politisianListElem.innerHTML = `<li class="error-message">${message}</li>`;
             }

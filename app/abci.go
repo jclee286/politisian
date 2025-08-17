@@ -29,6 +29,12 @@ func (app *PoliticianApp) Query(_ context.Context, req *types.RequestQuery) (*ty
 			return &types.ResponseQuery{Code: 4, Log: "failed to marshal politicians list"}, nil
 		}
 		return &types.ResponseQuery{Value: res}, nil
+	case "/proposals/list":
+		res, err := json.Marshal(app.proposals)
+		if err != nil {
+			return &types.ResponseQuery{Code: 4, Log: "failed to marshal proposals list"}, nil
+		}
+		return &types.ResponseQuery{Value: res}, nil
 	default:
 		// Handle account queries with pattern /account?address=...
 		if len(req.Path) >= 8 && req.Path[:8] == "/account" {

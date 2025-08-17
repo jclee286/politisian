@@ -103,20 +103,20 @@ func handleUserProfileFromSession(w http.ResponseWriter, r *http.Request, userID
 
 func handleGetPolitisians(w http.ResponseWriter, r *http.Request) {
 	log.Println("Attempting to handle /api/politisian/list request")
-	res, err := blockchainClient.ABCIQuery(context.Background(), "/politisian/list", nil)
+	res, err := blockchainClient.ABCIQuery(context.Background(), "/proposals/list", nil)
 	if err != nil {
-		log.Printf("Error querying for politisian list: %v", err)
+		log.Printf("Error querying for proposals list: %v", err)
 		http.Error(w, fmt.Sprintf("블록체인 쿼리 실패: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	if res.Response.Code != 0 {
-		log.Printf("Failed to get politisian list from app. Code: %d, Log: %s", res.Response.Code, res.Response.Log)
-		http.Error(w, "정치인 목록 조회에 실패했습니다.", http.StatusInternalServerError)
+		log.Printf("Failed to get proposals list from app. Code: %d, Log: %s", res.Response.Code, res.Response.Log)
+		http.Error(w, "제안 목록 조회에 실패했습니다.", http.StatusInternalServerError)
 		return
 	}
 
-	log.Println("Successfully fetched politisian list.")
+	log.Println("Successfully fetched proposals list.")
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(res.Response.Value)
 }
@@ -194,7 +194,13 @@ func handleProposePolitician(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("User %s is proposing a new politisian: %s", userID, reqBody.Name)
 
+	// 고유한 트랜잭션 ID 생성 (타임스탬프 + 사용자ID + 랜덤요소)
+	randBytes := make([]byte, 4)
+	rand.Read(randBytes)
+	txID := fmt.Sprintf("%s-propose-%d-%x", userID, time.Now().UnixNano(), randBytes)
+
 	txData := ptypes.TxData{
+		TxID:           txID,
 		Action:         "propose_politician",
 		UserID:         userID,
 		PoliticianName: reqBody.Name,
