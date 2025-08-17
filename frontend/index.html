@@ -171,6 +171,10 @@
                     <label for="party">소속정당</label>
                     <input type="text" id="party" required>
                 </div>
+                <div class="form-group">
+                    <label for="intro-url">소개 URL (선택사항)</label>
+                    <input type="url" id="intro-url" placeholder="https://example.com/politician-profile">
+                </div>
                 <button type="submit" class="button propose-button">발의하기</button>
             </form>
             <p id="propose-status" style="height: 1em; color: green;"></p>
@@ -218,7 +222,9 @@
                         }
                         
                         if (!response.ok) {
-                            throw new Error(`프로필 로드 실패: ${response.status}`);
+                            console.log('❌ 프로필 API 실패, 세션 정보로 대체');
+                            loadSessionInfo();
+                            return null;
                         }
                         
                         return response.json();
@@ -226,6 +232,14 @@
                     .then(data => {
                         if (data) {
                             console.log('✅ 프로필 데이터 로드 성공:', data);
+                            walletAddressElem.textContent = data.wallet || data.walletAddress || '지갑 주소 없음';
+                            
+                            // 백업 데이터 저장
+                            saveBackupData(data.wallet || data.walletAddress, {
+                                email: data.email,
+                                address: data.address
+                            });
+                            
                             updateDashboardUI(data);
                             loadProposals(); // 프로필 로드 성공 후에만 제안 목록 로드
                         }
@@ -242,17 +256,27 @@
                 
                 fetch('/api/user/session-info')
                     .then(response => {
+                        console.log('📡 세션 API 응답 상태:', response.status);
                         if (response.ok) {
                             return response.json();
                         }
-                        throw new Error('세션 정보 로드 실패');
+                        throw new Error(`세션 정보 로드 실패: ${response.status}`);
                     })
                     .then(sessionData => {
                         console.log('✅ 세션 데이터 로드 성공:', sessionData);
                         
+                        // 로딩 메시지 제거
+                        walletAddressElem.textContent = sessionData.walletAddress || '지갑 주소 없음';
+                        
+                        // 백업 데이터 저장
+                        saveBackupData(sessionData.walletAddress, {
+                            name: sessionData.name,
+                            email: sessionData.email,
+                            userId: sessionData.userId
+                        });
+                        
                         // 세션 데이터를 기반으로 기본 UI 업데이트
-                        welcomeMessage.textContent = `${sessionData.name}님, 환영합니다!`;
-                        walletAddressElem.textContent = sessionData.walletAddress;
+                        // welcomeMessage.textContent = `${sessionData.name}님, 환영합니다!`;
                         referralLinkInput.value = `${window.location.origin}/login.html?ref=${sessionData.walletAddress}`;
                         politisianListElem.innerHTML = '<li>프로필 정보를 완전히 불러오지 못했습니다.</li>';
                         
@@ -261,9 +285,114 @@
                     })
                     .catch(error => {
                         console.error('❌ 세션 정보도 로드 실패:', error);
-                        showError('사용자 정보를 불러올 수 없습니다.');
-                        loginButton.style.display = 'block';
+                        handleCompleteFailure();
                     });
+            }
+
+            // 완전한 로드 실패 시 복구 전략
+            function handleCompleteFailure() {
+                console.log('🚨 완전한 데이터 로드 실패 - 복구 시도');
+                
+                // 1단계: 로컬 스토리지에서 백업 데이터 확인
+                const backupWallet = localStorage.getItem('backup_wallet_address');
+                const backupUserInfo = localStorage.getItem('backup_user_info');
+                
+                if (backupWallet) {
+                    console.log('💾 로컬 백업에서 지갑 주소 복구');
+                    walletAddressElem.textContent = backupWallet;
+                    referralLinkInput.value = `${window.location.origin}/login.html?ref=${backupWallet}`;
+                    
+                    if (backupUserInfo) {
+                        try {
+                            const userInfo = JSON.parse(backupUserInfo);
+                            // welcomeMessage.textContent = `${userInfo.name}님 (복구된 세션)`;
+                        } catch (e) {
+                            console.log('백업 사용자 정보 파싱 실패');
+                        }
+                    }
+                    
+                    showRecoveryMessage();
+                    return;
+                }
+                
+                // 2단계: 세션 만료로 판단하고 재로그인 유도
+                walletAddressElem.textContent = '세션이 만료되었습니다';
+                politisianListElem.innerHTML = '<li style="color: #e74c3c;">로그인이 필요합니다</li>';
+                
+                // 재로그인 버튼 표시
+                showReloginPrompt();
+            }
+            
+            // 복구 메시지 표시
+            function showRecoveryMessage() {
+                const recoveryMsg = document.createElement('div');
+                recoveryMsg.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; 
+                    background: #f39c12; color: white; 
+                    padding: 15px 20px; border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    z-index: 1000; font-size: 14px;
+                `;
+                recoveryMsg.innerHTML = `
+                    ⚠️ 백업 데이터에서 복구됨<br>
+                    <small>새로고침 후 다시 로그인을 권장합니다</small>
+                `;
+                document.body.appendChild(recoveryMsg);
+                
+                setTimeout(() => recoveryMsg.remove(), 10000);
+            }
+            
+            // 재로그인 프롬프트 표시
+            function showReloginPrompt() {
+                const reloginDiv = document.createElement('div');
+                reloginDiv.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; 
+                    transform: translate(-50%, -50%);
+                    background: white; padding: 30px; 
+                    border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+                    text-align: center; z-index: 2000;
+                    border: 2px solid #e74c3c;
+                `;
+                reloginDiv.innerHTML = `
+                    <h3 style="color: #e74c3c; margin-top: 0;">🔒 세션 만료</h3>
+                    <p>안전을 위해 다시 로그인해 주세요</p>
+                    <button onclick="window.location.href='/login.html'" 
+                            style="background: #e74c3c; color: white; border: none; 
+                                   padding: 12px 24px; border-radius: 6px; 
+                                   cursor: pointer; font-size: 16px;">
+                        다시 로그인
+                    </button>
+                    <br><br>
+                    <button onclick="this.parentElement.remove()" 
+                            style="background: #95a5a6; color: white; border: none; 
+                                   padding: 8px 16px; border-radius: 4px; 
+                                   cursor: pointer; font-size: 14px;">
+                        나중에
+                    </button>
+                `;
+                
+                // 배경 오버레이
+                const overlay = document.createElement('div');
+                overlay.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0,0,0,0.5); z-index: 1500;
+                `;
+                
+                document.body.appendChild(overlay);
+                document.body.appendChild(reloginDiv);
+                
+                // 오버레이 클릭 시 닫기
+                overlay.onclick = () => {
+                    overlay.remove();
+                    reloginDiv.remove();
+                };
+            }
+            
+            // 백업 데이터 저장 (로그인 성공 시 호출)
+            function saveBackupData(walletAddress, userInfo) {
+                localStorage.setItem('backup_wallet_address', walletAddress);
+                localStorage.setItem('backup_user_info', JSON.stringify(userInfo));
+                localStorage.setItem('backup_timestamp', Date.now().toString());
             }
 
             // UI 업데이트 함수
@@ -391,6 +520,7 @@
                     name: document.getElementById('name').value,
                     region: document.getElementById('region').value,
                     party: document.getElementById('party').value,
+                    introUrl: document.getElementById('intro-url').value,
                 };
 
                 fetch('/api/politisian/propose', {

@@ -183,9 +183,10 @@ func handleProposePolitician(w http.ResponseWriter, r *http.Request) {
 	log.Println("Attempting to handle /api/politisian/propose request")
 	userID, _ := r.Context().Value("userID").(string)
 	var reqBody struct {
-		Name   string `json:"name"`
-		Region string `json:"region"`
-		Party  string `json:"party"`
+		Name     string `json:"name"`
+		Region   string `json:"region"`
+		Party    string `json:"party"`
+		IntroUrl string `json:"introUrl"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		http.Error(w, "잘못된 요청", http.StatusBadRequest)
@@ -199,6 +200,7 @@ func handleProposePolitician(w http.ResponseWriter, r *http.Request) {
 		PoliticianName: reqBody.Name,
 		Region:         reqBody.Region,
 		Party:          reqBody.Party,
+		IntroUrl:       reqBody.IntroUrl,
 	}
 	txBytes, _ := json.Marshal(txData)
 

@@ -165,7 +165,7 @@ func (app *PoliticianApp) proposePolitician(txData *ptypes.TxData) *types.ExecTx
 	proposalID := uuid.New().String()
 	app.proposals[proposalID] = &ptypes.Proposal{
 		ID: proposalID, Politician: ptypes.Politician{
-			Name: txData.PoliticianName, Region: txData.Region, Party: txData.Party,
+			Name: txData.PoliticianName, Region: txData.Region, Party: txData.Party, IntroUrl: txData.IntroUrl,
 		}, Proposer: txData.UserID, Votes: make(map[string]bool),
 	}
 	app.logger.Info("Proposed new politician", "proposer", txData.UserID, "politician_name", txData.PoliticianName, "proposal_id", proposalID)
@@ -192,7 +192,7 @@ func (app *PoliticianApp) handleVoteOnProposal(txData *ptypes.TxData) *types.Exe
 	}
 	app.logger.Info("Vote cast", "user_id", txData.UserID, "proposal_id", txData.ProposalID, "vote", txData.Vote, "yes_votes", proposal.YesVotes, "no_votes", proposal.NoVotes)
 
-	if proposal.YesVotes >= 10 {
+	if proposal.YesVotes >= 1 {
 		newPolitician := &proposal.Politician
 		app.politicians[newPolitician.Name] = newPolitician
 		delete(app.proposals, txData.ProposalID)

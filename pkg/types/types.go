@@ -10,6 +10,7 @@ type TxData struct {
 	PoliticianName string   `json:"politician_name,omitempty"`
 	Region         string   `json:"region,omitempty"`
 	Party          string   `json:"party,omitempty"`
+	IntroUrl       string   `json:"intro_url,omitempty"`
 	Politicians    []string `json:"politicians,omitempty"` // 지지하는 정치인 이름 목록
 	ProposalID     string   `json:"proposal_id,omitempty"`
 	Vote           bool     `json:"vote,omitempty"`
@@ -52,6 +53,7 @@ type Politician struct {
 	Name         string   `json:"name"`
 	Region       string   `json:"region"`
 	Party        string   `json:"party"`
+	IntroUrl     string   `json:"intro_url,omitempty"`
 	Supporters   []string `json:"supporters"`
 	TokensMinted int64    `json:"tokens_minted"`
 	MaxTokens    int64    `json:"max_tokens"`
@@ -69,9 +71,10 @@ type Proposal struct {
 
 // ProposePolitisianRequest는 정치인 발의 API 요청을 위한 구조체입니다.
 type ProposePolitisianRequest struct {
-	Name   string `json:"name"`
-	Region string `json:"region"`
-	Party  string `json:"party"`
+	Name     string `json:"name"`
+	Region   string `json:"region"`
+	Party    string `json:"party"`
+	IntroUrl string `json:"introUrl,omitempty"`
 }
 
 // VoteRequest는 투표 API 요청을 위한 구조체입니다.
