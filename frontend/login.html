@@ -202,19 +202,6 @@
         .btn-cancel:hover {
             background: #7f8c8d;
         }
-        .debug {
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
-            margin: 10px 0;
-            font-family: monospace;
-            font-size: 12px;
-            text-align: left;
-            color: #666;
-            max-height: 200px;
-            overflow-y: auto;
-        }
     </style>
 </head>
 <body>
@@ -227,28 +214,6 @@
         <div id="login-buttons">
             <!-- 구글 공식 로그인 버튼이 여기에 렌더링됩니다 -->
             <div id="google-signin-button"></div>
-            
-            <!-- 수동 로그인 버튼 (백업용) -->
-            <button class="btn" onclick="handleGoogleLogin()" style="margin-top: 10px;">
-                🔐 구글 로그인 (수동)
-            </button>
-            
-            <!-- 도메인 인증 안내 -->
-            <div id="domainNotice" class="notice" style="display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; color: #856404;">
-                <h4 style="margin-top: 0;">⚠️ 도메인 인증 필요</h4>
-                <p>현재 <strong>politisian.org</strong> 도메인이 Google OAuth에서 승인되지 않은 상태입니다.</p>
-                <p><strong>Google Cloud Console</strong>에서 다음 도메인을 <em>"승인된 JavaScript 출처"</em>에 추가해주세요:</p>
-                <ul>
-                    <li><code>https://politisian.org</code></li>
-                    <li><code>http://politisian.org</code> (필요시)</li>
-                </ul>
-                <p><small>Google Cloud Console → APIs 및 서비스 → 사용자 인증 정보 → OAuth 2.0 클라이언트 ID 편집</small></p>
-            </div>
-            
-            <!-- 테스트용 로그인 버튼 -->
-            <button class="btn" onclick="testLogin()" style="margin-top: 10px; background: #28a745;">
-                🧪 테스트 로그인 (임시)
-            </button>
         </div>
         
         <!-- PIN 입력 모달 -->
@@ -291,10 +256,6 @@
             </div>
         </div>
         
-        <div id="debugLog">
-            <h4>🔍 디버깅 로그</h4>
-            <div id="debugMessages" class="debug"></div>
-        </div>
     </div>
 
     <!-- 구글 OAuth 라이브러리 -->
@@ -321,30 +282,14 @@
             }
         }
         
-        // 디버깅 함수
-        function debugLog(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const logElement = document.getElementById('debugMessages');
-            const logMsg = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
-            
-            logElement.innerHTML += logMsg + '\n';
-            logElement.scrollTop = logElement.scrollHeight;
-            console.log(logMsg);
-        }
-
         function updateStatus(message, type = 'info') {
             const statusEl = document.getElementById('status');
             statusEl.textContent = message;
             statusEl.className = `status ${type}`;
-            debugLog(`Status: ${message}`, type);
         }
 
         // 구글 OAuth 초기화
         function initGoogleOAuth() {
-            debugLog('=== 구글 OAuth 초기화 ===');
-            debugLog(`현재 도메인: ${window.location.origin}`);
-            debugLog(`클라이언트 ID: ${GOOGLE_CLIENT_ID}`);
-            
             if (typeof google !== 'undefined') {
                 try {
                     google.accounts.id.initialize({
@@ -365,35 +310,20 @@
                         }
                     );
                     
-                    debugLog('구글 OAuth 초기화 완료', 'success');
                     updateStatus('구글 로그인 버튼을 클릭하세요', 'success');
                     
                 } catch (error) {
-                    debugLog('구글 OAuth 초기화 오류: ' + error.message, 'error');
-                    if (error.message.includes('origin') || error.message.includes('client ID')) {
-                        updateStatus('⚠️ 도메인 인증 문제: 아래 안내를 참조하세요', 'error');
-                        document.getElementById('domainNotice').style.display = 'block';
-                    } else {
-                        updateStatus('구글 OAuth 초기화 실패', 'error');
-                    }
+                    updateStatus('구글 OAuth 초기화 실패', 'error');
                 }
             } else {
-                debugLog('구글 라이브러리 로딩 실패', 'error');
                 updateStatus('구글 로그인 라이브러리 로딩 실패', 'error');
             }
         }
 
         // 구글 OAuth 오류 처리
         function handleGoogleError(error) {
-            debugLog('=== 구글 OAuth 오류 ===', 'error');
-            debugLog('오류 내용: ' + JSON.stringify(error), 'error');
-            
             if (error && error.type === 'popup_closed') {
                 updateStatus('로그인 팝업이 닫혔습니다. 다시 시도해주세요.', 'warning');
-            } else if (error && (error.type === 'invalid_client' || error.message?.includes('origin'))) {
-                updateStatus('⚠️ 도메인 인증 문제: 아래 안내를 참조하세요', 'error');
-                debugLog('도메인이 Google OAuth 승인 목록에 없습니다', 'error');
-                document.getElementById('domainNotice').style.display = 'block';
             } else {
                 updateStatus('구글 로그인 중 오류가 발생했습니다', 'error');
             }
@@ -401,9 +331,6 @@
 
         // 구글 OAuth 응답 처리
         function handleGoogleResponse(response) {
-            debugLog('=== 구글 OAuth 응답 받음 ===');
-            debugLog('JWT 토큰: ' + response.credential.substring(0, 50) + '...');
-            
             // JWT 토큰 파싱
             try {
                 const payload = parseJwt(response.credential);
@@ -414,14 +341,12 @@
                     sub: payload.sub
                 };
                 
-                debugLog('사용자 정보 파싱 완료: ' + JSON.stringify(userData, null, 2));
                 updateStatus('구글 로그인 성공! PIN을 입력하세요...', 'success');
                 
                 // PIN 입력 요청
                 requestPin(userData);
                 
             } catch (error) {
-                debugLog('JWT 파싱 오류: ' + error.message, 'error');
                 updateStatus('로그인 처리 중 오류 발생', 'error');
             }
         }
@@ -506,7 +431,6 @@
                 return;
             }
             
-            debugLog('PIN 입력 완료: ' + '●'.repeat(6));
             const modal = document.getElementById('pin-modal');
             modal.style.display = 'none';
             
@@ -516,7 +440,6 @@
         // 백엔드로 데이터 전송
         async function sendToBackend(userData, pin) {
             try {
-                debugLog('=== 백엔드 전송 시작 ===');
                 updateStatus('지갑 생성 중...', 'info');
                 
                 const loginData = {
@@ -528,8 +451,6 @@
                     pin: pin
                 };
                 
-                debugLog('전송 데이터: ' + JSON.stringify({...loginData, pin: '******'}, null, 2));
-                
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
@@ -538,78 +459,31 @@
                     body: JSON.stringify(loginData)
                 });
                 
-                debugLog('백엔드 응답 상태: ' + response.status);
-                
                 if (response.ok) {
                     const result = await response.json();
-                    debugLog('백엔드 응답: ' + JSON.stringify(result, null, 2), 'success');
                     
                     updateStatus('로그인 성공! 프로필 페이지로 이동합니다...', 'success');
                     
                     setTimeout(() => {
                         if (result.isNewUser) {
-                            debugLog('신규 사용자 → 프로필 페이지로 이동');
                             window.location.href = '/profile.html';
                         } else {
-                            debugLog('기존 사용자 → 대시보드로 이동');
                             window.location.href = '/';
                         }
                     }, 2000);
                 } else {
                     const errorText = await response.text();
-                    debugLog('백엔드 오류: ' + errorText, 'error');
                     updateStatus('로그인 실패: ' + errorText, 'error');
                 }
             } catch (error) {
-                debugLog('네트워크 오류: ' + error.message, 'error');
                 updateStatus('네트워크 오류가 발생했습니다', 'error');
             }
         }
 
-        // 구글 로그인 버튼 클릭 (수동 호출용)
-        function handleGoogleLogin() {
-            debugLog('수동 구글 로그인 시도');
-            if (typeof google !== 'undefined' && google.accounts) {
-                google.accounts.id.prompt();
-            } else {
-                alert('구글 라이브러리가 로드되지 않았습니다. 테스트 로그인을 사용하세요.');
-            }
-        }
-        
-        // 테스트 로그인 함수 (구글 OAuth 설정 문제 해결용)
-        function testLogin() {
-            debugLog('=== 테스트 로그인 시작 ===');
-            updateStatus('테스트 사용자로 로그인 중...', 'info');
-            
-            // 가짜 구글 사용자 데이터
-            const testUserData = {
-                name: '테스트 사용자',
-                email: 'test@gmail.com',
-                picture: 'https://via.placeholder.com/96',
-                sub: 'test123456'
-            };
-            
-            debugLog('테스트 사용자 데이터: ' + JSON.stringify(testUserData, null, 2));
-            updateStatus('구글 로그인 성공! PIN을 입력하세요...', 'success');
-            
-            // PIN 입력 요청
-            requestPin(testUserData);
-        }
 
         // 페이지 로드 시 초기화
         window.addEventListener('load', function() {
-            debugLog('=== 정리된 로그인 페이지 로딩 완료 ===');
             updateStatus('구글 OAuth 초기화 중...');
-            
-            // 도메인 확인 (politisian.org인 경우 미리 안내 표시)
-            if (window.location.hostname === 'politisian.org') {
-                debugLog('politisian.org 도메인 감지 - Google OAuth 설정 확인 필요할 수 있음', 'warning');
-                setTimeout(() => {
-                    if (document.getElementById('status').className.includes('error')) {
-                        document.getElementById('domainNotice').style.display = 'block';
-                    }
-                }, 3000); // 3초 후 오류가 있으면 안내 표시
-            }
             
             // 구글 라이브러리 로딩 대기
             if (typeof google !== 'undefined') {
