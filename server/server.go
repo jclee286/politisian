@@ -46,6 +46,7 @@ func StartServer(node *node.Node) {
 	mux.Handle("/api/politisian/list", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetPolitisians))))
 	mux.Handle("/api/politisian/registered", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetRegisteredPoliticians))))
 	mux.Handle("/api/politisian/propose", corsMiddleware(authMiddleware(http.HandlerFunc(handleProposePolitician))))
+	mux.Handle("/api/proposals/", corsMiddleware(authMiddleware(http.HandlerFunc(handleVoteOnProposal))))
 	mux.Handle("/api/user/session-info", corsMiddleware(http.HandlerFunc(handleSessionInfo)))
 	mux.Handle("/api/auth/generate-wallet", corsMiddleware(authMiddleware(http.HandlerFunc(handleGenerateWallet))))
 	// 나중에 추가될 API 핸들러들...

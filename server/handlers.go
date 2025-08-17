@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	ptypes "politisian/pkg/types"
@@ -140,6 +141,54 @@ func handleGetRegisteredPoliticians(w http.ResponseWriter, r *http.Request) {
 	log.Println("Successfully fetched registered politicians list.")
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(res.Response.Value)
+}
+
+// handleVoteOnProposal는 제안에 대한 투표를 처리합니다.
+func handleVoteOnProposal(w http.ResponseWriter, r *http.Request) {
+	log.Println("Attempting to handle vote on proposal request")
+	userID, _ := r.Context().Value("userID").(string)
+	
+	// URL에서 proposal ID 추출 (예: /api/proposals/123/vote)
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 4 {
+		http.Error(w, "잘못된 요청 경로", http.StatusBadRequest)
+		return
+	}
+	proposalID := parts[3] // proposals/{id}/vote에서 {id} 부분
+	
+	var reqBody struct {
+		Vote bool `json:"vote"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		http.Error(w, "잘못된 요청", http.StatusBadRequest)
+		return
+	}
+	
+	log.Printf("User %s is voting %v on proposal %s", userID, reqBody.Vote, proposalID)
+
+	// 고유한 트랜잭션 ID 생성
+	randBytes := make([]byte, 4)
+	rand.Read(randBytes)
+	txID := fmt.Sprintf("%s-vote-%d-%x", userID, time.Now().UnixNano(), randBytes)
+
+	txData := ptypes.TxData{
+		TxID:       txID,
+		Action:     "vote_on_proposal",
+		UserID:     userID,
+		ProposalID: proposalID,
+		Vote:       reqBody.Vote,
+	}
+	txBytes, _ := json.Marshal(txData)
+
+	if err := broadcastAndCheckTx(r.Context(), txBytes); err != nil {
+		log.Printf("Error broadcasting vote transaction: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	
+	log.Printf("Vote successful for user %s on proposal %s", userID, proposalID)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("투표가 성공적으로 처리되었습니다"))
 }
 
 // handleProfileSave는 사용자의 프로필을 저장하는 요청을 처리합니다.

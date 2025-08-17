@@ -667,9 +667,24 @@
                         return response.text();
                     })
                     .then(data => {
-                        alert('투표가 반영되었습니다. 목록을 새로고침합니다.');
+                        // 알림창 없이 바로 목록 새로고침
                         loadProposals();
                         loadRegisteredPoliticians();
+                        
+                        // 투표 버튼 비활성화 및 상태 표시
+                        const allVoteButtons = event.target.parentElement.querySelectorAll('.vote-button');
+                        allVoteButtons.forEach(btn => {
+                            btn.disabled = true;
+                            btn.style.opacity = '0.5';
+                        });
+                        
+                        // 투표 완료 표시
+                        const statusSpan = document.createElement('span');
+                        statusSpan.textContent = '투표 완료 ✓';
+                        statusSpan.style.color = '#28a745';
+                        statusSpan.style.fontWeight = 'bold';
+                        statusSpan.style.marginLeft = '10px';
+                        event.target.parentElement.appendChild(statusSpan);
                     })
                     .catch(error => {
                         alert(`오류: ${error.message}`);

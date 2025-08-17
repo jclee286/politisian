@@ -1,4 +1,4 @@
-
+http://localhost:8080/login.html
 
 Git으로 커밋(commit) 해줘..env는 커밋하지말고,메시지는 네가 작성해줘.
 
@@ -66,9 +66,11 @@ http://politisian.org/login.html
      일별사용량    npx ccusage
 
 
-       서버 업데이트 방법:
-  1. SSH로 디지털오션 서버에 접속
-  2. cd /root/politisian - 프로젝트 폴더로 이동
-  3. git pull origin main - 새로 수정한 코드 다운로드
-  4. docker-compose down && docker-compose up -d - 서버 재시작
-  5. docker-compose logs -f app - 서버가 정상 작동하는지 확인
+    서버 업데이트 방법:
+      
+  ssh root@134.209.214.151
+  cd /root/politisian
+  git pull origin main
+  docker-compose down
+  docker-compose up -d
+  docker-compose logs -f app 
