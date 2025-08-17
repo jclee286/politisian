@@ -258,7 +258,7 @@
                 form.querySelector('button').disabled = true;
                 
                 console.log('✅ 프로필 저장 완료, 대시보드로 이동합니다...');
-                alert('프로필이 블록체인에 성공적으로 저장되었습니다! 대시보드로 이동합니다.');
+                // 알림창 없이 바로 대시보드로 이동
                 window.location.href = '/index.html';
             })
             .catch(error => {

@@ -206,10 +206,9 @@
 </head>
 <body>
     <div class="container">
-        <h1>🏛️ 정치인 관리 시스템</h1>
-        <p class="subtitle">구글 계정으로 간편하게 로그인하세요</p>
+        <h1>정치를 바꾸자</h1>
         
-        <div id="status" class="status">구글 로그인 준비 완료</div>
+        <div id="status" class="status" style="display: none;">구글 로그인 준비 완료</div>
         
         <div id="login-buttons">
             <!-- 구글 공식 로그인 버튼이 여기에 렌더링됩니다 -->
@@ -310,13 +309,13 @@
                         }
                     );
                     
-                    updateStatus('구글 로그인 버튼을 클릭하세요', 'success');
+                    // 상태 메시지 제거 - 깨끗한 UI 유지
                     
                 } catch (error) {
                     updateStatus('구글 OAuth 초기화 실패', 'error');
                 }
             } else {
-                updateStatus('구글 로그인 라이브러리 로딩 실패', 'error');
+                updateStatus('로그인 준비 중...', 'error');
             }
         }
 
@@ -483,8 +482,6 @@
 
         // 페이지 로드 시 초기화
         window.addEventListener('load', function() {
-            updateStatus('구글 OAuth 초기화 중...');
-            
             // 구글 라이브러리 로딩 대기
             if (typeof google !== 'undefined') {
                 initGoogleOAuth();
@@ -494,7 +491,8 @@
                     if (typeof google !== 'undefined') {
                         initGoogleOAuth();
                     } else {
-                        updateStatus('구글 라이브러리 로딩 실패', 'error');
+                        updateStatus('로그인 준비 중...', 'error');
+                        document.getElementById('status').style.display = 'block';
                     }
                 }, 1000);
             }
