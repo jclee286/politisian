@@ -330,33 +330,50 @@
 
         // 구글 OAuth 초기화
         function initGoogleOAuth() {
+            console.log('initGoogleOAuth 함수 호출됨');
+            
             if (typeof google !== 'undefined') {
                 try {
+                    console.log('Google OAuth 초기화 중...');
+                    
                     google.accounts.id.initialize({
                         client_id: GOOGLE_CLIENT_ID,
                         callback: handleGoogleResponse,
                         error_callback: handleGoogleError
                     });
                     
+                    console.log('Google OAuth 초기화 완료, 버튼 렌더링 중...');
+                    
                     // 구글 로그인 버튼 렌더링 (모바일 최적화)
-                    google.accounts.id.renderButton(
-                        document.getElementById("google-signin-button"),
-                        { 
+                    const buttonContainer = document.getElementById("google-signin-button");
+                    if (buttonContainer) {
+                        google.accounts.id.renderButton(buttonContainer, { 
                             theme: "outline", 
                             size: "medium",
                             width: "200",
                             text: "signin_with",
                             locale: "ko"
-                        }
-                    );
-                    
-                    // 상태 메시지 제거 - 깨끗한 UI 유지
-                    
+                        });
+                        
+                        console.log('구글 로그인 버튼 렌더링 완료');
+                        updateStatus('로그인 준비 완료', 'success');
+                        
+                        // 상태 메시지를 3초 후 숨김
+                        setTimeout(() => {
+                            const statusEl = document.getElementById('status');
+                            if (statusEl) statusEl.style.display = 'none';
+                        }, 3000);
+                    } else {
+                        console.error('구글 로그인 버튼 컨테이너를 찾을 수 없습니다');
+                        updateStatus('로그인 버튼 로드 실패', 'error');
+                    }
                 } catch (error) {
-                    updateStatus('구글 OAuth 초기화 실패', 'error');
+                    console.error('구글 OAuth 초기화 실패:', error);
+                    updateStatus('로그인 서비스 오류: ' + error.message, 'error');
                 }
             } else {
-                updateStatus('로그인 준비 중...', 'error');
+                console.log('Google 객체가 정의되지 않음');
+                updateStatus('구글 라이브러리를 불러오는 중...', 'info');
             }
         }
 
@@ -371,9 +388,13 @@
 
         // 구글 OAuth 응답 처리
         function handleGoogleResponse(response) {
+            console.log('Google OAuth 응답 받음:', response);
+            
             // JWT 토큰 파싱
             try {
                 const payload = parseJwt(response.credential);
+                console.log('JWT 파싱 완료:', payload);
+                
                 const userData = {
                     name: payload.name,
                     email: payload.email,
@@ -381,6 +402,7 @@
                     sub: payload.sub
                 };
                 
+                console.log('사용자 데이터 준비 완료:', userData);
                 updateStatus('구글 로그인 성공! PIN을 입력하세요...', 'success');
                 
                 // PIN 입력 요청
@@ -525,23 +547,34 @@
 
         // 페이지 로드 시 초기화
         window.addEventListener('load', function() {
-            // 구글 라이브러리 로딩 대기
-            if (typeof google !== 'undefined') {
+            console.log('페이지 로드 완료');
+            initGoogleOAuthWithRetry(0);
+        });
+        
+        // Google OAuth 초기화를 재시도하는 함수
+        function initGoogleOAuthWithRetry(attempt) {
+            console.log(`Google OAuth 초기화 시도 ${attempt + 1}/10`);
+            
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                console.log('Google OAuth 라이브러리 감지됨, 초기화 시작');
                 initGoogleOAuth();
-            } else {
-                // 구글 라이브러리가 아직 로드되지 않은 경우 재시도
-                setTimeout(() => {
-                    if (typeof google !== 'undefined') {
-                        initGoogleOAuth();
-                    } else {
-                        updateStatus('로그인 준비 중...', 'error');
-                        document.getElementById('status').style.display = 'block';
-                    }
-                }, 1000);
+                return;
             }
             
-            showElement('login-buttons');
-        });
+            if (attempt < 10) {
+                console.log('Google OAuth 라이브러리 대기 중...');
+                updateStatus(`로그인 준비 중... (${attempt + 1}/10)`, 'info');
+                setTimeout(() => {
+                    initGoogleOAuthWithRetry(attempt + 1);
+                }, 1000);
+            } else {
+                console.error('Google OAuth 라이브러리 로드 실패');
+                updateStatus('로그인 서비스를 불러올 수 없습니다. 페이지를 새로고침해주세요.', 'error');
+                // 새로고침 버튼 추가
+                document.getElementById('status').innerHTML += '<br><button onclick="location.reload()">새로고침</button>';
+                document.getElementById('status').style.display = 'block';
+            }
+        }
         
         // PIN 입력 필드에서 키보드 입력 처리
         document.addEventListener('DOMContentLoaded', function() {
