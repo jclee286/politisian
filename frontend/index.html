@@ -202,7 +202,7 @@
             <p id="copy-status" style="height: 1em; color: green;"></p>
             
             <!-- 카카오톡 친구 초대 버튼 -->
-            <div class="share-buttons">
+            <div class="share-buttons" style="margin-top: 20px;">
                 <button class="share-button kakao" onclick="shareToKakaoFriends()">
                     💬 카카오톡 친구에게 보내기
                 </button>
@@ -860,69 +860,61 @@
                 return;
             }
 
-            // 카카오톡 친구 선택하기 (정식 API)
-            Kakao.Picker.selectFriends({
-                title: '정치인 공화국 친구 초대',
-                enableBackButton: true,
-                enableSearch: true,
-                disableTalkChannel: false,
-                maxPickableCount: 10,
-                minPickableCount: 1,
-                success: function(selectedFriends) {
-                    console.log('선택된 친구들:', selectedFriends);
-                    
-                    // 선택된 친구들에게 메시지 보내기
-                    Kakao.Talk.sendCustomMemo({
-                        templateId: YOUR_TEMPLATE_ID, // 카카오 비즈 메시지 템플릿 ID
-                        templateArgs: {
-                            'REFERRAL_LINK': referralLink,
-                            'INVITER_NAME': '친구' // 실제 사용자 이름으로 교체 가능
-                        },
-                        success: function(response) {
-                            console.log('메시지 전송 성공:', response);
-                            alert('친구에게 초대 메시지를 보냈습니다! 🎉');
-                        },
-                        fail: function(error) {
-                            console.error('메시지 전송 실패:', error);
-                            // 대안: 단순 텍스트 공유
-                            shareToKakaoSimple();
-                        }
-                    });
-                },
-                fail: function(error) {
-                    console.error('친구 선택 실패:', error);
-                    // 대안: 단순 텍스트 공유
-                    shareToKakaoSimple();
-                }
-            });
+            // 카카오톡 API 2.7.2 버전에서는 Picker.selectFriends 대신 간단한 공유 사용
+            // 친구 선택 기능은 카카오 비즈니스 계정 승인이 필요하므로 대안 사용
+            console.log('카카오톡 공유 시작');
+            shareToKakaoSimple();
         }
 
         // 카카오톡 단순 텍스트 공유 (대안)
         function shareToKakaoSimple() {
             const referralLink = document.getElementById('referral-link').value;
             
-            Kakao.Share.sendDefault({
-                objectType: 'text',
-                text: `🏛️ 정치인 공화국에 초대합니다!\n\n투표로 정치인을 등록하고 함께 정치를 만들어가요!\n\n👇 아래 링크로 가입해주세요\n${referralLink}`,
-                link: {
-                    webUrl: referralLink,
-                    mobileWebUrl: referralLink
-                },
-                success: function(response) {
+            try {
+                Kakao.Share.sendDefault({
+                    objectType: 'text',
+                    text: `🏛️ 정치인 공화국에 초대합니다!\n\n투표로 정치인을 등록하고 함께 정치를 만들어가요!\n\n👇 아래 링크로 가입해주세요\n${referralLink}`,
+                    link: {
+                        webUrl: referralLink,
+                        mobileWebUrl: referralLink
+                    }
+                })
+                .then(function(response) {
                     console.log('카카오톡 공유 성공:', response);
                     alert('카카오톡으로 초대 메시지를 공유했습니다! 🎉');
-                },
-                fail: function(error) {
+                })
+                .catch(function(error) {
                     console.error('카카오톡 공유 실패:', error);
-                    // 최종 대안: 클립보드 복사
-                    const message = `🏛️ 정치인 공화국에 초대합니다!\n\n투표로 정치인을 등록하고 함께 정치를 만들어가요!\n\n초대 링크: ${referralLink}`;
-                    navigator.clipboard.writeText(message).then(() => {
-                        alert('초대 메시지가 복사되었습니다!\n카카오톡에서 붙여넣기 해주세요.');
-                    }).catch(() => {
-                        prompt('아래 메시지를 복사해서 카카오톡에 공유해주세요:', message);
-                    });
-                }
-            });
+                    fallbackToClipboard();
+                });
+            } catch (error) {
+                console.error('카카오톡 SDK 오류:', error);
+                fallbackToClipboard();
+            }
+        }
+
+        // 클립보드 복사 대안 함수
+        function fallbackToClipboard() {
+            const referralLink = document.getElementById('referral-link').value;
+            const message = `🏛️ 정치인 공화국에 초대합니다!\n\n투표로 정치인을 등록하고 함께 정치를 만들어가요!\n\n초대 링크: ${referralLink}`;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(message).then(() => {
+                    alert('초대 메시지가 복사되었습니다!\n카카오톡에서 붙여넣기 해주세요.');
+                }).catch(() => {
+                    showPromptFallback(message);
+                });
+            } else {
+                showPromptFallback(message);
+            }
+        }
+
+        // 프롬프트 대안 함수
+        function showPromptFallback(message) {
+            const result = prompt('아래 메시지를 복사해서 카카오톡에 공유해주세요:', message);
+            if (result !== null) {
+                alert('메시지를 카카오톡에 붙여넣기 해주세요! 📱');
+            }
         }
     </script>
 </body>
