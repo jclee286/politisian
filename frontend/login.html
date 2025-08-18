@@ -291,6 +291,20 @@
         // 구글 OAuth 클라이언트 ID
         const GOOGLE_CLIENT_ID = "152573583059-2k51btfpnqb31potv830g676nag3flps.apps.googleusercontent.com";
         
+        // URL에서 추천인 파라미터 추출
+        function getReferrerFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('ref'); // ?ref=wallet_address 형태
+        }
+        
+        // 페이지 로드 시 추천인 정보 확인
+        const referrer = getReferrerFromURL();
+        if (referrer) {
+            console.log('추천인 감지:', referrer);
+            // 추천인 정보를 세션 스토리지에 저장 (프로필 페이지에서 사용)
+            sessionStorage.setItem('referrer', referrer);
+        }
+        
         // 유틸리티 함수들
         function showElement(id) {
             const element = document.getElementById(id);
@@ -492,8 +506,10 @@
                     
                     setTimeout(() => {
                         if (result.isNewUser) {
+                            // 새 사용자면 프로필 페이지로 (추천인 정보는 이미 sessionStorage에 저장됨)
                             window.location.href = '/profile.html';
                         } else {
+                            // 기존 사용자면 대시보드로
                             window.location.href = '/';
                         }
                     }, 2000);

@@ -883,7 +883,7 @@
             if (typeof Kakao.Auth === 'undefined' || typeof Kakao.Auth.login !== 'function') {
                 console.error('Kakao.Auth.login 함수가 사용할 수 없습니다.');
                 console.log('사용 가능한 Kakao 기능들:', Object.keys(Kakao));
-                alert('카카오 로그인 기능을 사용할 수 없습니다. 일반 공유로 진행합니다.');
+                console.log('일반 공유로 자동 전환');
                 shareToKakaoSimple(referralLink);
                 return;
             }
@@ -906,7 +906,7 @@
                 });
             } catch (error) {
                 console.error('카카오 로그인 호출 중 오류:', error);
-                alert('카카오 로그인 중 오류가 발생했습니다. 일반 공유로 진행합니다.');
+                console.log('일반 공유로 자동 전환');
                 shareToKakaoSimple(referralLink);
             }
         }
@@ -958,13 +958,13 @@
                     fail: function(err) {
                         console.error('메시지 전송 실패:', err);
                         // 메시지 전송 실패 시 일반 공유로 대체
-                        alert('친구에게 직접 메시지 전송은 카카오 비즈니스 승인이 필요합니다.\n일반 공유로 진행합니다.');
+                        console.log('친구 직접 메시지 전송 실패, 일반 공유로 자동 전환');
                         shareToKakaoSimple(referralLink);
                     }
                 });
             } catch (error) {
                 console.error('메시지 API 오류:', error);
-                alert('친구 메시지 전송 기능은 현재 준비 중입니다.\n일반 공유로 진행합니다.');
+                console.log('메시지 API 오류, 일반 공유로 자동 전환');
                 shareToKakaoSimple(referralLink);
             }
         }

@@ -260,8 +260,9 @@
             statusMessage.textContent = '프로필을 저장하는 중...';
             statusMessage.className = 'status-message';
 
-            // URLSearchParams 정의 추가
-            const urlParams = new URLSearchParams(window.location.search);
+            // 추천인 정보를 sessionStorage에서 가져오기
+            const referrer = sessionStorage.getItem('referrer');
+            console.log('추천인 정보:', referrer); // 디버깅
 
             const selectedPolitisian = [
                 document.getElementById('politisian1').value,
@@ -277,7 +278,7 @@
                 gender: document.querySelector('input[name="gender"]:checked').value,
                 birthYear: parseInt(document.getElementById('birthYear').value, 10),
                 politisians: selectedPolitisian, // 백엔드와 맞추기 위해 "politisians"로 수정
-                referrer: urlParams.get('ref') || null
+                referrer: referrer || null // sessionStorage에서 가져온 추천인 정보
             };
             
             console.log('💾 전송할 프로필 데이터:', profileData); // 디버깅
@@ -305,6 +306,12 @@
                 statusMessage.textContent = "프로필이 성공적으로 블록체인에 저장되었습니다!";
                 statusMessage.className = 'status-message success';
                 form.querySelector('button').disabled = true;
+                
+                // 추천인 정보 사용 완료 후 정리
+                if (referrer) {
+                    console.log('추천인 등록 완료, sessionStorage 정리');
+                    sessionStorage.removeItem('referrer');
+                }
                 
                 console.log('✅ 프로필 저장 완료, 대시보드로 이동합니다...');
                 // 알림창 없이 바로 대시보드로 이동
