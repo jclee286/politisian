@@ -7,6 +7,8 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>나의 공화국 - 대시보드</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -849,32 +851,64 @@
             if (typeof Kakao !== 'undefined') {
                 Kakao.init('624d2fce49d965a460eafeb9390e49aa'); // 카카오 JavaScript 키
                 console.log('카카오 SDK 초기화 완료:', Kakao.isInitialized());
+                
+                // 카카오 SDK 기능 확인
+                console.log('Kakao 객체:', Kakao);
+                console.log('Kakao.Auth 사용 가능:', typeof Kakao.Auth);
+                console.log('Kakao.Share 사용 가능:', typeof Kakao.Share);
+                console.log('Kakao.Picker 사용 가능:', typeof Kakao.Picker);
+                console.log('Kakao.Talk 사용 가능:', typeof Kakao.Talk);
+            } else {
+                console.error('카카오 SDK가 로드되지 않았습니다.');
             }
         });
 
         function shareToKakaoFriends() {
+            console.log('=== 카카오톡 공유 버튼 클릭됨 ===');
+            
             const referralLink = document.getElementById('referral-link').value;
+            console.log('추천 링크:', referralLink);
+            
+            // SDK 초기화 상태 확인
+            console.log('Kakao SDK 초기화 상태:', Kakao.isInitialized());
+            console.log('Kakao.Auth 타입:', typeof Kakao.Auth);
             
             if (!Kakao.isInitialized()) {
+                console.error('카카오 SDK가 초기화되지 않음');
                 alert('카카오톡 서비스를 초기화하는 중입니다. 잠시 후 다시 시도해주세요.');
                 return;
             }
 
-            console.log('카카오톡 로그인 및 친구 선택 시작');
+            // Auth 모듈 확인
+            if (typeof Kakao.Auth === 'undefined' || typeof Kakao.Auth.login !== 'function') {
+                console.error('Kakao.Auth.login 함수가 사용할 수 없습니다.');
+                console.log('사용 가능한 Kakao 기능들:', Object.keys(Kakao));
+                alert('카카오 로그인 기능을 사용할 수 없습니다. 일반 공유로 진행합니다.');
+                shareToKakaoSimple(referralLink);
+                return;
+            }
+
+            console.log('카카오톡 로그인 시작');
             
             // 1단계: 카카오 로그인
-            Kakao.Auth.login({
-                success: function(authObj) {
-                    console.log('카카오 로그인 성공:', authObj);
-                    // 2단계: 친구 선택
-                    selectKakaoFriends(referralLink);
-                },
-                fail: function(err) {
-                    console.error('카카오 로그인 실패:', err);
-                    alert('카카오톡 로그인에 실패했습니다. 다른 방법으로 공유해주세요.');
-                    fallbackToClipboard();
-                }
-            });
+            try {
+                Kakao.Auth.login({
+                    success: function(authObj) {
+                        console.log('카카오 로그인 성공:', authObj);
+                        // 2단계: 친구 선택
+                        selectKakaoFriends(referralLink);
+                    },
+                    fail: function(err) {
+                        console.error('카카오 로그인 실패:', err);
+                        alert('카카오톡 로그인에 실패했습니다. 다른 방법으로 공유해주세요.');
+                        fallbackToClipboard();
+                    }
+                });
+            } catch (error) {
+                console.error('카카오 로그인 호출 중 오류:', error);
+                alert('카카오 로그인 중 오류가 발생했습니다. 일반 공유로 진행합니다.');
+                shareToKakaoSimple(referralLink);
+            }
         }
 
         // 카카오톡 친구 선택 및 메시지 전송
