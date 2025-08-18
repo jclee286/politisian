@@ -109,6 +109,12 @@
                 })
                 .then(data => {
                     if (data && data.wallet) {
+                        // 기존 사용자가 프로필이 완전히 있는 경우 대시보드로 리다이렉트
+                        if (data.nickname && data.politicians && data.politicians.length > 0) {
+                            console.log('기존 사용자 프로필 감지, 대시보드로 리다이렉트');
+                            window.location.href = '/';
+                            return;
+                        }
                         document.getElementById('walletAddress').value = data.wallet;
                     } else {
                         // 새 사용자이거나 지갑 정보가 없는 경우, 세션에서 지갑 정보 가져오기
