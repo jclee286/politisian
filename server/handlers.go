@@ -50,10 +50,18 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if res.Response.Code != 0 {
-		log.Printf("Account not found in blockchain for user %s, trying session data", userID)
-		// 블록체인에 계정이 없으면 세션 데이터로 대체 시도
-		handleUserProfileFromSession(w, r, userID)
-		return
+		log.Printf("Account not found in blockchain for user %s, creating basic account", userID)
+		// 기존 회원인 경우 기본 계정 생성
+		createBasicAccount(userID, r)
+		
+		// 다시 조회 시도
+		res, err = blockchainClient.ABCIQuery(context.Background(), queryPath, nil)
+		if err != nil || res.Response.Code != 0 {
+			log.Printf("Still failed to create/find account, falling back to session data")
+			handleUserProfileFromSession(w, r, userID)
+			return
+		}
+		// 성공하면 계속 진행
 	}
 
 	var account ptypes.Account
@@ -305,6 +313,51 @@ func handleProposePolitician(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
+}
+
+// createBasicAccount는 기존 회원을 위한 기본 계정을 생성합니다.
+func createBasicAccount(userID string, r *http.Request) error {
+	log.Printf("Creating basic account for existing user %s", userID)
+	
+	// 세션에서 이메일과 지갑 주소 가져오기
+	email := r.Context().Value("email")
+	walletAddress := r.Context().Value("walletAddress")
+	
+	var emailStr, walletStr string
+	if email != nil {
+		emailStr = email.(string)
+	}
+	if walletAddress != nil {
+		walletStr = walletAddress.(string)
+	}
+	
+	// 고유한 트랜잭션 ID 생성
+	randBytes := make([]byte, 4)
+	rand.Read(randBytes)
+	txID := fmt.Sprintf("%s-basic-%d-%x", userID, time.Now().UnixNano(), randBytes)
+
+	txData := ptypes.TxData{
+		TxID:          txID,
+		Action:        "create_profile",
+		UserID:        userID,
+		Email:         emailStr,
+		WalletAddress: walletStr,
+		Politicians:   []string{}, // 빈 정치인 목록으로 시작
+	}
+	
+	txBytes, err := json.Marshal(txData)
+	if err != nil {
+		log.Printf("Error marshaling basic account transaction: %v", err)
+		return err
+	}
+
+	if err := broadcastAndCheckTx(context.Background(), txBytes); err != nil {
+		log.Printf("Error broadcasting basic account transaction: %v", err)
+		return err
+	}
+	
+	log.Printf("Basic account created successfully for user %s", userID)
+	return nil
 }
 
 // handleClaimReward는 추천 크레딧을 사용하는 핸들러입니다.
