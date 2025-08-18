@@ -847,7 +847,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             // 카카오 SDK 초기화 (실제 앱 키로 교체 필요)
             if (typeof Kakao !== 'undefined') {
-                Kakao.init('YOUR_KAKAO_APP_KEY'); // 실제 카카오 앱 키로 교체 필요
+                Kakao.init('624d2fce49d965a460eafeb9390e49aa'); // 카카오 JavaScript 키
                 console.log('카카오 SDK 초기화 완료:', Kakao.isInitialized());
             }
         });
@@ -860,16 +860,83 @@
                 return;
             }
 
-            // 카카오톡 API 2.7.2 버전에서는 Picker.selectFriends 대신 간단한 공유 사용
-            // 친구 선택 기능은 카카오 비즈니스 계정 승인이 필요하므로 대안 사용
-            console.log('카카오톡 공유 시작');
-            shareToKakaoSimple();
+            console.log('카카오톡 로그인 및 친구 선택 시작');
+            
+            // 1단계: 카카오 로그인
+            Kakao.Auth.login({
+                success: function(authObj) {
+                    console.log('카카오 로그인 성공:', authObj);
+                    // 2단계: 친구 선택
+                    selectKakaoFriends(referralLink);
+                },
+                fail: function(err) {
+                    console.error('카카오 로그인 실패:', err);
+                    alert('카카오톡 로그인에 실패했습니다. 다른 방법으로 공유해주세요.');
+                    fallbackToClipboard();
+                }
+            });
         }
 
-        // 카카오톡 단순 텍스트 공유 (대안)
-        function shareToKakaoSimple() {
-            const referralLink = document.getElementById('referral-link').value;
-            
+        // 카카오톡 친구 선택 및 메시지 전송
+        function selectKakaoFriends(referralLink) {
+            try {
+                // 친구 선택 API 호출
+                Kakao.Picker.selectFriends({
+                    title: '정치인 공화국 친구 초대',
+                    enableSearch: true,
+                    showMyProfile: false,
+                    showFavorite: true,
+                    showPickedFriend: true,
+                    maxPickableCount: 10,
+                    minPickableCount: 1,
+                    success: function(res) {
+                        console.log('친구 선택 성공:', res);
+                        const selectedFriends = res.selectedTotalCount;
+                        if (selectedFriends > 0) {
+                            // 3단계: 선택된 친구들에게 메시지 전송
+                            sendMessageToFriends(res.users, referralLink);
+                        } else {
+                            alert('친구를 선택해주세요.');
+                        }
+                    },
+                    fail: function(err) {
+                        console.error('친구 선택 실패:', err);
+                        // 친구 선택이 실패하면 일반 공유로 대체
+                        shareToKakaoSimple(referralLink);
+                    }
+                });
+            } catch (error) {
+                console.error('친구 선택 API 오류:', error);
+                // API 오류 시 일반 공유로 대체
+                shareToKakaoSimple(referralLink);
+            }
+        }
+
+        // 선택된 친구들에게 메시지 전송
+        function sendMessageToFriends(friends, referralLink) {
+            try {
+                // 친구들에게 메모 전송 (개별 메시지)
+                Kakao.Talk.sendScrap({
+                    requestUrl: referralLink,
+                    success: function() {
+                        alert(`${friends.length}명의 친구에게 초대 메시지를 보냈습니다! 🎉`);
+                    },
+                    fail: function(err) {
+                        console.error('메시지 전송 실패:', err);
+                        // 메시지 전송 실패 시 일반 공유로 대체
+                        alert('친구에게 직접 메시지 전송은 카카오 비즈니스 승인이 필요합니다.\n일반 공유로 진행합니다.');
+                        shareToKakaoSimple(referralLink);
+                    }
+                });
+            } catch (error) {
+                console.error('메시지 API 오류:', error);
+                alert('친구 메시지 전송 기능은 현재 준비 중입니다.\n일반 공유로 진행합니다.');
+                shareToKakaoSimple(referralLink);
+            }
+        }
+
+        // 카카오톡 일반 공유 (대안)
+        function shareToKakaoSimple(referralLink) {
             try {
                 Kakao.Share.sendDefault({
                     objectType: 'text',
@@ -877,16 +944,9 @@
                     link: {
                         webUrl: referralLink,
                         mobileWebUrl: referralLink
-                    },
-                    success: function(response) {
-                        console.log('카카오톡 공유 성공:', response);
-                        alert('카카오톡으로 초대 메시지를 공유했습니다! 🎉');
-                    },
-                    fail: function(error) {
-                        console.error('카카오톡 공유 실패:', error);
-                        fallbackToClipboard();
                     }
                 });
+                console.log('카카오톡 일반 공유 실행');
             } catch (error) {
                 console.error('카카오톡 SDK 오류:', error);
                 fallbackToClipboard();
