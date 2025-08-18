@@ -877,15 +877,15 @@
                     link: {
                         webUrl: referralLink,
                         mobileWebUrl: referralLink
+                    },
+                    success: function(response) {
+                        console.log('카카오톡 공유 성공:', response);
+                        alert('카카오톡으로 초대 메시지를 공유했습니다! 🎉');
+                    },
+                    fail: function(error) {
+                        console.error('카카오톡 공유 실패:', error);
+                        fallbackToClipboard();
                     }
-                })
-                .then(function(response) {
-                    console.log('카카오톡 공유 성공:', response);
-                    alert('카카오톡으로 초대 메시지를 공유했습니다! 🎉');
-                })
-                .catch(function(error) {
-                    console.error('카카오톡 공유 실패:', error);
-                    fallbackToClipboard();
                 });
             } catch (error) {
                 console.error('카카오톡 SDK 오류:', error);
