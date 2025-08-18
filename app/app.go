@@ -10,22 +10,28 @@ import (
 // PoliticianApp은 ABCI 애플리케이션의 상태를 저장합니다.
 type PoliticianApp struct {
 	types.BaseApplication
-	logger      log.Logger
-	db          dbm.DB
-	height      int64
-	appHash     []byte
-	accounts    map[string]*ptypes.Account    // 사용자 계정 정보
-	proposals   map[string]*ptypes.Proposal   // 제안 정보
-	politicians map[string]*ptypes.Politician // 정치인 정보
+	logger         log.Logger
+	db             dbm.DB
+	height         int64
+	appHash        []byte
+	accounts       map[string]*ptypes.Account       // 사용자 계정 정보
+	proposals      map[string]*ptypes.Proposal      // 제안 정보
+	politicians    map[string]*ptypes.Politician    // 정치인 정보
+	orders         map[string]*ptypes.TradeOrder    // 거래 주문들
+	escrowAccounts map[string]*ptypes.EscrowAccount // 에스크로 계정들
+	trades         map[string]*ptypes.Trade         // 체결된 거래들
 }
 
 func NewPoliticianApp(db dbm.DB, logger log.Logger) *PoliticianApp {
 	app := &PoliticianApp{
-		logger:      logger,
-		db:          db,
-		accounts:    make(map[string]*ptypes.Account),
-		proposals:   make(map[string]*ptypes.Proposal),
-		politicians: make(map[string]*ptypes.Politician),
+		logger:         logger,
+		db:             db,
+		accounts:       make(map[string]*ptypes.Account),
+		proposals:      make(map[string]*ptypes.Proposal),
+		politicians:    make(map[string]*ptypes.Politician),
+		orders:         make(map[string]*ptypes.TradeOrder),
+		escrowAccounts: make(map[string]*ptypes.EscrowAccount),
+		trades:         make(map[string]*ptypes.Trade),
 	}
 	// DB에서 마지막 상태를 불러옵니다.
 	if err := app.loadState(); err != nil {

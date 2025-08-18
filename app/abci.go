@@ -124,6 +124,16 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 			respTxs[i] = app.handleVoteOnProposal(&txData)
 		case "claim_referral_reward":
 			respTxs[i] = app.handleClaimReferralReward(&txData)
+		case "place_order":
+			respTxs[i] = app.handlePlaceOrder(&txData)
+		case "cancel_order":
+			respTxs[i] = app.handleCancelOrder(&txData)
+		case "freeze_escrow":
+			respTxs[i] = app.handleFreezeEscrow(&txData)
+		case "release_escrow":
+			respTxs[i] = app.handleReleaseEscrow(&txData)
+		case "execute_trade":
+			respTxs[i] = app.handleExecuteTrade(&txData)
 		default:
 			logMsg := "Unknown action"
 			app.logger.Error(logMsg, "action", txData.Action)
@@ -158,6 +168,14 @@ func (app *PoliticianApp) handleCreateProfile(txData *ptypes.TxData) *types.Exec
 		PoliticianCoins:  make(map[string]int64),  // 정치인별 코인 보유량
 		ReceivedCoins:    make(map[string]bool),   // 정치인별 코인 수령 여부
 		InitialSelection: false,                   // 초기 선택 아직 완료 안됨
+		TetherBalance:    10000,                   // 초기 테더코인 10,000 USDT 지급
+		ActiveOrders:     []ptypes.TradeOrder{},   // 빈 주문 배열
+		EscrowAccount: ptypes.EscrowAccount{       // 에스크로 계정 초기화
+			UserID:                txData.UserID,
+			FrozenTetherBalance:   0,
+			FrozenPoliticianCoins: make(map[string]int64),
+			ActiveOrders:          []string{},
+		},
 	}
 	
 	// 추천인이 있는 경우 추천인에게 크레딧 지급
@@ -338,6 +356,258 @@ func (app *PoliticianApp) handleClaimReferralReward(txData *ptypes.TxData) *type
 		"coins_given", 100,
 		"remaining_credits", account.ReferralCredits,
 		"politician_remaining", politician.RemainingCoins)
+	
+	return &types.ExecTxResult{Code: types.CodeTypeOK}
+}
+
+// --- 거래 관련 핸들러 함수들 ---
+
+// handlePlaceOrder는 거래 주문을 처리합니다.
+func (app *PoliticianApp) handlePlaceOrder(txData *ptypes.TxData) *types.ExecTxResult {
+	app.logger.Info("Processing place order", "user_id", txData.UserID, "tx_id", txData.TxID)
+	
+	// 주문 데이터 파싱
+	if len(txData.Politicians) == 0 {
+		return &types.ExecTxResult{Code: 1, Log: "주문 데이터가 없습니다"}
+	}
+	
+	var order ptypes.TradeOrder
+	if err := json.Unmarshal([]byte(txData.Politicians[0]), &order); err != nil {
+		app.logger.Error("Failed to parse order data", "error", err)
+		return &types.ExecTxResult{Code: 2, Log: "주문 데이터 파싱 실패"}
+	}
+	
+	// 계정 확인
+	account, exists := app.accounts[txData.UserID]
+	if !exists {
+		return &types.ExecTxResult{Code: 3, Log: "계정을 찾을 수 없습니다"}
+	}
+	
+	// 에스크로 계정 초기화
+	if account.EscrowAccount.FrozenPoliticianCoins == nil {
+		account.EscrowAccount.FrozenPoliticianCoins = make(map[string]int64)
+	}
+	if account.EscrowAccount.ActiveOrders == nil {
+		account.EscrowAccount.ActiveOrders = []string{}
+	}
+	
+	// 주문을 전역 주문 맵에 저장
+	app.orders[order.ID] = &order
+	
+	app.logger.Info("Order placed successfully", "order_id", order.ID, "type", order.OrderType, "quantity", order.Quantity, "price", order.Price)
+	return &types.ExecTxResult{Code: types.CodeTypeOK}
+}
+
+// handleCancelOrder는 주문 취소를 처리합니다.
+func (app *PoliticianApp) handleCancelOrder(txData *ptypes.TxData) *types.ExecTxResult {
+	app.logger.Info("Processing cancel order", "user_id", txData.UserID, "tx_id", txData.TxID)
+	
+	if len(txData.Politicians) == 0 {
+		return &types.ExecTxResult{Code: 1, Log: "주문 ID가 없습니다"}
+	}
+	
+	orderID := txData.Politicians[0]
+	order, exists := app.orders[orderID]
+	if !exists {
+		return &types.ExecTxResult{Code: 2, Log: "주문을 찾을 수 없습니다"}
+	}
+	
+	// 주문 소유권 확인
+	if order.UserID != txData.UserID {
+		return &types.ExecTxResult{Code: 3, Log: "주문을 취소할 권한이 없습니다"}
+	}
+	
+	// 주문 상태 업데이트
+	order.Status = "cancelled"
+	
+	app.logger.Info("Order cancelled successfully", "order_id", orderID, "user_id", txData.UserID)
+	return &types.ExecTxResult{Code: types.CodeTypeOK}
+}
+
+// handleFreezeEscrow는 에스크로 동결을 처리합니다.
+func (app *PoliticianApp) handleFreezeEscrow(txData *ptypes.TxData) *types.ExecTxResult {
+	app.logger.Info("Processing freeze escrow", "user_id", txData.UserID, "tx_id", txData.TxID)
+	
+	// 주문 데이터 파싱
+	if len(txData.Politicians) == 0 {
+		return &types.ExecTxResult{Code: 1, Log: "주문 데이터가 없습니다"}
+	}
+	
+	var order ptypes.TradeOrder
+	if err := json.Unmarshal([]byte(txData.Politicians[0]), &order); err != nil {
+		app.logger.Error("Failed to parse order data", "error", err)
+		return &types.ExecTxResult{Code: 2, Log: "주문 데이터 파싱 실패"}
+	}
+	
+	// 계정 확인
+	account, exists := app.accounts[txData.UserID]
+	if !exists {
+		return &types.ExecTxResult{Code: 3, Log: "계정을 찾을 수 없습니다"}
+	}
+	
+	// 에스크로 계정 초기화
+	if account.EscrowAccount.FrozenPoliticianCoins == nil {
+		account.EscrowAccount.FrozenPoliticianCoins = make(map[string]int64)
+	}
+	if account.EscrowAccount.ActiveOrders == nil {
+		account.EscrowAccount.ActiveOrders = []string{}
+	}
+	
+	// 자금 동결
+	if order.OrderType == "buy" {
+		// 매수: 테더코인 동결
+		account.EscrowAccount.FrozenTetherBalance += order.EscrowAmount
+		if account.TetherBalance < account.EscrowAccount.FrozenTetherBalance {
+			return &types.ExecTxResult{Code: 4, Log: "테더코인 잔액이 부족합니다"}
+		}
+	} else {
+		// 매도: 정치인 코인 동결
+		account.EscrowAccount.FrozenPoliticianCoins[order.PoliticianID] += order.EscrowAmount
+		if account.PoliticianCoins[order.PoliticianID] < account.EscrowAccount.FrozenPoliticianCoins[order.PoliticianID] {
+			return &types.ExecTxResult{Code: 4, Log: "정치인 코인이 부족합니다"}
+		}
+	}
+	
+	// 활성 주문 목록에 추가
+	account.EscrowAccount.ActiveOrders = append(account.EscrowAccount.ActiveOrders, order.ID)
+	
+	app.logger.Info("Escrow frozen successfully", "order_id", order.ID, "amount", order.EscrowAmount, "type", order.OrderType)
+	return &types.ExecTxResult{Code: types.CodeTypeOK}
+}
+
+// handleReleaseEscrow는 에스크로 해제를 처리합니다.
+func (app *PoliticianApp) handleReleaseEscrow(txData *ptypes.TxData) *types.ExecTxResult {
+	app.logger.Info("Processing release escrow", "user_id", txData.UserID, "tx_id", txData.TxID)
+	
+	if len(txData.Politicians) == 0 {
+		return &types.ExecTxResult{Code: 1, Log: "주문 ID가 없습니다"}
+	}
+	
+	orderID := txData.Politicians[0]
+	order, exists := app.orders[orderID]
+	if !exists {
+		return &types.ExecTxResult{Code: 2, Log: "주문을 찾을 수 없습니다"}
+	}
+	
+	// 계정 확인
+	account, exists := app.accounts[txData.UserID]
+	if !exists {
+		return &types.ExecTxResult{Code: 3, Log: "계정을 찾을 수 없습니다"}
+	}
+	
+	// 에스크로 해제
+	if order.OrderType == "buy" {
+		// 매수: 테더코인 해제
+		account.EscrowAccount.FrozenTetherBalance -= order.EscrowAmount
+		if account.EscrowAccount.FrozenTetherBalance < 0 {
+			account.EscrowAccount.FrozenTetherBalance = 0
+		}
+	} else {
+		// 매도: 정치인 코인 해제
+		account.EscrowAccount.FrozenPoliticianCoins[order.PoliticianID] -= order.EscrowAmount
+		if account.EscrowAccount.FrozenPoliticianCoins[order.PoliticianID] < 0 {
+			account.EscrowAccount.FrozenPoliticianCoins[order.PoliticianID] = 0
+		}
+	}
+	
+	// 활성 주문 목록에서 제거
+	for i, activeOrderID := range account.EscrowAccount.ActiveOrders {
+		if activeOrderID == orderID {
+			account.EscrowAccount.ActiveOrders = append(account.EscrowAccount.ActiveOrders[:i], account.EscrowAccount.ActiveOrders[i+1:]...)
+			break
+		}
+	}
+	
+	app.logger.Info("Escrow released successfully", "order_id", orderID, "amount", order.EscrowAmount)
+	return &types.ExecTxResult{Code: types.CodeTypeOK}
+}
+
+// handleExecuteTrade는 거래 체결을 처리합니다.
+func (app *PoliticianApp) handleExecuteTrade(txData *ptypes.TxData) *types.ExecTxResult {
+	app.logger.Info("Processing execute trade", "tx_id", txData.TxID)
+	
+	// 거래 데이터 파싱
+	if len(txData.Politicians) == 0 {
+		return &types.ExecTxResult{Code: 1, Log: "거래 데이터가 없습니다"}
+	}
+	
+	var trade ptypes.Trade
+	if err := json.Unmarshal([]byte(txData.Politicians[0]), &trade); err != nil {
+		app.logger.Error("Failed to parse trade data", "error", err)
+		return &types.ExecTxResult{Code: 2, Log: "거래 데이터 파싱 실패"}
+	}
+	
+	// 매수자와 매도자 계정 확인
+	buyerAccount, buyerExists := app.accounts[trade.BuyerID]
+	sellerAccount, sellerExists := app.accounts[trade.SellerID]
+	
+	if !buyerExists || !sellerExists {
+		return &types.ExecTxResult{Code: 3, Log: "거래 당사자 계정을 찾을 수 없습니다"}
+	}
+	
+	// 주문 확인
+	buyOrder, buyOrderExists := app.orders[trade.BuyOrderID]
+	sellOrder, sellOrderExists := app.orders[trade.SellOrderID]
+	
+	if !buyOrderExists || !sellOrderExists {
+		return &types.ExecTxResult{Code: 4, Log: "거래 주문을 찾을 수 없습니다"}
+	}
+	
+	// 실제 자금 이체 수행
+	// 1. 매수자에게서 테더코인 차감 및 정치인 코인 지급
+	buyerAccount.TetherBalance -= trade.TotalAmount
+	if buyerAccount.PoliticianCoins == nil {
+		buyerAccount.PoliticianCoins = make(map[string]int64)
+	}
+	buyerAccount.PoliticianCoins[trade.PoliticianID] += trade.Quantity
+	
+	// 2. 매도자에게서 정치인 코인 차감 및 테더코인 지급
+	sellerAccount.PoliticianCoins[trade.PoliticianID] -= trade.Quantity
+	sellerAccount.TetherBalance += trade.TotalAmount
+	
+	// 3. 에스크로 해제
+	// 매수자 에스크로 해제
+	buyerAccount.EscrowAccount.FrozenTetherBalance -= trade.TotalAmount
+	if buyerAccount.EscrowAccount.FrozenTetherBalance < 0 {
+		buyerAccount.EscrowAccount.FrozenTetherBalance = 0
+	}
+	
+	// 매도자 에스크로 해제
+	if sellerAccount.EscrowAccount.FrozenPoliticianCoins == nil {
+		sellerAccount.EscrowAccount.FrozenPoliticianCoins = make(map[string]int64)
+	}
+	sellerAccount.EscrowAccount.FrozenPoliticianCoins[trade.PoliticianID] -= trade.Quantity
+	if sellerAccount.EscrowAccount.FrozenPoliticianCoins[trade.PoliticianID] < 0 {
+		sellerAccount.EscrowAccount.FrozenPoliticianCoins[trade.PoliticianID] = 0
+	}
+	
+	// 4. 주문 상태 업데이트
+	buyOrder.FilledQuantity += trade.Quantity
+	sellOrder.FilledQuantity += trade.Quantity
+	
+	if buyOrder.FilledQuantity >= buyOrder.Quantity {
+		buyOrder.Status = "filled"
+	} else {
+		buyOrder.Status = "partial"
+	}
+	
+	if sellOrder.FilledQuantity >= sellOrder.Quantity {
+		sellOrder.Status = "filled"
+	} else {
+		sellOrder.Status = "partial"
+	}
+	
+	// 5. 거래 기록 저장
+	trade.Status = "completed"
+	app.trades[trade.ID] = &trade
+	
+	app.logger.Info("Trade executed successfully", 
+		"trade_id", trade.ID, 
+		"buyer", trade.BuyerID, 
+		"seller", trade.SellerID, 
+		"quantity", trade.Quantity, 
+		"price", trade.Price, 
+		"total_amount", trade.TotalAmount)
 	
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
