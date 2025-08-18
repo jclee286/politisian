@@ -8,12 +8,70 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	ptypes "politisian/pkg/types"
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+// SessionData는 세션에 저장되는 사용자 정보입니다.
+type SessionData struct {
+	UserID        string    `json:"user_id"`
+	Email         string    `json:"email"`
+	Name          string    `json:"name"`
+	WalletAddress string    `json:"wallet_address"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+// SessionStore는 세션 관리를 위한 구조체입니다.
+type SessionStore struct {
+	sessions     map[string]string      // token -> userID
+	sessionData  map[string]SessionData // token -> SessionData
+	mu           sync.RWMutex
+}
+
+// NewSessionStore는 새로운 세션 스토어를 생성합니다.
+func NewSessionStore() *SessionStore {
+	return &SessionStore{
+		sessions:    make(map[string]string),
+		sessionData: make(map[string]SessionData),
+	}
+}
+
+// Set은 세션 토큰과 사용자 ID를 저장합니다.
+func (s *SessionStore) Set(token, userID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.sessions[token] = userID
+}
+
+// Get은 세션 토큰으로 사용자 ID를 조회합니다.
+func (s *SessionStore) Get(token string) (string, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	userID, exists := s.sessions[token]
+	return userID, exists
+}
+
+// SetSessionData는 세션 데이터를 저장합니다.
+func (s *SessionStore) SetSessionData(token string, data SessionData) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.sessionData[token] = data
+}
+
+// GetSessionData는 세션 데이터를 조회합니다.
+func (s *SessionStore) GetSessionData(token string) (SessionData, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	data, exists := s.sessionData[token]
+	return data, exists
+}
+
+// 전역 세션 스토어
+var sessionStore = NewSessionStore()
 
 // handleSignup는 전통적 회원가입을 처리합니다.
 func handleSignup(w http.ResponseWriter, r *http.Request) {
@@ -253,7 +311,7 @@ func handleVerifyPIN(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, exists := sessionStore.Get(sessionCookie.Value)
+	_, exists := sessionStore.Get(sessionCookie.Value)
 	if !exists {
 		http.Error(w, "유효하지 않은 세션입니다", http.StatusUnauthorized)
 		return
