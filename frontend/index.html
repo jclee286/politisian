@@ -188,17 +188,30 @@
 
     <div class="dashboard-container">
         <div class="card">
-            <h2>나의 지갑 정보</h2>
-            <p><strong>지갑 주소:</strong></p>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div id="wallet-address" class="wallet-address loading">
-                    불러오는 중...
+            <h2>💰 나의 지갑 & 보유 코인</h2>
+            <div style="margin-bottom: 20px;">
+                <p><strong>지갑 주소:</strong></p>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div id="wallet-address" class="wallet-address loading">
+                        불러오는 중...
+                    </div>
+                    <button id="copy-wallet-btn" onclick="copyWalletAddress()" 
+                            style="display: none; padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                        📋 복사
+                    </button>
                 </div>
-                <button id="copy-wallet-btn" onclick="copyWalletAddress()" 
-                        style="display: none; padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                    📋 복사
-                </button>
             </div>
+            
+            <div style="margin-bottom: 20px;">
+                <p><strong>총 보유 코인:</strong> <span id="total-coins" style="font-size: 1.3em; font-weight: bold; color: #2c3e50;">0개</span></p>
+            </div>
+            
+            <hr style="margin: 20px 0;">
+            
+            <h3 style="margin-bottom: 15px;">🏛️ 보유 중인 정치인 코인</h3>
+            <ul id="politician-coins-list" class="politisian-list">
+                <li class="loading">목록을 불러오는 중...</li>
+            </ul>
         </div>
         <div class="card">
             <h2>친구 초대 및 보상</h2>
@@ -221,12 +234,6 @@
             <p>사용 가능한 추천 크레딧: <strong id="referral-credits" style="font-size: 1.2em;">0</strong> 개</p>
             <button id="claim-reward-button" class="button" disabled>크레딧 사용 (지지 정치인 추가 & 100 코인 받기)</button>
             <p id="claim-status" style="height: 1em; color: green;"></p>
-        </div>
-        <div class="card">
-            <h2>내가 지지하는 정치인</h2>
-            <ul id="politisian-list" class="politisian-list">
-                <li class="loading">목록을 불러오는 중...</li>
-            </ul>
         </div>
         <div class="card">
             <h2>등록된 정치인 목록</h2>
@@ -284,7 +291,8 @@
             // 완전히 안전한 요소 참조
             const welcomeMessage = null; // 완전 제거
             const walletAddressElem = document.getElementById('wallet-address');
-            const politisianListElem = document.getElementById('politisian-list');
+            const politicianCoinsListElem = document.getElementById('politician-coins-list');
+            const totalCoinsElem = document.getElementById('total-coins');
             const loginButton = document.getElementById('login-button');
             const referralLinkInput = document.getElementById('referral-link');
             const copyButton = document.getElementById('copy-button');
@@ -375,7 +383,9 @@
                         // 세션 데이터를 기반으로 기본 UI 업데이트
                         // welcomeMessage.textContent = `${sessionData.name}님, 환영합니다!`;
                         referralLinkInput.value = `${window.location.origin}/login.html?ref=${sessionData.walletAddress}`;
-                        politisianListElem.innerHTML = '<li>프로필 정보를 완전히 불러오지 못했습니다.</li>';
+                        if (politicianCoinsListElem) {
+                            politicianCoinsListElem.innerHTML = '<li>프로필 정보를 완전히 불러오지 못했습니다.</li>';
+                        }
                         
                         // 세션 정보로도 제안 목록 시도
                         setTimeout(() => {
@@ -417,7 +427,9 @@
                 
                 // 2단계: 세션 만료로 판단하고 재로그인 유도
                 setWalletAddress('세션이 만료되었습니다');
-                politisianListElem.innerHTML = '<li style="color: #e74c3c;">로그인이 필요합니다</li>';
+                if (politicianCoinsListElem) {
+                    politicianCoinsListElem.innerHTML = '<li style="color: #e74c3c;">로그인이 필요합니다</li>';
+                }
                 
                 // 재로그인 버튼 표시
                 showReloginPrompt();
@@ -518,23 +530,31 @@
                         claimRewardButton.disabled = false;
                     }
 
-                    if (politisianListElem) {
-                        // 서버에서는 politicians 필드로 응답함 (대문자 P)
-                        const supportedPoliticians = data.politicians || data.politisians || [];
-                        console.log('지지하는 정치인 데이터:', supportedPoliticians);
+                    // 총 코인 표시 업데이트
+                    if (totalCoinsElem) {
+                        const totalCoins = data.total_coins || data.balance || 0;
+                        totalCoinsElem.textContent = `${totalCoins}개`;
+                    }
+
+                    // 정치인별 코인 보유량 표시
+                    if (politicianCoinsListElem && data.politician_coins) {
+                        console.log('정치인별 코인 데이터:', data.politician_coins);
                         
-                        if (supportedPoliticians && supportedPoliticians.length > 0) {
-                            politisianListElem.innerHTML = '';
-                            supportedPoliticians.forEach(politicianId => {
+                        const coinEntries = Object.entries(data.politician_coins);
+                        
+                        if (coinEntries.length > 0) {
+                            politicianCoinsListElem.innerHTML = '';
+                            coinEntries.forEach(([politicianId, coins]) => {
                                 const li = document.createElement('li');
-                                // 정치인 ID에서 실제 이름을 찾아서 표시
                                 const politicianName = getPoliticianNameById(politicianId);
-                                li.innerHTML = `${politicianName} <span style="float: right; color: #28a745; font-weight: normal;">100 P-COIN</span>`;
-                                politisianListElem.appendChild(li);
+                                li.innerHTML = `${politicianName} <span style="float: right; color: #28a745; font-weight: bold;">${coins} 코인</span>`;
+                                politicianCoinsListElem.appendChild(li);
                             });
                         } else {
-                            politisianListElem.innerHTML = '<li>지지하는 정치인이 없습니다.</li>';
+                            politicianCoinsListElem.innerHTML = '<li>보유 중인 정치인 코인이 없습니다.</li>';
                         }
+                    } else if (politicianCoinsListElem) {
+                        politicianCoinsListElem.innerHTML = '<li>코인 정보를 불러올 수 없습니다.</li>';
                     }
                     
                     console.log('✅ UI 업데이트 완료');
@@ -709,7 +729,7 @@
             // 지갑 주소 설정 및 복사 버튼 표시 함수
             function setWalletAddress(address) {
                 if (walletAddressElem) {
-                    setWalletAddress(address;
+                    walletAddressElem.textContent = address;
                     // 유효한 지갑 주소일 때만 복사 버튼 표시
                     const copyBtn = document.getElementById('copy-wallet-btn');
                     if (copyBtn && address && address !== '불러오는 중...' && address !== '오류' && address !== '세션이 만료되었습니다' && address !== '지갑 주소 없음') {
@@ -748,7 +768,9 @@
             function showError(message) {
                 console.error('🚨 오류:', message);
                 setWalletAddress('오류');
-                politisianListElem.innerHTML = `<li class="error-message">${message}</li>`;
+                if (politicianCoinsListElem) {
+                    politicianCoinsListElem.innerHTML = `<li class="error-message">${message}</li>`;
+                }
             }
 
             // 이벤트 리스너들
