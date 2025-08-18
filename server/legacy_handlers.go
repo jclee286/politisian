@@ -39,3 +39,8 @@ func handleSessionInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+// handleGenerateWallet은 지갑 생성을 처리합니다 (레거시 - 사용하지 않음).
+func handleGenerateWallet(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "지갑 생성 기능은 더 이상 지원되지 않습니다. 새로운 회원가입을 사용해주세요.", http.StatusGone)
+}
