@@ -90,8 +90,42 @@ type VoteRequest struct {
 	Vote bool `json:"vote"`
 }
 
+// User는 전통적 로그인 사용자 정보를 나타냅니다.
+type User struct {
+	ID           string `json:"id"`           // 고유 사용자 ID
+	Email        string `json:"email"`        // 이메일 주소
+	PasswordHash string `json:"password_hash"` // bcrypt 해시된 비밀번호
+	Nickname     string `json:"nickname"`     // 닉네임
+	PIN          string `json:"pin"`          // 지갑 PIN (해시됨)
+	CreatedAt    int64  `json:"created_at"`   // 생성 시간
+	IsActive     bool   `json:"is_active"`    // 활성 상태
+}
+
+// SignupRequest는 회원가입 요청 구조체입니다.
+type SignupRequest struct {
+	Email       string   `json:"email"`
+	Password    string   `json:"password"`
+	Nickname    string   `json:"nickname"`
+	PIN         string   `json:"pin"`
+	Politicians []string `json:"politicians"`
+}
+
+// LoginRequest는 로그인 요청 구조체입니다.
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// LoginResponse는 로그인 응답 구조체입니다.
+type LoginResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	UserID  string `json:"user_id,omitempty"`
+}
+
 // GenesisState는 블록체인의 초기 상태를 정의합니다.
 type GenesisState struct {
 	Accounts    map[string]*Account    `json:"accounts"`
 	Politicians map[string]*Politician `json:"politicians"`
+	Users       map[string]*User       `json:"users"`       // 사용자 정보 추가
 } 

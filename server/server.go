@@ -39,8 +39,15 @@ func StartServer(node *node.Node) {
 	mux := http.NewServeMux()
 
 	// 1. API 핸들러들을 CORS 미들웨어로 감싸서 등록합니다.
+	
+	// 새로운 전통 인증 API
+	mux.Handle("/api/auth/signup", corsMiddleware(http.HandlerFunc(handleSignup)))
+	mux.Handle("/api/auth/login", corsMiddleware(http.HandlerFunc(handleLogin)))
+	mux.Handle("/api/auth/verify-pin", corsMiddleware(http.HandlerFunc(handleVerifyPIN)))
+	
+	// 기존 API (호환성 유지)
 	mux.Handle("/api/auth/wallet/login", corsMiddleware(http.HandlerFunc(handleWalletLogin)))
-	mux.Handle("/api/auth/login", corsMiddleware(http.HandlerFunc(handleSocialLogin)))
+	mux.Handle("/api/auth/social-login", corsMiddleware(http.HandlerFunc(handleSocialLogin))) // 이름 변경으로 구분
 	mux.Handle("/api/user/profile", corsMiddleware(authMiddleware(http.HandlerFunc(handleUserProfile))))
 	mux.Handle("/api/profile/save", corsMiddleware(authMiddleware(http.HandlerFunc(handleProfileSave))))
 	mux.Handle("/api/politisian/list", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetPolitisians))))

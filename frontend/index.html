@@ -189,29 +189,64 @@
     <div class="dashboard-container">
         <div class="card">
             <h2>💰 나의 지갑 & 보유 코인</h2>
-            <div style="margin-bottom: 20px;">
-                <p><strong>지갑 주소:</strong></p>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div id="wallet-address" class="wallet-address loading">
-                        불러오는 중...
+            
+            <!-- PIN 입력 모달 -->
+            <div id="pin-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; margin: 20px;">
+                    <h3 style="color: #333; margin-bottom: 20px;">🔐 지갑 잠금 해제</h3>
+                    <p style="color: #666; margin-bottom: 20px;">6자리 PIN을 입력하세요</p>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
+                        <input type="number" class="pin-digit-unlock" maxlength="1" min="0" max="9" style="width: 40px; height: 40px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-size: 18px;">
+                        <input type="number" class="pin-digit-unlock" maxlength="1" min="0" max="9" style="width: 40px; height: 40px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-size: 18px;">
+                        <input type="number" class="pin-digit-unlock" maxlength="1" min="0" max="9" style="width: 40px; height: 40px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-size: 18px;">
+                        <input type="number" class="pin-digit-unlock" maxlength="1" min="0" max="9" style="width: 40px; height: 40px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-size: 18px;">
+                        <input type="number" class="pin-digit-unlock" maxlength="1" min="0" max="9" style="width: 40px; height: 40px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-size: 18px;">
+                        <input type="number" class="pin-digit-unlock" maxlength="1" min="0" max="9" style="width: 40px; height: 40px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-size: 18px;">
                     </div>
-                    <button id="copy-wallet-btn" onclick="copyWalletAddress()" 
-                            style="display: none; padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                        📋 복사
-                    </button>
+                    <div id="pin-error" style="color: #e74c3c; margin-bottom: 15px; font-size: 14px;"></div>
+                    <button id="unlock-wallet-btn" onclick="unlockWallet()" style="background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-right: 10px;">잠금 해제</button>
+                    <button onclick="closePinModal()" style="background: #6c757d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">취소</button>
                 </div>
             </div>
-            
-            <div style="margin-bottom: 20px;">
-                <p><strong>총 보유 코인:</strong> <span id="total-coins" style="font-size: 1.3em; font-weight: bold; color: #2c3e50;">0개</span></p>
+
+            <!-- 지갑이 잠겨있을 때 표시 -->
+            <div id="wallet-locked" style="text-align: center; padding: 40px;">
+                <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
+                <h3 style="color: #666; margin-bottom: 15px;">지갑이 잠겨있습니다</h3>
+                <p style="color: #999; margin-bottom: 20px;">코인 정보를 확인하려면 PIN을 입력하세요</p>
+                <button onclick="showPinModal()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-size: 16px;">🔑 지갑 잠금 해제</button>
             </div>
-            
-            <hr style="margin: 20px 0;">
-            
-            <h3 style="margin-bottom: 15px;">🏛️ 보유 중인 정치인 코인</h3>
-            <ul id="politician-coins-list" class="politisian-list">
-                <li class="loading">목록을 불러오는 중...</li>
-            </ul>
+
+            <!-- 지갑이 해제되었을 때 표시 -->
+            <div id="wallet-unlocked" style="display: none;">
+                <div style="margin-bottom: 20px;">
+                    <p><strong>지갑 주소:</strong></p>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div id="wallet-address" class="wallet-address loading">
+                            불러오는 중...
+                        </div>
+                        <button id="copy-wallet-btn" onclick="copyWalletAddress()" 
+                                style="display: none; padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            📋 복사
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <p><strong>총 보유 코인:</strong> <span id="total-coins" style="font-size: 1.3em; font-weight: bold; color: #2c3e50;">0개</span></p>
+                </div>
+                
+                <hr style="margin: 20px 0;">
+                
+                <h3 style="margin-bottom: 15px;">🏛️ 보유 중인 정치인 코인</h3>
+                <ul id="politician-coins-list" class="politisian-list">
+                    <li class="loading">목록을 불러오는 중...</li>
+                </ul>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button onclick="lockWallet()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px;">🔒 지갑 잠그기</button>
+                </div>
+            </div>
         </div>
         <div class="card">
             <h2>친구 초대 및 보상</h2>
@@ -903,10 +938,101 @@
                 }
             });
 
+            // PIN 입력 자동 포커스 이동 (잠금 해제용)
+            const pinInputsUnlock = document.querySelectorAll('.pin-digit-unlock');
+            pinInputsUnlock.forEach((input, index) => {
+                input.addEventListener('input', function(e) {
+                    if (e.target.value.length === 1 && index < pinInputsUnlock.length - 1) {
+                        pinInputsUnlock[index + 1].focus();
+                    }
+                });
+
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
+                        pinInputsUnlock[index - 1].focus();
+                    }
+                    if (e.key === 'Enter' && index === pinInputsUnlock.length - 1) {
+                        unlockWallet();
+                    }
+                });
+            });
+
             // 안전한 데이터 로드 시작 (즉시 로드)
             console.log('🚀 즉시 데이터 로드 시작');
             loadUserProfile();
         });
+
+        // PIN 모달 관련 함수들
+        function showPinModal() {
+            document.getElementById('pin-modal').style.display = 'flex';
+            document.querySelectorAll('.pin-digit-unlock').forEach(input => input.value = '');
+            document.querySelectorAll('.pin-digit-unlock')[0].focus();
+            document.getElementById('pin-error').textContent = '';
+        }
+
+        function closePinModal() {
+            document.getElementById('pin-modal').style.display = 'none';
+        }
+
+        function unlockWallet() {
+            const pinInputs = document.querySelectorAll('.pin-digit-unlock');
+            let pin = '';
+            pinInputs.forEach(input => {
+                pin += input.value;
+            });
+
+            if (pin.length !== 6) {
+                document.getElementById('pin-error').textContent = '6자리 숫자를 모두 입력하세요.';
+                return;
+            }
+
+            const unlockBtn = document.getElementById('unlock-wallet-btn');
+            unlockBtn.disabled = true;
+            unlockBtn.textContent = '확인 중...';
+
+            // PIN 검증 API 호출 (여기서는 간단히 클라이언트에서 처리)
+            fetch('/api/auth/verify-pin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ pin: pin })
+            })
+            .then(response => {
+                if (response.ok) {
+                    // PIN 검증 성공
+                    document.getElementById('wallet-locked').style.display = 'none';
+                    document.getElementById('wallet-unlocked').style.display = 'block';
+                    closePinModal();
+                    
+                    // 지갑 데이터 로드
+                    loadWalletData();
+                } else {
+                    throw new Error('잘못된 PIN입니다.');
+                }
+            })
+            .catch(error => {
+                console.error('PIN 검증 실패:', error);
+                document.getElementById('pin-error').textContent = error.message || '잘못된 PIN입니다.';
+                unlockBtn.disabled = false;
+                unlockBtn.textContent = '잠금 해제';
+            });
+        }
+
+        function lockWallet() {
+            document.getElementById('wallet-locked').style.display = 'block';
+            document.getElementById('wallet-unlocked').style.display = 'none';
+            
+            // 지갑 데이터 초기화
+            document.getElementById('wallet-address').textContent = '불러오는 중...';
+            document.getElementById('total-coins').textContent = '0개';
+            document.getElementById('politician-coins-list').innerHTML = '<li class="loading">목록을 불러오는 중...</li>';
+        }
+
+        function loadWalletData() {
+            // 기존의 프로필 로드 함수 재사용
+            loadUserProfile();
+        }
 
         // 카카오톡 SDK 초기화 및 친구 초대 함수
         document.addEventListener('DOMContentLoaded', function() {
