@@ -190,8 +190,14 @@
         <div class="card">
             <h2>나의 지갑 정보</h2>
             <p><strong>지갑 주소:</strong></p>
-            <div id="wallet-address" class="wallet-address loading">
-                불러오는 중...
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div id="wallet-address" class="wallet-address loading">
+                    불러오는 중...
+                </div>
+                <button id="copy-wallet-btn" onclick="copyWalletAddress()" 
+                        style="display: none; padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                    📋 복사
+                </button>
             </div>
         </div>
         <div class="card">
@@ -322,7 +328,7 @@
                     .then(data => {
                         if (data) {
                             console.log('✅ 프로필 데이터 로드 성공:', data);
-                            walletAddressElem.textContent = data.wallet || data.walletAddress || '지갑 주소 없음';
+                            setWalletAddress(data.wallet || data.walletAddress || '지갑 주소 없음');
                             
                             // 백업 데이터 저장
                             saveBackupData(data.wallet || data.walletAddress, {
@@ -357,7 +363,7 @@
                         console.log('✅ 세션 데이터 로드 성공:', sessionData);
                         
                         // 로딩 메시지 제거
-                        walletAddressElem.textContent = sessionData.walletAddress || '지갑 주소 없음';
+                        setWalletAddress(sessionData.walletAddress || '지갑 주소 없음');
                         
                         // 백업 데이터 저장
                         saveBackupData(sessionData.walletAddress, {
@@ -393,7 +399,7 @@
                 
                 if (backupWallet) {
                     console.log('💾 로컬 백업에서 지갑 주소 복구');
-                    walletAddressElem.textContent = backupWallet;
+                    setWalletAddress(backupWallet);
                     referralLinkInput.value = `${window.location.origin}/login.html?ref=${backupWallet}`;
                     
                     if (backupUserInfo) {
@@ -410,7 +416,7 @@
                 }
                 
                 // 2단계: 세션 만료로 판단하고 재로그인 유도
-                walletAddressElem.textContent = '세션이 만료되었습니다';
+                setWalletAddress('세션이 만료되었습니다');
                 politisianListElem.innerHTML = '<li style="color: #e74c3c;">로그인이 필요합니다</li>';
                 
                 // 재로그인 버튼 표시
@@ -497,7 +503,7 @@
                     
                     // 안전한 요소 접근
                     if (walletAddressElem) {
-                        walletAddressElem.textContent = data.wallet || '주소 없음';
+                        setWalletAddress(data.wallet || '주소 없음');
                     }
                     
                     if (referralLinkInput) {
@@ -700,11 +706,48 @@
                 return politicianId;
             }
 
+            // 지갑 주소 설정 및 복사 버튼 표시 함수
+            function setWalletAddress(address) {
+                if (walletAddressElem) {
+                    setWalletAddress(address;
+                    // 유효한 지갑 주소일 때만 복사 버튼 표시
+                    const copyBtn = document.getElementById('copy-wallet-btn');
+                    if (copyBtn && address && address !== '불러오는 중...' && address !== '오류' && address !== '세션이 만료되었습니다' && address !== '지갑 주소 없음') {
+                        copyBtn.style.display = 'inline-block';
+                    }
+                }
+            }
+
+            // 지갑 주소 복사 함수
+            function copyWalletAddress() {
+                const address = walletAddressElem.textContent;
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(address).then(() => {
+                        const btn = document.getElementById('copy-wallet-btn');
+                        const originalText = btn.textContent;
+                        btn.textContent = '✅ 복사됨!';
+                        btn.style.backgroundColor = '#28a745';
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                            btn.style.backgroundColor = '#007bff';
+                        }, 2000);
+                    });
+                } else {
+                    // 구형 브라우저 대응
+                    const textArea = document.createElement('textarea');
+                    textArea.value = address;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    alert('지갑 주소가 복사되었습니다!');
+                }
+            }
+
             // 오류 표시 함수
             function showError(message) {
                 console.error('🚨 오류:', message);
-                // welcomeMessage는 제거된 요소이므로 스킵
-                walletAddressElem.textContent = '오류';
+                setWalletAddress('오류');
                 politisianListElem.innerHTML = `<li class="error-message">${message}</li>`;
             }
 
