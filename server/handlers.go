@@ -64,9 +64,25 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	log.Printf("Successfully fetched and sending profile for user %s", userID)
+	// Account를 ProfileInfoResponse로 변환
+	totalCoins := int64(0)
+	for _, coins := range account.PoliticianCoins {
+		totalCoins += coins
+	}
+	
+	response := ptypes.ProfileInfoResponse{
+		Email:           account.Email,
+		Wallet:          account.Wallet,
+		Politisians:     account.Politicians,
+		Balance:         totalCoins,                // 총 코인 잔액
+		ReferralCredits: account.ReferralCredits,
+		PoliticianCoins: account.PoliticianCoins,   // 정치인별 코인 보유량
+		TotalCoins:      totalCoins,                // 총 코인 수 (편의용)
+	}
+	
+	log.Printf("Successfully fetched and sending profile for user %s (total coins: %d)", userID, totalCoins)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(account)
+	json.NewEncoder(w).Encode(response)
 }
 
 // 세션 데이터로 프로필 정보를 반환하는 함수
@@ -89,17 +105,20 @@ func handleUserProfileFromSession(w http.ResponseWriter, r *http.Request, userID
 		return
 	}
 
-	// 세션 데이터를 Account 형태로 변환
-	account := ptypes.Account{
-		Address:     userID,
-		Email:       sessionData.Email,
-		Wallet:      sessionData.WalletAddress,
-		Politicians: []string{}, // 세션에는 정치인 정보가 없으므로 빈 배열
+	// 세션 데이터를 ProfileInfoResponse 형태로 변환
+	response := ptypes.ProfileInfoResponse{
+		Email:           sessionData.Email,
+		Wallet:          sessionData.WalletAddress,
+		Politisians:     []string{},                    // 세션에는 정치인 정보가 없으므로 빈 배열
+		Balance:         0,                             // 세션에는 코인 정보가 없음
+		ReferralCredits: 0,                             // 세션에는 크레딧 정보가 없음
+		PoliticianCoins: make(map[string]int64),        // 빈 맵
+		TotalCoins:      0,                             // 0개
 	}
 
 	log.Printf("Successfully returning session-based profile for user %s", userID)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(account)
+	json.NewEncoder(w).Encode(response)
 }
 
 func handleGetPolitisians(w http.ResponseWriter, r *http.Request) {

@@ -19,15 +19,17 @@ type TxData struct {
 
 // ProfileInfoResponse는 사용자 프로필 조회 시 반환되는 데이터 구조입니다.
 type ProfileInfoResponse struct {
-	Email           string   `json:"email"`
-	Nickname        string   `json:"nickname"`
-	Wallet          string   `json:"wallet"`
-	Country         string   `json:"country"`
-	Gender          string   `json:"gender"`
-	BirthYear       int      `json:"birthYear"`
-	Politisians     []string `json:"politisians"`
-	Balance         int64    `json:"balance"`
-	ReferralCredits int      `json:"referral_credits"`
+	Email           string              `json:"email"`
+	Nickname        string              `json:"nickname"`
+	Wallet          string              `json:"wallet"`
+	Country         string              `json:"country"`
+	Gender          string              `json:"gender"`
+	BirthYear       int                 `json:"birthYear"`
+	Politisians     []string            `json:"politisians"`
+	Balance         int64               `json:"balance"`               // 총 코인 잔액 (모든 정치인 코인의 합)
+	ReferralCredits int                 `json:"referral_credits"`
+	PoliticianCoins map[string]int64    `json:"politician_coins"`     // 정치인별 코인 보유량
+	TotalCoins      int64               `json:"total_coins"`          // 총 코인 수 (편의용)
 }
 
 // ProfileSaveRequest는 프로필 저장 요청 시 받는 데이터 구조입니다.
@@ -43,22 +45,26 @@ type ProfileSaveRequest struct {
 
 // Account는 사용자의 계정 정보를 나타냅니다.
 type Account struct {
-	Address         string   `json:"address"`
-	Email           string   `json:"email,omitempty"`
-	Wallet          string   `json:"wallet,omitempty"`  // PIN 기반으로 생성된 지갑 주소  
-	Politicians     []string `json:"politicians"`
-	ReferralCredits int      `json:"referral_credits"`
+	Address           string              `json:"address"`
+	Email             string              `json:"email,omitempty"`
+	Wallet            string              `json:"wallet,omitempty"`  // PIN 기반으로 생성된 지갑 주소  
+	Politicians       []string            `json:"politicians"`
+	ReferralCredits   int                 `json:"referral_credits"`
+	PoliticianCoins   map[string]int64    `json:"politician_coins"`   // "정치인명": 코인 보유량
+	ReceivedCoins     map[string]bool     `json:"received_coins"`     // "정치인명": 코인 받았는지 여부
+	InitialSelection  bool                `json:"initial_selection"`  // 초기 3명 선택 완료 여부
 }
 
 // Politician은 정치인의 정보를 나타냅니다.
 type Politician struct {
-	Name         string   `json:"name"`
-	Region       string   `json:"region"`
-	Party        string   `json:"party"`
-	IntroUrl     string   `json:"intro_url,omitempty"`
-	Supporters   []string `json:"supporters"`
-	TokensMinted int64    `json:"tokens_minted"`
-	MaxTokens    int64    `json:"max_tokens"`
+	Name             string   `json:"name"`
+	Region           string   `json:"region"`
+	Party            string   `json:"party"`
+	IntroUrl         string   `json:"intro_url,omitempty"`
+	Supporters       []string `json:"supporters"`
+	TotalCoinSupply  int64    `json:"total_coin_supply"`   // 총 발행량 (1,000만개)
+	RemainingCoins   int64    `json:"remaining_coins"`     // 남은 코인 수량
+	DistributedCoins int64    `json:"distributed_coins"`   // 이미 배포된 코인 수량
 }
 
 // Proposal은 새로운 정치인을 등록하기 위한 제안을 나타냅니다.

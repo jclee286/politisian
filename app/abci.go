@@ -150,11 +150,14 @@ func (app *PoliticianApp) handleCreateProfile(txData *ptypes.TxData) *types.Exec
 	
 	// 새 계정 생성
 	newAccount := &ptypes.Account{
-		Address:         txData.UserID,
-		Email:           txData.Email,
-		Wallet:          txData.WalletAddress,  // PIN 기반 지갑 주소
-		Politicians:     txData.Politicians,
-		ReferralCredits: 0, // 초기 크레딧은 0
+		Address:          txData.UserID,
+		Email:            txData.Email,
+		Wallet:           txData.WalletAddress,  // PIN 기반 지갑 주소
+		Politicians:      txData.Politicians,
+		ReferralCredits:  0, // 초기 크레딧은 0
+		PoliticianCoins:  make(map[string]int64),  // 정치인별 코인 보유량
+		ReceivedCoins:    make(map[string]bool),   // 정치인별 코인 수령 여부
+		InitialSelection: false,                   // 초기 선택 아직 완료 안됨
 	}
 	
 	// 추천인이 있는 경우 추천인에게 크레딧 지급
@@ -182,6 +185,44 @@ func (app *PoliticianApp) updateSupporters(txData *ptypes.TxData) *types.ExecTxR
 		app.logger.Info(logMsg, "user_id", txData.UserID)
 		return &types.ExecTxResult{Code: 30, Log: logMsg}
 	}
+	
+	// 초기 선택인지 확인 (처음 3명 선택)
+	if !account.InitialSelection && len(txData.Politicians) <= 3 {
+		// 초기 3명 선택 시 각각 100개씩 코인 지급
+		totalCoinsGiven := int64(0)
+		
+		for _, politicianName := range txData.Politicians {
+			// 이미 받은 코인인지 확인
+			if !account.ReceivedCoins[politicianName] {
+				// 정치인이 존재하고 코인이 충분한지 확인
+				if politician, exists := app.politicians[politicianName]; exists {
+					if politician.RemainingCoins >= 100 {
+						// 코인 지급
+						account.PoliticianCoins[politicianName] += 100
+						account.ReceivedCoins[politicianName] = true
+						
+						// 정치인의 남은 코인 수량 감소
+						politician.RemainingCoins -= 100
+						politician.DistributedCoins += 100
+						
+						totalCoinsGiven += 100
+						
+						app.logger.Info("Initial coin distribution", 
+							"user", txData.UserID, 
+							"politician", politicianName,
+							"coins_given", 100,
+							"politician_remaining", politician.RemainingCoins)
+					}
+				}
+			}
+		}
+		
+		account.InitialSelection = true
+		app.logger.Info("Initial selection completed", 
+			"user", txData.UserID, 
+			"total_coins_given", totalCoinsGiven)
+	}
+	
 	account.Politicians = txData.Politicians
 	app.logger.Info("Updated supporters", "user_id", txData.UserID, "politician_count", len(txData.Politicians))
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
@@ -220,14 +261,23 @@ func (app *PoliticianApp) handleVoteOnProposal(txData *ptypes.TxData) *types.Exe
 
 	if proposal.YesVotes >= 1 {
 		newPolitician := &proposal.Politician
+		
+		// 정치인 등록 시 1,000만개 코인 발행
+		newPolitician.TotalCoinSupply = 10_000_000    // 1,000만개
+		newPolitician.RemainingCoins = 10_000_000     // 초기에는 모두 남아있음
+		newPolitician.DistributedCoins = 0            // 아직 배포 안됨
+		
 		app.politicians[newPolitician.Name] = newPolitician
 		delete(app.proposals, txData.ProposalID)
-		app.logger.Info("Proposal approved and politician added", "proposal_id", txData.ProposalID, "politician_name", newPolitician.Name)
+		app.logger.Info("Politician approved with coin issuance", 
+			"proposal_id", txData.ProposalID, 
+			"politician_name", newPolitician.Name,
+			"coin_supply", newPolitician.TotalCoinSupply)
 	}
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
-// handleClaimReferralReward는 추천 크레딧을 사용하여 지지 정치인을 추가할 수 있는 권한을 부여합니다.
+// handleClaimReferralReward는 추천 크레딧을 사용하여 새 정치인의 코인 100개를 지급합니다.
 func (app *PoliticianApp) handleClaimReferralReward(txData *ptypes.TxData) *types.ExecTxResult {
 	account, exists := app.accounts[txData.UserID]
 	if !exists {
@@ -243,13 +293,52 @@ func (app *PoliticianApp) handleClaimReferralReward(txData *ptypes.TxData) *type
 		return &types.ExecTxResult{Code: 51, Log: logMsg}
 	}
 	
+	// 선택한 정치인이 존재하는지 확인
+	if txData.PoliticianName == "" {
+		logMsg := "No politician specified for referral reward"
+		app.logger.Info(logMsg, "user_id", txData.UserID)
+		return &types.ExecTxResult{Code: 52, Log: logMsg}
+	}
+	
+	// 이미 받은 정치인인지 확인
+	if account.ReceivedCoins[txData.PoliticianName] {
+		logMsg := "Already received coins from this politician"
+		app.logger.Info(logMsg, "user_id", txData.UserID, "politician", txData.PoliticianName)
+		return &types.ExecTxResult{Code: 53, Log: logMsg}
+	}
+	
+	// 정치인이 존재하고 코인이 충분한지 확인
+	politician, exists := app.politicians[txData.PoliticianName]
+	if !exists {
+		logMsg := "Politician not found"
+		app.logger.Info(logMsg, "politician", txData.PoliticianName)
+		return &types.ExecTxResult{Code: 54, Log: logMsg}
+	}
+	
+	if politician.RemainingCoins < 100 {
+		logMsg := "Not enough coins available from politician"
+		app.logger.Info(logMsg, "politician", txData.PoliticianName, "remaining", politician.RemainingCoins)
+		return &types.ExecTxResult{Code: 55, Log: logMsg}
+	}
+	
 	// 크레딧 1개 차감
 	account.ReferralCredits--
 	
-	// 지지 정치인 슬롯을 추가하거나 100 P-COIN을 지급 (여기서는 간단히 크레딧만 차감)
-	// 실제로는 사용자가 추가 정치인을 선택할 수 있도록 하는 로직이 필요
+	// 코인 지급
+	account.PoliticianCoins[txData.PoliticianName] += 100
+	account.ReceivedCoins[txData.PoliticianName] = true
 	
-	app.logger.Info("Referral reward claimed", "user_id", txData.UserID, "remaining_credits", account.ReferralCredits)
+	// 정치인의 남은 코인 수량 감소
+	politician.RemainingCoins -= 100
+	politician.DistributedCoins += 100
+	
+	app.logger.Info("Referral reward coin distributed", 
+		"user", txData.UserID, 
+		"politician", txData.PoliticianName,
+		"coins_given", 100,
+		"remaining_credits", account.ReferralCredits,
+		"politician_remaining", politician.RemainingCoins)
+	
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 

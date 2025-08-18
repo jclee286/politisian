@@ -55,8 +55,9 @@ func (app *PoliticianApp) initializeDefaultPoliticians() {
 			Party:        "더불어민주당",
 			IntroUrl:     "",
 			Supporters:   []string{},
-			TokensMinted: 0,
-			MaxTokens:    1000000,
+			TotalCoinSupply:  10_000_000,  // 1,000만개
+			RemainingCoins:   10_000_000,  // 초기에는 모두 남아있음
+			DistributedCoins: 0,           // 아직 배포 안됨
 		},
 		{
 			Name:         "한동훈",
@@ -64,8 +65,9 @@ func (app *PoliticianApp) initializeDefaultPoliticians() {
 			Party:        "국민의힘",
 			IntroUrl:     "",
 			Supporters:   []string{},
-			TokensMinted: 0,
-			MaxTokens:    1000000,
+			TotalCoinSupply:  10_000_000,  // 1,000만개
+			RemainingCoins:   10_000_000,  // 초기에는 모두 남아있음
+			DistributedCoins: 0,           // 아직 배포 안됨
 		},
 		{
 			Name:         "조국",
@@ -73,8 +75,9 @@ func (app *PoliticianApp) initializeDefaultPoliticians() {
 			Party:        "조국혁신당",
 			IntroUrl:     "",
 			Supporters:   []string{},
-			TokensMinted: 0,
-			MaxTokens:    1000000,
+			TotalCoinSupply:  10_000_000,  // 1,000만개
+			RemainingCoins:   10_000_000,  // 초기에는 모두 남아있음
+			DistributedCoins: 0,           // 아직 배포 안됨
 		},
 		{
 			Name:         "안철수",
@@ -82,8 +85,9 @@ func (app *PoliticianApp) initializeDefaultPoliticians() {
 			Party:        "국민의당",
 			IntroUrl:     "",
 			Supporters:   []string{},
-			TokensMinted: 0,
-			MaxTokens:    1000000,
+			TotalCoinSupply:  10_000_000,  // 1,000만개
+			RemainingCoins:   10_000_000,  // 초기에는 모두 남아있음
+			DistributedCoins: 0,           // 아직 배포 안됨
 		},
 		{
 			Name:         "심상정",
@@ -91,8 +95,9 @@ func (app *PoliticianApp) initializeDefaultPoliticians() {
 			Party:        "정의당",
 			IntroUrl:     "",
 			Supporters:   []string{},
-			TokensMinted: 0,
-			MaxTokens:    1000000,
+			TotalCoinSupply:  10_000_000,  // 1,000만개
+			RemainingCoins:   10_000_000,  // 초기에는 모두 남아있음
+			DistributedCoins: 0,           // 아직 배포 안됨
 		},
 		{
 			Name:         "이낙연",
@@ -100,8 +105,9 @@ func (app *PoliticianApp) initializeDefaultPoliticians() {
 			Party:        "더불어민주당",
 			IntroUrl:     "",
 			Supporters:   []string{},
-			TokensMinted: 0,
-			MaxTokens:    1000000,
+			TotalCoinSupply:  10_000_000,  // 1,000만개
+			RemainingCoins:   10_000_000,  // 초기에는 모두 남아있음
+			DistributedCoins: 0,           // 아직 배포 안됨
 		},
 		{
 			Name:         "김기현",
@@ -109,8 +115,9 @@ func (app *PoliticianApp) initializeDefaultPoliticians() {
 			Party:        "국민의힘",
 			IntroUrl:     "",
 			Supporters:   []string{},
-			TokensMinted: 0,
-			MaxTokens:    1000000,
+			TotalCoinSupply:  10_000_000,  // 1,000만개
+			RemainingCoins:   10_000_000,  // 초기에는 모두 남아있음
+			DistributedCoins: 0,           // 아직 배포 안됨
 		},
 		{
 			Name:         "박홍근",
@@ -118,8 +125,9 @@ func (app *PoliticianApp) initializeDefaultPoliticians() {
 			Party:        "더불어민주당",
 			IntroUrl:     "",
 			Supporters:   []string{},
-			TokensMinted: 0,
-			MaxTokens:    1000000,
+			TotalCoinSupply:  10_000_000,  // 1,000만개
+			RemainingCoins:   10_000_000,  // 초기에는 모두 남아있음
+			DistributedCoins: 0,           // 아직 배포 안됨
 		},
 		{
 			Name:         "추경호",
@@ -127,8 +135,9 @@ func (app *PoliticianApp) initializeDefaultPoliticians() {
 			Party:        "국민의힘",
 			IntroUrl:     "",
 			Supporters:   []string{},
-			TokensMinted: 0,
-			MaxTokens:    1000000,
+			TotalCoinSupply:  10_000_000,  // 1,000만개
+			RemainingCoins:   10_000_000,  // 초기에는 모두 남아있음
+			DistributedCoins: 0,           // 아직 배포 안됨
 		},
 		{
 			Name:         "우상호",
@@ -136,8 +145,9 @@ func (app *PoliticianApp) initializeDefaultPoliticians() {
 			Party:        "더불어민주당",
 			IntroUrl:     "",
 			Supporters:   []string{},
-			TokensMinted: 0,
-			MaxTokens:    1000000,
+			TotalCoinSupply:  10_000_000,  // 1,000만개
+			RemainingCoins:   10_000_000,  // 초기에는 모두 남아있음
+			DistributedCoins: 0,           // 아직 배포 안됨
 		},
 	}
 
