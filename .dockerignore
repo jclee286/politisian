@@ -1,22 +1,46 @@
-# Git-related files
+# Git 관련
 .git
 .gitignore
+.gitattributes
 
-# Docker-related files
+# GitHub Actions
+.github
+
+# Docker 관련
 Dockerfile
 .dockerignore
 
-# Local development files
+# 문서
+README.md
+*.md
+
+# 로컬 개발 파일
 nohup.out
 *.log
 *.bak
+*.tmp
 app_state.json
+.DS_Store
+.env.local
 
-# Local blockchain data
+# 로컬 블록체인 데이터
 .cometbft/
+data/
+*.db
 
-# Local server executable
+# 로컬 서버 실행 파일
 politisian_server
 
-# Build artifacts (will be created inside the container)
-build_temp/ 
+# 빌드 아티팩트
+build_temp/
+dist/
+build/
+
+# IDE/에디터
+.vscode
+.idea
+*.swp
+*.swo
+
+# 정리 스크립트
+cleanup-disk.sh 

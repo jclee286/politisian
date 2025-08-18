@@ -1,22 +1,28 @@
 # 1단계: 빌드 환경 (코드를 컴파일하는 역할)
-# Go 1.23 버전의 가벼운 Alpine Linux를 기반으로 빌드 서버를 구성합니다.
 FROM golang:1.23-alpine AS builder
+
+# 빌드에 필요한 도구 설치 및 캐시 정리
+RUN apk add --no-cache git && \
+    go env -w GOCACHE=/tmp/go-cache && \
+    go env -w GOMODCACHE=/tmp/go-mod
 
 # 작업 디렉토리 설정
 WORKDIR /app
 
-# 의존성 관리를 위해 go.mod와 go.sum 파일을 먼저 복사합니다.
-# 이렇게 하면, 소스 코드가 변경되지 않는 한 불필요한 의존성 다운로드를 건너뛰어 빌드 속도를 높일 수 있습니다.
+# 의존성 파일만 먼저 복사하고 다운로드 (레이어 캐싱 최적화)
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod download && go mod verify
 
-# 나머지 모든 소스 코드를 복사합니다.
+# 소스 코드 복사
 COPY . .
 
-# CGO_ENABLED=0는 다른 시스템 라이브러리에 대한 의존성이 없는 정적 바이너리를 만듭니다.
-# 이렇게 하면 어떤 리눅스 환경에서도 실행 파일이 독립적으로 실행될 수 있습니다.
-# -o /politisian_server는 컴파일 결과물이 / 경로에 politisian_server라는 이름으로 저장되도록 합니다.
-RUN CGO_ENABLED=0 go build -o /politisian_server .
+# 최적화된 빌드 (메모리 사용량 제한, 병렬 빌드 제한)
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -a -installsuffix cgo \
+    -ldflags='-w -s -extldflags "-static"' \
+    -o /politisian_server . && \
+    # 빌드 완료 후 캐시 정리
+    go clean -cache -modcache
 
 
 # 2단계: 실행 환경 (빌드된 결과물만 실행하는 역할)

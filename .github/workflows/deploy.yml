@@ -122,12 +122,39 @@ jobs:
               git reset --hard origin/main
             fi
             
-            # Ensure data directory exists but is clean
-            rm -rf ./data
+            # 디스크 공간 정리 (빌드 전 필수)
+            echo "=== 디스크 공간 정리 시작 ==="
+            df -h
+            
+            # Docker 완전 정리
+            docker system prune -a -f --volumes
+            docker builder prune -a -f
+            
+            # 기존 컨테이너/이미지 강제 정리
+            docker-compose down --volumes --remove-orphans 2>/dev/null || true
+            docker rmi $(docker images -q) -f 2>/dev/null || true
+            docker volume rm $(docker volume ls -q) -f 2>/dev/null || true
+            
+            # 시스템 캐시 정리
+            apt-get clean
+            apt-get autoremove -y --purge
+            rm -rf /var/lib/apt/lists/*
+            rm -rf /tmp/* /var/tmp/*
+            find /var/log -name "*.log" -type f -delete 2>/dev/null || true
+            
+            # Go 캐시 완전 정리
+            export GOCACHE=/tmp/go-build
+            export GOMODCACHE=/tmp/go-mod
+            rm -rf /root/.cache/go-build /root/go/pkg/mod 2>/dev/null || true
+            go clean -cache -modcache -testcache 2>/dev/null || true
+            
+            echo "=== 디스크 공간 정리 완료 ==="
+            df -h
+
+            # 데이터 디렉토리 정리
+            rm -rf ./data ./build_temp
             mkdir -p ./data
 
-            # Run docker-compose with force recreate
+            # Docker Compose 실행 (메모리 제한 적용)
             echo "IMAGE_TAG=${{ github.sha }}" > .env
-            docker-compose --env-file .env down
-            docker-compose --env-file .env pull
             docker-compose --env-file .env up -d --build --remove-orphans --force-recreate 
