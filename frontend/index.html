@@ -157,15 +157,15 @@
             </div>
 
             <!-- 지갑이 잠겨있을 때 표시 -->
-            <div id="wallet-locked" style="text-align: center; padding: 40px;">
+            <div id="wallet-locked" style="display: none; text-align: center; padding: 40px;">
                 <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
                 <h3 style="color: #666; margin-bottom: 15px;">지갑이 잠겨있습니다</h3>
-                <p style="color: #999; margin-bottom: 20px;">코인 정보를 확인하려면 PIN을 입력하세요</p>
+                <p style="color: #999; margin-bottom: 20px;">중요한 거래를 위해 PIN을 입력하세요</p>
                 <button onclick="showPinModal()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-size: 16px;">🔑 지갑 잠금 해제</button>
             </div>
 
             <!-- 지갑이 해제되었을 때 표시 -->
-            <div id="wallet-unlocked" style="display: none;">
+            <div id="wallet-unlocked">
                 <div style="margin-bottom: 20px;">
                     <p><strong>지갑 주소:</strong></p>
                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -191,7 +191,7 @@
                 </ul>
                 
                 <div style="margin-top: 20px; text-align: center;">
-                    <button onclick="lockWallet()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px;">🔒 지갑 잠그기</button>
+                    <button onclick="lockWallet()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px;">🔒 보안 잠금</button>
                 </div>
             </div>
         </div>
@@ -498,6 +498,11 @@
                     } else if (politicianCoinsListElem) {
                         politicianCoinsListElem.innerHTML = '<li>코인 정보를 불러올 수 없습니다.</li>';
                     }
+                    
+                    // 로그인 후 자동으로 지갑 해제
+                    console.log('🔓 로그인 후 자동 지갑 해제');
+                    document.getElementById('wallet-locked').style.display = 'none';
+                    document.getElementById('wallet-unlocked').style.display = 'block';
                     
                     console.log('✅ UI 업데이트 완료');
                 } catch (error) {
