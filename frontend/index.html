@@ -171,6 +171,11 @@
         .line { background-color: #00C300; }
         .instagram { background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4); }
     </style>
+    
+    <!-- 카카오톡 JavaScript SDK -->
+    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
+            integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4" 
+            crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -196,28 +201,10 @@
             </div>
             <p id="copy-status" style="height: 1em; color: green;"></p>
             
-            <!-- SNS 공유 버튼들 -->
+            <!-- 카카오톡 친구 초대 버튼 -->
             <div class="share-buttons">
-                <button class="share-button kakao" onclick="shareToKakao()">
-                    💬 카카오톡
-                </button>
-                <button class="share-button facebook" onclick="shareToFacebook()">
-                    📘 페이스북
-                </button>
-                <button class="share-button twitter" onclick="shareToTwitter()">
-                    🐦 트위터
-                </button>
-                <button class="share-button telegram" onclick="shareToTelegram()">
-                    ✈️ 텔레그램
-                </button>
-                <button class="share-button whatsapp" onclick="shareToWhatsApp()">
-                    💚 왓츠앱
-                </button>
-                <button class="share-button line" onclick="shareToLine()">
-                    💚 라인
-                </button>
-                <button class="share-button instagram" onclick="shareToInstagram()">
-                    📷 인스타그램
+                <button class="share-button kakao" onclick="shareToKakaoFriends()">
+                    💬 카카오톡 친구에게 보내기
                 </button>
             </div>
             
@@ -856,61 +843,85 @@
             }, 5000);
         });
 
-        // SNS 공유 함수들
-        function getShareData() {
-            const referralLink = document.getElementById('referral-link').value;
-            const message = `정치인 공화국에 참여해보세요! 🏛️\n\n투표로 정치인을 등록하고 함께 정치를 만들어가요!\n\n초대 링크: ${referralLink}`;
-            return { link: referralLink, message: message };
-        }
+        // 카카오톡 SDK 초기화 및 친구 초대 함수
+        document.addEventListener('DOMContentLoaded', function() {
+            // 카카오 SDK 초기화 (실제 앱 키로 교체 필요)
+            if (typeof Kakao !== 'undefined') {
+                Kakao.init('YOUR_KAKAO_APP_KEY'); // 실제 카카오 앱 키로 교체 필요
+                console.log('카카오 SDK 초기화 완료:', Kakao.isInitialized());
+            }
+        });
 
-        function shareToKakao() {
-            const { link, message } = getShareData();
-            // 카카오톡 공유 (웹에서는 클립보드 복사 + 안내)
-            navigator.clipboard.writeText(message).then(() => {
-                alert('초대 메시지가 복사되었습니다!\n카카오톡에서 붙여넣기 해주세요.');
-            }).catch(() => {
-                prompt('아래 메시지를 복사해서 카카오톡에 공유해주세요:', message);
+        function shareToKakaoFriends() {
+            const referralLink = document.getElementById('referral-link').value;
+            
+            if (!Kakao.isInitialized()) {
+                alert('카카오톡 서비스를 초기화하는 중입니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+
+            // 카카오톡 친구 선택하기 (정식 API)
+            Kakao.Picker.selectFriends({
+                title: '정치인 공화국 친구 초대',
+                enableBackButton: true,
+                enableSearch: true,
+                disableTalkChannel: false,
+                maxPickableCount: 10,
+                minPickableCount: 1,
+                success: function(selectedFriends) {
+                    console.log('선택된 친구들:', selectedFriends);
+                    
+                    // 선택된 친구들에게 메시지 보내기
+                    Kakao.Talk.sendCustomMemo({
+                        templateId: YOUR_TEMPLATE_ID, // 카카오 비즈 메시지 템플릿 ID
+                        templateArgs: {
+                            'REFERRAL_LINK': referralLink,
+                            'INVITER_NAME': '친구' // 실제 사용자 이름으로 교체 가능
+                        },
+                        success: function(response) {
+                            console.log('메시지 전송 성공:', response);
+                            alert('친구에게 초대 메시지를 보냈습니다! 🎉');
+                        },
+                        fail: function(error) {
+                            console.error('메시지 전송 실패:', error);
+                            // 대안: 단순 텍스트 공유
+                            shareToKakaoSimple();
+                        }
+                    });
+                },
+                fail: function(error) {
+                    console.error('친구 선택 실패:', error);
+                    // 대안: 단순 텍스트 공유
+                    shareToKakaoSimple();
+                }
             });
         }
 
-        function shareToFacebook() {
-            const { link } = getShareData();
-            const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
-            window.open(url, '_blank', 'width=600,height=400');
-        }
-
-        function shareToTwitter() {
-            const { link, message } = getShareData();
-            const text = '정치인 공화국에 참여해보세요! 🏛️ 투표로 정치인을 등록하고 함께 정치를 만들어가요!';
-            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
-            window.open(url, '_blank', 'width=600,height=400');
-        }
-
-        function shareToTelegram() {
-            const { link, message } = getShareData();
-            const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(message)}`;
-            window.open(url, '_blank', 'width=600,height=400');
-        }
-
-        function shareToWhatsApp() {
-            const { message } = getShareData();
-            const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-            window.open(url, '_blank', 'width=600,height=400');
-        }
-
-        function shareToLine() {
-            const { link, message } = getShareData();
-            const url = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(link)}&text=${encodeURIComponent(message)}`;
-            window.open(url, '_blank', 'width=600,height=400');
-        }
-
-        function shareToInstagram() {
-            const { message } = getShareData();
-            // 인스타그램은 직접 링크 공유가 불가능하므로 클립보드 복사
-            navigator.clipboard.writeText(message).then(() => {
-                alert('초대 메시지가 복사되었습니다!\n인스타그램 스토리나 DM에서 붙여넣기 해주세요.');
-            }).catch(() => {
-                prompt('아래 메시지를 복사해서 인스타그램에 공유해주세요:', message);
+        // 카카오톡 단순 텍스트 공유 (대안)
+        function shareToKakaoSimple() {
+            const referralLink = document.getElementById('referral-link').value;
+            
+            Kakao.Share.sendDefault({
+                objectType: 'text',
+                text: `🏛️ 정치인 공화국에 초대합니다!\n\n투표로 정치인을 등록하고 함께 정치를 만들어가요!\n\n👇 아래 링크로 가입해주세요\n${referralLink}`,
+                link: {
+                    webUrl: referralLink,
+                    mobileWebUrl: referralLink
+                },
+                success: function(response) {
+                    console.log('카카오톡 공유 성공:', response);
+                    alert('카카오톡으로 초대 메시지를 공유했습니다! 🎉');
+                },
+                fail: function(error) {
+                    console.error('카카오톡 공유 실패:', error);
+                    // 최종 대안: 클립보드 복사
+                    const message = `🏛️ 정치인 공화국에 초대합니다!\n\n투표로 정치인을 등록하고 함께 정치를 만들어가요!\n\n초대 링크: ${referralLink}`;
+                    navigator.clipboard.writeText(message).then(() => {
+                        alert('초대 메시지가 복사되었습니다!\n카카오톡에서 붙여넣기 해주세요.');
+                    }).catch(() => {
+                        prompt('아래 메시지를 복사해서 카카오톡에 공유해주세요:', message);
+                    });
+                }
             });
         }
     </script>
