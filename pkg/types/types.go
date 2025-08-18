@@ -30,6 +30,7 @@ type ProfileInfoResponse struct {
 	ReferralCredits int                 `json:"referral_credits"`
 	PoliticianCoins map[string]int64    `json:"politician_coins"`     // 정치인별 코인 보유량
 	TotalCoins      int64               `json:"total_coins"`          // 총 코인 수 (편의용)
+	TetherBalance   int64               `json:"tether_balance"`       // 테더코인 잔액
 }
 
 // ProfileSaveRequest는 프로필 저장 요청 시 받는 데이터 구조입니다.
@@ -53,6 +54,9 @@ type Account struct {
 	PoliticianCoins   map[string]int64    `json:"politician_coins"`   // "정치인명": 코인 보유량
 	ReceivedCoins     map[string]bool     `json:"received_coins"`     // "정치인명": 코인 받았는지 여부
 	InitialSelection  bool                `json:"initial_selection"`  // 초기 3명 선택 완료 여부
+	TetherBalance     int64               `json:"tether_balance"`     // 테더코인 잔액 (USDT 단위)
+	ActiveOrders      []TradeOrder        `json:"active_orders"`      // 활성 거래 주문들
+	EscrowAccount     EscrowAccount       `json:"escrow_account"`     // 에스크로 계정
 }
 
 // Politician은 정치인의 정보를 나타냅니다.
@@ -123,9 +127,79 @@ type LoginResponse struct {
 	UserID  string `json:"user_id,omitempty"`
 }
 
+// TradeOrder는 거래 주문을 나타냅니다.
+type TradeOrder struct {
+	ID            string    `json:"id"`             // 주문 ID
+	UserID        string    `json:"user_id"`        // 주문한 사용자 ID
+	PoliticianID  string    `json:"politician_id"`  // 거래할 정치인 ID
+	OrderType     string    `json:"order_type"`     // "buy" 또는 "sell"
+	Quantity      int64     `json:"quantity"`       // 수량
+	Price         int64     `json:"price"`          // 가격 (테더코인 단위)
+	Status        string    `json:"status"`         // "active", "filled", "cancelled", "partial"
+	FilledQuantity int64    `json:"filled_quantity"` // 체결된 수량
+	EscrowAmount   int64    `json:"escrow_amount"`   // 에스크로 동결 금액
+	CreatedAt     int64     `json:"created_at"`     // 생성 시간
+	UpdatedAt     int64     `json:"updated_at"`     // 업데이트 시간
+}
+
+// EscrowAccount는 에스크로 계정을 나타냅니다.
+type EscrowAccount struct {
+	UserID              string            `json:"user_id"`              // 사용자 ID
+	FrozenTetherBalance int64            `json:"frozen_tether_balance"` // 동결된 테더코인
+	FrozenPoliticianCoins map[string]int64 `json:"frozen_politician_coins"` // 동결된 정치인 코인들
+	ActiveOrders        []string         `json:"active_orders"`        // 활성 주문 ID 목록
+}
+
+// Trade는 체결된 거래를 나타냅니다.
+type Trade struct {
+	ID           string `json:"id"`            // 거래 ID
+	BuyOrderID   string `json:"buy_order_id"`  // 매수 주문 ID
+	SellOrderID  string `json:"sell_order_id"` // 매도 주문 ID
+	BuyerID      string `json:"buyer_id"`      // 구매자 ID
+	SellerID     string `json:"seller_id"`     // 판매자 ID
+	PoliticianID string `json:"politician_id"` // 정치인 ID
+	Quantity     int64  `json:"quantity"`      // 거래 수량
+	Price        int64  `json:"price"`         // 거래 가격
+	TotalAmount  int64  `json:"total_amount"`  // 총 거래 금액 (수량 × 가격)
+	Timestamp    int64  `json:"timestamp"`     // 거래 시간
+	Status       string `json:"status"`        // "completed", "processing"
+}
+
+// OrderBook은 특정 정치인의 오더북을 나타냅니다.
+type OrderBook struct {
+	PoliticianID  string       `json:"politician_id"`
+	BuyOrders     []TradeOrder `json:"buy_orders"`    // 매수 주문들 (가격 높은 순)
+	SellOrders    []TradeOrder `json:"sell_orders"`   // 매도 주문들 (가격 낮은 순)
+	LastPrice     int64        `json:"last_price"`    // 최근 체결가
+	Volume24h     int64        `json:"volume_24h"`    // 24시간 거래량
+}
+
+// TradeRequest는 거래 주문 요청을 나타냅니다.
+type TradeRequest struct {
+	PoliticianID  string `json:"politician_id"`  // 거래할 정치인 ID
+	OrderType     string `json:"order_type"`     // "buy" 또는 "sell"
+	Quantity      int64  `json:"quantity"`       // 수량
+	Price         int64  `json:"price"`          // 가격 (테더코인 단위)
+	PIN           string `json:"pin"`            // 거래 승인용 PIN
+}
+
+// PoliticianPrice는 정치인 코인의 가격 정보를 나타냅니다.
+type PoliticianPrice struct {
+	PoliticianID   string `json:"politician_id"`
+	Name           string `json:"name"`
+	CurrentPrice   int64  `json:"current_price"`   // 현재 가격
+	Change24h      int64  `json:"change_24h"`      // 24시간 변동가
+	ChangePercent  float64 `json:"change_percent"` // 24시간 변동률
+	Volume24h      int64  `json:"volume_24h"`      // 24시간 거래량
+	Rank           int    `json:"rank"`            // 가격 순위
+}
+
 // GenesisState는 블록체인의 초기 상태를 정의합니다.
 type GenesisState struct {
-	Accounts    map[string]*Account    `json:"accounts"`
-	Politicians map[string]*Politician `json:"politicians"`
-	Users       map[string]*User       `json:"users"`       // 사용자 정보 추가
+	Accounts       map[string]*Account       `json:"accounts"`
+	Politicians    map[string]*Politician    `json:"politicians"`
+	Users          map[string]*User          `json:"users"`          // 사용자 정보 추가
+	Orders         []TradeOrder              `json:"orders"`         // 거래 주문들
+	EscrowAccounts map[string]*EscrowAccount `json:"escrow_accounts"` // 에스크로 계정들
+	Trades         []Trade                   `json:"trades"`         // 체결된 거래 기록들
 } 

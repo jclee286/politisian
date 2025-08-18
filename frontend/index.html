@@ -181,6 +181,8 @@
                 
                 <div style="margin-bottom: 20px;">
                     <p><strong>총 보유 코인:</strong> <span id="total-coins" style="font-size: 1.3em; font-weight: bold; color: #2c3e50;">0개</span></p>
+                    <p><strong>테더코인 잔액:</strong> <span id="tether-balance" style="font-size: 1.2em; font-weight: bold; color: #f39c12;">0 USDT</span></p>
+                    <p><strong>사용 가능한 테더:</strong> <span id="available-tether" style="font-size: 1.1em; color: #28a745;">0 USDT</span> <small style="color: #6c757d;">(동결 제외)</small></p>
                 </div>
                 
                 <hr style="margin: 20px 0;">
@@ -213,6 +215,47 @@
                 <ul id="registered-politicians-list" class="politisian-list" style="margin: 0;">
                     <li class="loading">목록을 불러오는 중...</li>
                 </ul>
+            </div>
+        </div>
+        
+        <!-- 거래 시스템 카드 -->
+        <div class="card">
+            <h2>📈 정치인 코인 거래</h2>
+            
+            <!-- 가격 순위 -->
+            <div style="margin-bottom: 20px;">
+                <h3>🏆 인기 순위 (가격순)</h3>
+                <div id="price-rankings" style="max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 4px; padding: 10px;">
+                    <div class="loading">가격 정보를 불러오는 중...</div>
+                </div>
+            </div>
+            
+            <!-- 간단 거래 인터페이스 -->
+            <div style="border-top: 1px solid #e0e0e0; padding-top: 20px;">
+                <h3>💱 빠른 거래</h3>
+                <form id="trade-form" style="display: grid; gap: 10px;">
+                    <select id="politician-select" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">정치인 선택...</option>
+                    </select>
+                    <select id="trade-type" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="buy">매수 (USDT로 구매)</option>
+                        <option value="sell">매도 (코인 판매)</option>
+                    </select>
+                    <input type="number" id="trade-quantity" placeholder="수량" min="1" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="number" id="trade-price" placeholder="가격 (USDT)" min="1" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <button type="submit" style="padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                        📊 주문 등록
+                    </button>
+                </form>
+                <div id="trade-status" style="margin-top: 10px; font-size: 14px;"></div>
+            </div>
+            
+            <!-- 내 주문 목록 -->
+            <div style="border-top: 1px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
+                <h3>📋 내 활성 주문</h3>
+                <div id="my-orders" style="max-height: 150px; overflow-y: auto;">
+                    <div class="loading">주문 목록을 불러오는 중...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -309,6 +352,7 @@
                             updateDashboardUI(data);
                             loadProposals(); // 프로필 로드 성공 후에만 제안 목록 로드
                             loadRegisteredPoliticians(); // 등록된 정치인 목록 로드
+                            loadTradingData(); // 거래 관련 데이터 로드
                         }
                     })
                     .catch(error => {
@@ -484,6 +528,31 @@
                         const totalCoins = data.total_coins || data.balance || 0;
                         totalCoinsElem.textContent = `${totalCoins}개`;
                     }
+                    
+                    // 테더코인 잔액 업데이트
+                    const tetherBalanceElem = document.getElementById('tether-balance');
+                    if (tetherBalanceElem) {
+                        const tetherBalance = data.tether_balance || 0;
+                        tetherBalanceElem.textContent = `${tetherBalance} USDT`;
+                    }
+                    
+                    // 사용 가능한 테더코인 잔액 업데이트
+                    const availableTetherElem = document.getElementById('available-tether');
+                    if (availableTetherElem) {
+                        const tetherBalance = data.tether_balance || 0;
+                        const frozenTether = (data.escrow_account && data.escrow_account.frozen_tether_balance) || 0;
+                        const availableTether = tetherBalance - frozenTether;
+                        availableTetherElem.textContent = `${availableTether} USDT`;
+                        
+                        // 동결된 금액이 있으면 색상 변경
+                        if (frozenTether > 0) {
+                            availableTetherElem.style.color = '#ffc107';
+                            availableTetherElem.title = `총 ${tetherBalance} USDT 중 ${frozenTether} USDT 동결됨`;
+                        } else {
+                            availableTetherElem.style.color = '#28a745';
+                            availableTetherElem.title = '';
+                        }
+                    }
 
                     // 정치인별 코인 보유량 표시
                     if (politicianCoinsListElem && data.politician_coins) {
@@ -609,6 +678,9 @@
                             
                             // 목록 표시
                             displayPoliticians(politicians);
+                            
+                            // 거래용 셀렉트 박스 옵션 업데이트
+                            loadPoliticianSelectOptions();
                         }
                     })
                     .catch(error => {
@@ -842,10 +914,264 @@
                 });
             });
 
+            // 거래 관련 이벤트 리스너
+            const tradeForm = document.getElementById('trade-form');
+            if (tradeForm) {
+                tradeForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    placeTradeOrder();
+                });
+            }
+
             // 안전한 데이터 로드 시작 (즉시 로드)
             console.log('🚀 즉시 데이터 로드 시작');
             loadUserProfile();
         });
+
+        // 거래 관련 함수들
+        function loadTradingData() {
+            console.log('📈 거래 데이터 로드 시작');
+            loadPoliticianPrices();
+            loadMyOrders();
+            loadPoliticianSelectOptions();
+        }
+
+        function loadPoliticianPrices() {
+            fetch('/api/trading/prices')
+                .then(response => {
+                    if (!response.ok) throw new Error('가격 정보 로드 실패');
+                    return response.json();
+                })
+                .then(prices => {
+                    console.log('✅ 가격 정보 로드 성공:', prices);
+                    displayPriceRankings(prices);
+                })
+                .catch(error => {
+                    console.error('❌ 가격 정보 로드 실패:', error);
+                    document.getElementById('price-rankings').innerHTML = '<div style="color: #e74c3c;">가격 정보를 불러올 수 없습니다.</div>';
+                });
+        }
+
+        function displayPriceRankings(prices) {
+            const rankingsElem = document.getElementById('price-rankings');
+            if (!prices || prices.length === 0) {
+                rankingsElem.innerHTML = '<div>등록된 정치인이 없습니다.</div>';
+                return;
+            }
+
+            rankingsElem.innerHTML = '';
+            prices.forEach((price, index) => {
+                const div = document.createElement('div');
+                div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #f0f0f0; cursor: pointer;';
+                div.innerHTML = `
+                    <div>
+                        <span style="font-weight: bold; color: #333;">${index + 1}. ${price.name}</span>
+                        <br>
+                        <small style="color: #666;">24h 거래량: ${price.volume_24h || 0}</small>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: bold; color: #2c3e50;">${price.current_price} USDT</div>
+                        <small style="color: ${price.change_24h >= 0 ? '#28a745' : '#dc3545'};">
+                            ${price.change_24h >= 0 ? '+' : ''}${price.change_24h || 0} (${((price.change_percent || 0) * 100).toFixed(2)}%)
+                        </small>
+                    </div>
+                `;
+                div.onclick = () => selectPoliticianForTrade(price.politician_id, price.name);
+                rankingsElem.appendChild(div);
+            });
+        }
+
+        function selectPoliticianForTrade(politicianId, name) {
+            const selectElem = document.getElementById('politician-select');
+            if (selectElem) {
+                selectElem.value = politicianId;
+                // 선택된 정치인의 현재 가격을 가격 입력란에 자동 입력
+                fetch(`/api/trading/prices`)
+                    .then(response => response.json())
+                    .then(prices => {
+                        const politician = prices.find(p => p.politician_id === politicianId);
+                        if (politician) {
+                            document.getElementById('trade-price').value = politician.current_price;
+                        }
+                    })
+                    .catch(error => console.error('가격 정보 조회 실패:', error));
+            }
+        }
+
+        function loadPoliticianSelectOptions() {
+            // 등록된 정치인 목록을 셀렉트 박스에 추가
+            if (allPoliticiansData && Object.keys(allPoliticiansData).length > 0) {
+                const selectElem = document.getElementById('politician-select');
+                selectElem.innerHTML = '<option value="">정치인 선택...</option>';
+                
+                for (const id in allPoliticiansData) {
+                    const politician = allPoliticiansData[id];
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = politician.name || id;
+                    selectElem.appendChild(option);
+                }
+            }
+        }
+
+        function loadMyOrders() {
+            fetch('/api/trading/my-orders')
+                .then(response => {
+                    if (!response.ok) throw new Error('주문 목록 로드 실패');
+                    return response.json();
+                })
+                .then(orders => {
+                    console.log('✅ 내 주문 목록 로드 성공:', orders);
+                    displayMyOrders(orders);
+                })
+                .catch(error => {
+                    console.error('❌ 내 주문 목록 로드 실패:', error);
+                    document.getElementById('my-orders').innerHTML = '<div style="color: #e74c3c;">주문 목록을 불러올 수 없습니다.</div>';
+                });
+        }
+
+        function displayMyOrders(orders) {
+            const ordersElem = document.getElementById('my-orders');
+            if (!orders || orders.length === 0) {
+                ordersElem.innerHTML = '<div>활성 주문이 없습니다.</div>';
+                return;
+            }
+
+            ordersElem.innerHTML = '';
+            orders.forEach(order => {
+                const div = document.createElement('div');
+                div.style.cssText = 'padding: 10px; border: 1px solid #e0e0e0; border-radius: 4px; margin-bottom: 8px; background: #f9f9f9;';
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${getPoliticianNameById(order.politician_id)}</strong>
+                            <span style="color: ${order.order_type === 'buy' ? '#28a745' : '#dc3545'}; font-weight: bold;">
+                                ${order.order_type === 'buy' ? '매수' : '매도'}
+                            </span>
+                            <br>
+                            <small>${order.quantity}개 @ ${order.price} USDT</small>
+                            ${order.escrow_amount ? `<br><small style="color: #ffc107;">🔒 ${order.escrow_amount} ${order.order_type === 'buy' ? 'USDT' : '코인'} 동결됨</small>` : ''}
+                        </div>
+                        <button onclick="cancelOrder('${order.id}')" 
+                                style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            취소
+                        </button>
+                    </div>
+                `;
+                ordersElem.appendChild(div);
+            });
+        }
+
+        function placeTradeOrder() {
+            const politicianId = document.getElementById('politician-select').value;
+            const orderType = document.getElementById('trade-type').value;
+            const quantity = parseInt(document.getElementById('trade-quantity').value);
+            const price = parseInt(document.getElementById('trade-price').value);
+            const statusElem = document.getElementById('trade-status');
+
+            // 입력값 검증
+            if (!politicianId) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">정치인을 선택하세요.</span>';
+                return;
+            }
+            if (!quantity || quantity <= 0) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">올바른 수량을 입력하세요.</span>';
+                return;
+            }
+            if (!price || price <= 0) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">올바른 가격을 입력하세요.</span>';
+                return;
+            }
+
+            // 잔액 확인
+            if (orderType === 'buy') {
+                const availableTetherText = document.getElementById('available-tether').textContent;
+                const availableTether = parseInt(availableTetherText.replace(' USDT', '').replace(',', ''));
+                const totalCost = quantity * price;
+                
+                if (totalCost > availableTether) {
+                    statusElem.innerHTML = `<span style="color: #e74c3c;">사용 가능한 테더코인이 부족합니다. (필요: ${totalCost} USDT, 사용가능: ${availableTether} USDT)</span>`;
+                    return;
+                }
+            }
+
+            // PIN 입력 받기 (간단히 prompt 사용)
+            const pin = prompt('거래 승인을 위해 6자리 PIN을 입력하세요:');
+            if (!pin || pin.length !== 6) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">6자리 PIN을 입력해야 합니다.</span>';
+                return;
+            }
+
+            statusElem.innerHTML = '<span style="color: #f39c12;">주문 등록 중...</span>';
+
+            const orderData = {
+                politician_id: politicianId,
+                order_type: orderType,
+                quantity: quantity,
+                price: price,
+                pin: pin
+            };
+
+            fetch('/api/trading/place-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+                return response.json();
+            })
+            .then(result => {
+                console.log('✅ 주문 등록 성공:', result);
+                statusElem.innerHTML = '<span style="color: #28a745;">주문이 성공적으로 등록되었습니다!</span>';
+                
+                // 폼 초기화
+                document.getElementById('trade-form').reset();
+                
+                // 데이터 새로고침
+                loadTradingData();
+                loadUserProfile(); // 잔액 업데이트
+                
+                setTimeout(() => {
+                    statusElem.innerHTML = '';
+                }, 3000);
+            })
+            .catch(error => {
+                console.error('❌ 주문 등록 실패:', error);
+                statusElem.innerHTML = `<span style="color: #e74c3c;">주문 실패: ${error.message}</span>`;
+            });
+        }
+
+        function cancelOrder(orderId) {
+            if (!confirm('정말로 이 주문을 취소하시겠습니까?')) {
+                return;
+            }
+
+            fetch(`/api/trading/cancel-order/${orderId}`, {
+                method: 'POST'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+                return response.json();
+            })
+            .then(result => {
+                console.log('✅ 주문 취소 성공:', result);
+                
+                // 데이터 새로고침
+                loadMyOrders();
+                loadUserProfile(); // 잔액 업데이트
+            })
+            .catch(error => {
+                console.error('❌ 주문 취소 실패:', error);
+                alert(`주문 취소 실패: ${error.message}`);
+            });
+        }
 
         // PIN 모달 관련 함수들
         function showPinModal() {

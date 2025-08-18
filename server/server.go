@@ -56,7 +56,13 @@ func StartServer(node *node.Node) {
 	mux.Handle("/api/proposals/", corsMiddleware(authMiddleware(http.HandlerFunc(handleVoteOnProposal))))
 	mux.Handle("/api/user/session-info", corsMiddleware(http.HandlerFunc(handleSessionInfo)))
 	mux.Handle("/api/auth/generate-wallet", corsMiddleware(authMiddleware(http.HandlerFunc(handleGenerateWallet))))
-	// 나중에 추가될 API 핸들러들...
+	
+	// 거래 관련 API
+	mux.Handle("/api/trading/prices", corsMiddleware(http.HandlerFunc(handleGetPoliticianPrices)))
+	mux.Handle("/api/trading/orderbook/", corsMiddleware(http.HandlerFunc(handleGetOrderBook)))
+	mux.Handle("/api/trading/place-order", corsMiddleware(authMiddleware(http.HandlerFunc(handlePlaceOrder))))
+	mux.Handle("/api/trading/cancel-order/", corsMiddleware(authMiddleware(http.HandlerFunc(handleCancelOrder))))
+	mux.Handle("/api/trading/my-orders", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetUserOrders))))
 
 	// 2. 정적 파일 핸들러 (CSS, JS 등)를 등록합니다. 이 요청들은 인증을 거치지 않습니다.
 	// ./frontend/js/ 디렉토리를 /js/ URL 경로에 매핑합니다.
