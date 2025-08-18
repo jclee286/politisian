@@ -56,7 +56,6 @@ func StartServer(node *node.Node) {
 	mux.Handle("/api/proposals/", corsMiddleware(authMiddleware(http.HandlerFunc(handleVoteOnProposal))))
 	mux.Handle("/api/user/session-info", corsMiddleware(http.HandlerFunc(handleSessionInfo)))
 	mux.Handle("/api/auth/generate-wallet", corsMiddleware(authMiddleware(http.HandlerFunc(handleGenerateWallet))))
-	mux.Handle("/api/rewards/claim", corsMiddleware(authMiddleware(http.HandlerFunc(handleClaimReward))))
 	// 나중에 추가될 API 핸들러들...
 
 	// 2. 정적 파일 핸들러 (CSS, JS 등)를 등록합니다. 이 요청들은 인증을 거치지 않습니다.

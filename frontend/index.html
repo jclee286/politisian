@@ -52,25 +52,6 @@
             border-radius: 4px;
             word-break: break-all;
         }
-        .referral-container {
-            display: flex;
-            align-items: center;
-        }
-        #referral-link {
-            flex-grow: 1;
-            margin-right: 10px;
-        }
-        .copy-button {
-            padding: 10px 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .copy-button:hover {
-            background-color: #0056b3;
-        }
         .politisian-list {
             list-style: none;
             padding: 0;
@@ -142,42 +123,8 @@
             color: green;
             margin: 10px 0;
         }
-        .share-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 15px;
-        }
-        .share-button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            color: white;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            transition: opacity 0.2s;
-        }
-        .share-button:hover {
-            opacity: 0.8;
-        }
-        .kakao { background-color: #FEE500; color: #3C1E1E; }
-        .facebook { background-color: #1877F2; }
-        .twitter { background-color: #1DA1F2; }
-        .telegram { background-color: #0088CC; }
-        .whatsapp { background-color: #25D366; }
-        .line { background-color: #00C300; }
-        .instagram { background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4); }
     </style>
     
-    <!-- 카카오톡 JavaScript SDK -->
-    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
-            integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4" 
-            crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -249,28 +196,6 @@
             </div>
         </div>
         <div class="card">
-            <h2>친구 초대 및 보상</h2>
-            <p>친구에게 아래 링크를 공유하고, 친구가 가입하면 보상 크레딧을 받습니다.</p>
-            <div class="referral-container" style="margin-bottom: 20px;">
-                <input type="text" id="referral-link" class="wallet-address" readonly>
-                <button id="copy-button" class="copy-button">복사</button>
-            </div>
-            <p id="copy-status" style="height: 1em; color: green;"></p>
-            
-            <!-- 카카오톡 친구 초대 버튼 -->
-            <div class="share-buttons" style="margin-top: 20px;">
-                <button class="share-button kakao" onclick="shareToKakaoFriends()">
-                    💬 카카오톡 친구에게 보내기
-                </button>
-            </div>
-            
-            <hr style="margin: 20px 0;">
-
-            <p>사용 가능한 추천 크레딧: <strong id="referral-credits" style="font-size: 1.2em;">0</strong> 개</p>
-            <button id="claim-reward-button" class="button" disabled>크레딧 사용 (지지 정치인 추가 & 100 코인 받기)</button>
-            <p id="claim-status" style="height: 1em; color: green;"></p>
-        </div>
-        <div class="card">
             <h2>등록된 정치인 목록</h2>
             <p>투표를 통해 승인된 모든 정치인들을 확인할 수 있습니다.</p>
             <div class="search-container" style="margin-bottom: 15px;">
@@ -329,12 +254,7 @@
             const politicianCoinsListElem = document.getElementById('politician-coins-list');
             const totalCoinsElem = document.getElementById('total-coins');
             const loginButton = document.getElementById('login-button');
-            const referralLinkInput = document.getElementById('referral-link');
-            const copyButton = document.getElementById('copy-button');
             const copyStatus = document.getElementById('copy-status');
-            const referralCreditsSpan = document.getElementById('referral-credits');
-            const claimRewardButton = document.getElementById('claim-reward-button');
-            const claimStatus = document.getElementById('claim-status');
             const proposalsListElem = document.getElementById('proposals-list');
             const registeredPoliticiansListElem = document.getElementById('registered-politicians-list');
             const searchPoliticiansInput = document.getElementById('search-politicians');
@@ -417,7 +337,6 @@
                         
                         // 세션 데이터를 기반으로 기본 UI 업데이트
                         // welcomeMessage.textContent = `${sessionData.name}님, 환영합니다!`;
-                        referralLinkInput.value = `${window.location.origin}/login.html?ref=${sessionData.walletAddress}`;
                         if (politicianCoinsListElem) {
                             politicianCoinsListElem.innerHTML = '<li>프로필 정보를 완전히 불러오지 못했습니다.</li>';
                         }
@@ -445,7 +364,6 @@
                 if (backupWallet) {
                     console.log('💾 로컬 백업에서 지갑 주소 복구');
                     setWalletAddress(backupWallet);
-                    referralLinkInput.value = `${window.location.origin}/login.html?ref=${backupWallet}`;
                     
                     if (backupUserInfo) {
                         try {
@@ -553,17 +471,6 @@
                         setWalletAddress(data.wallet || '주소 없음');
                     }
                     
-                    if (referralLinkInput) {
-                        referralLinkInput.value = `${window.location.origin}/login.html?ref=${data.wallet}`;
-                    }
-                    
-                    if (referralCreditsSpan) {
-                        referralCreditsSpan.textContent = data.referral_credits || 0;
-                    }
-                    
-                    if (claimRewardButton && data.referral_credits > 0) {
-                        claimRewardButton.disabled = false;
-                    }
 
                     // 총 코인 표시 업데이트
                     if (totalCoinsElem) {
@@ -818,40 +725,6 @@
                 searchPoliticians(e.target.value);
             });
 
-            copyButton.addEventListener('click', function() {
-                referralLinkInput.select();
-                document.execCommand('copy');
-                copyStatus.textContent = '복사되었습니다!';
-                setTimeout(() => {
-                    copyStatus.textContent = '';
-                }, 2000);
-            });
-
-            claimRewardButton.addEventListener('click', function() {
-                claimStatus.textContent = '보상 요청 중...';
-                claimRewardButton.disabled = true;
-
-                fetch('/api/rewards/claim', {
-                    method: 'POST',
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => { throw new Error(text) });
-                    }
-                    return response.text();
-                })
-                .then(data => {
-                    claimStatus.textContent = '보상이 지급되었습니다! 페이지를 새로고침합니다.';
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
-                })
-                .catch(error => {
-                    console.error('보상 요청 실패:', error);
-                    claimStatus.textContent = `오류: ${error.message}`;
-                    claimRewardButton.disabled = false;
-                });
-            });
 
             proposeForm.addEventListener('submit', function(event) {
                 event.preventDefault();
@@ -1034,171 +907,6 @@
             loadUserProfile();
         }
 
-        // 카카오톡 SDK 초기화 및 친구 초대 함수
-        document.addEventListener('DOMContentLoaded', function() {
-            // 카카오 SDK 초기화 (실제 앱 키로 교체 필요)
-            if (typeof Kakao !== 'undefined') {
-                Kakao.init('624d2fce49d965a460eafeb9390e49aa'); // 카카오 JavaScript 키
-                console.log('카카오 SDK 초기화 완료:', Kakao.isInitialized());
-                
-                // 카카오 SDK 기능 확인
-                console.log('Kakao 객체:', Kakao);
-                console.log('Kakao.Auth 사용 가능:', typeof Kakao.Auth);
-                console.log('Kakao.Share 사용 가능:', typeof Kakao.Share);
-                console.log('Kakao.Picker 사용 가능:', typeof Kakao.Picker);
-                console.log('Kakao.Talk 사용 가능:', typeof Kakao.Talk);
-            } else {
-                console.error('카카오 SDK가 로드되지 않았습니다.');
-            }
-        });
-
-        function shareToKakaoFriends() {
-            console.log('=== 카카오톡 공유 버튼 클릭됨 ===');
-            
-            const referralLink = document.getElementById('referral-link').value;
-            console.log('추천 링크:', referralLink);
-            
-            // SDK 초기화 상태 확인
-            console.log('Kakao SDK 초기화 상태:', Kakao.isInitialized());
-            console.log('Kakao.Auth 타입:', typeof Kakao.Auth);
-            
-            if (!Kakao.isInitialized()) {
-                console.error('카카오 SDK가 초기화되지 않음');
-                alert('카카오톡 서비스를 초기화하는 중입니다. 잠시 후 다시 시도해주세요.');
-                return;
-            }
-
-            // Auth 모듈 확인
-            if (typeof Kakao.Auth === 'undefined' || typeof Kakao.Auth.login !== 'function') {
-                console.error('Kakao.Auth.login 함수가 사용할 수 없습니다.');
-                console.log('사용 가능한 Kakao 기능들:', Object.keys(Kakao));
-                console.log('일반 공유로 자동 전환');
-                shareToKakaoSimple(referralLink);
-                return;
-            }
-
-            console.log('카카오톡 로그인 시작');
-            
-            // 1단계: 카카오 로그인
-            try {
-                Kakao.Auth.login({
-                    success: function(authObj) {
-                        console.log('카카오 로그인 성공:', authObj);
-                        // 2단계: 친구 선택
-                        selectKakaoFriends(referralLink);
-                    },
-                    fail: function(err) {
-                        console.error('카카오 로그인 실패:', err);
-                        alert('카카오톡 로그인에 실패했습니다. 다른 방법으로 공유해주세요.');
-                        fallbackToClipboard();
-                    }
-                });
-            } catch (error) {
-                console.error('카카오 로그인 호출 중 오류:', error);
-                console.log('일반 공유로 자동 전환');
-                shareToKakaoSimple(referralLink);
-            }
-        }
-
-        // 카카오톡 친구 선택 및 메시지 전송
-        function selectKakaoFriends(referralLink) {
-            try {
-                // 친구 선택 API 호출
-                Kakao.Picker.selectFriends({
-                    title: '정치인 공화국 친구 초대',
-                    enableSearch: true,
-                    showMyProfile: false,
-                    showFavorite: true,
-                    showPickedFriend: true,
-                    maxPickableCount: 10,
-                    minPickableCount: 1,
-                    success: function(res) {
-                        console.log('친구 선택 성공:', res);
-                        const selectedFriends = res.selectedTotalCount;
-                        if (selectedFriends > 0) {
-                            // 3단계: 선택된 친구들에게 메시지 전송
-                            sendMessageToFriends(res.users, referralLink);
-                        } else {
-                            alert('친구를 선택해주세요.');
-                        }
-                    },
-                    fail: function(err) {
-                        console.error('친구 선택 실패:', err);
-                        // 친구 선택이 실패하면 일반 공유로 대체
-                        shareToKakaoSimple(referralLink);
-                    }
-                });
-            } catch (error) {
-                console.error('친구 선택 API 오류:', error);
-                // API 오류 시 일반 공유로 대체
-                shareToKakaoSimple(referralLink);
-            }
-        }
-
-        // 선택된 친구들에게 메시지 전송
-        function sendMessageToFriends(friends, referralLink) {
-            try {
-                // 친구들에게 메모 전송 (개별 메시지)
-                Kakao.Talk.sendScrap({
-                    requestUrl: referralLink,
-                    success: function() {
-                        alert(`${friends.length}명의 친구에게 초대 메시지를 보냈습니다! 🎉`);
-                    },
-                    fail: function(err) {
-                        console.error('메시지 전송 실패:', err);
-                        // 메시지 전송 실패 시 일반 공유로 대체
-                        console.log('친구 직접 메시지 전송 실패, 일반 공유로 자동 전환');
-                        shareToKakaoSimple(referralLink);
-                    }
-                });
-            } catch (error) {
-                console.error('메시지 API 오류:', error);
-                console.log('메시지 API 오류, 일반 공유로 자동 전환');
-                shareToKakaoSimple(referralLink);
-            }
-        }
-
-        // 카카오톡 일반 공유 (대안)
-        function shareToKakaoSimple(referralLink) {
-            try {
-                Kakao.Share.sendDefault({
-                    objectType: 'text',
-                    text: `🏛️ 정치인 공화국에 초대합니다!\n\n투표로 정치인을 등록하고 함께 정치를 만들어가요!\n\n👇 아래 링크로 가입해주세요\n${referralLink}`,
-                    link: {
-                        webUrl: referralLink,
-                        mobileWebUrl: referralLink
-                    }
-                });
-                console.log('카카오톡 일반 공유 실행');
-            } catch (error) {
-                console.error('카카오톡 SDK 오류:', error);
-                fallbackToClipboard();
-            }
-        }
-
-        // 클립보드 복사 대안 함수
-        function fallbackToClipboard() {
-            const referralLink = document.getElementById('referral-link').value;
-            const message = `🏛️ 정치인 공화국에 초대합니다!\n\n투표로 정치인을 등록하고 함께 정치를 만들어가요!\n\n초대 링크: ${referralLink}`;
-            
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(message).then(() => {
-                    alert('초대 메시지가 복사되었습니다!\n카카오톡에서 붙여넣기 해주세요.');
-                }).catch(() => {
-                    showPromptFallback(message);
-                });
-            } else {
-                showPromptFallback(message);
-            }
-        }
-
-        // 프롬프트 대안 함수
-        function showPromptFallback(message) {
-            const result = prompt('아래 메시지를 복사해서 카카오톡에 공유해주세요:', message);
-            if (result !== null) {
-                alert('메시지를 카카오톡에 붙여넣기 해주세요! 📱');
-            }
-        }
     </script>
 </body>
 </html>
