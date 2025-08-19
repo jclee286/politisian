@@ -136,10 +136,10 @@ func (app *PoliticianApp) FinalizeBlock(_ context.Context, req *types.RequestFin
 			respTxs[i] = app.handleReleaseEscrow(&txData)
 		case "execute_trade":
 			respTxs[i] = app.handleExecuteTrade(&txData)
-		case "deposit_tether":
-			respTxs[i] = app.handleDepositTether(&txData)
-		case "withdraw_tether":
-			respTxs[i] = app.handleWithdrawTether(&txData)
+		case "deposit_stablecoin":
+			respTxs[i] = app.handleDepositStablecoin(&txData)
+		case "withdraw_stablecoin":
+			respTxs[i] = app.handleWithdrawStablecoin(&txData)
 		default:
 			logMsg := "Unknown action"
 			app.logger.Error(logMsg, "action", txData.Action)
@@ -174,11 +174,14 @@ func (app *PoliticianApp) handleCreateProfile(txData *ptypes.TxData) *types.Exec
 		PoliticianCoins:  make(map[string]int64),  // 정치인별 코인 보유량
 		ReceivedCoins:    make(map[string]bool),   // 정치인별 코인 수령 여부
 		InitialSelection: false,                   // 초기 선택 아직 완료 안됨
-		TetherBalance:    0,                       // 초기 테더코인 잔액 0 (사용자가 직접 입금)
+		USDTBalance:      0,                       // 초기 USDT 잔액 0 (사용자가 직접 입금)
+		USDCBalance:      0,                       // 초기 USDC 잔액 0 (사용자가 직접 입금)
+		MATICBalance:     0,                       // 초기 MATIC 잔액 0 (수수료용)
 		ActiveOrders:     []ptypes.TradeOrder{},   // 빈 주문 배열
 		EscrowAccount: ptypes.EscrowAccount{       // 에스크로 계정 초기화
 			UserID:                txData.UserID,
-			FrozenTetherBalance:   0,
+			FrozenUSDTBalance:     0,
+			FrozenUSDCBalance:     0,
 			FrozenPoliticianCoins: make(map[string]int64),
 			ActiveOrders:          []string{},
 		},
@@ -462,8 +465,8 @@ func (app *PoliticianApp) handleFreezeEscrow(txData *ptypes.TxData) *types.ExecT
 	// 자금 동결
 	if order.OrderType == "buy" {
 		// 매수: 테더코인 동결
-		account.EscrowAccount.FrozenTetherBalance += order.EscrowAmount
-		if account.TetherBalance < account.EscrowAccount.FrozenTetherBalance {
+		account.EscrowAccount.FrozenUSDTBalance += order.EscrowAmount
+		if account.USDTBalance < account.EscrowAccount.FrozenUSDTBalance {
 			return &types.ExecTxResult{Code: 4, Log: "테더코인 잔액이 부족합니다"}
 		}
 	} else {
@@ -504,9 +507,9 @@ func (app *PoliticianApp) handleReleaseEscrow(txData *ptypes.TxData) *types.Exec
 	// 에스크로 해제
 	if order.OrderType == "buy" {
 		// 매수: 테더코인 해제
-		account.EscrowAccount.FrozenTetherBalance -= order.EscrowAmount
-		if account.EscrowAccount.FrozenTetherBalance < 0 {
-			account.EscrowAccount.FrozenTetherBalance = 0
+		account.EscrowAccount.FrozenUSDTBalance -= order.EscrowAmount
+		if account.EscrowAccount.FrozenUSDTBalance < 0 {
+			account.EscrowAccount.FrozenUSDTBalance = 0
 		}
 	} else {
 		// 매도: 정치인 코인 해제
@@ -561,7 +564,7 @@ func (app *PoliticianApp) handleExecuteTrade(txData *ptypes.TxData) *types.ExecT
 	
 	// 실제 자금 이체 수행
 	// 1. 매수자에게서 테더코인 차감 및 정치인 코인 지급
-	buyerAccount.TetherBalance -= trade.TotalAmount
+	buyerAccount.USDTBalance -= trade.TotalAmount
 	if buyerAccount.PoliticianCoins == nil {
 		buyerAccount.PoliticianCoins = make(map[string]int64)
 	}
@@ -569,13 +572,13 @@ func (app *PoliticianApp) handleExecuteTrade(txData *ptypes.TxData) *types.ExecT
 	
 	// 2. 매도자에게서 정치인 코인 차감 및 테더코인 지급
 	sellerAccount.PoliticianCoins[trade.PoliticianID] -= trade.Quantity
-	sellerAccount.TetherBalance += trade.TotalAmount
+	sellerAccount.USDTBalance += trade.TotalAmount
 	
 	// 3. 에스크로 해제
 	// 매수자 에스크로 해제
-	buyerAccount.EscrowAccount.FrozenTetherBalance -= trade.TotalAmount
-	if buyerAccount.EscrowAccount.FrozenTetherBalance < 0 {
-		buyerAccount.EscrowAccount.FrozenTetherBalance = 0
+	buyerAccount.EscrowAccount.FrozenUSDTBalance -= trade.TotalAmount
+	if buyerAccount.EscrowAccount.FrozenUSDTBalance < 0 {
+		buyerAccount.EscrowAccount.FrozenUSDTBalance = 0
 	}
 	
 	// 매도자 에스크로 해제
@@ -618,24 +621,26 @@ func (app *PoliticianApp) handleExecuteTrade(txData *ptypes.TxData) *types.ExecT
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
-// handleDepositTether는 테더코인 입금을 처리합니다.
-func (app *PoliticianApp) handleDepositTether(txData *ptypes.TxData) *types.ExecTxResult {
-	app.logger.Info("Processing tether deposit", "user_id", txData.UserID, "tx_id", txData.TxID)
+// handleDepositStablecoin는 스테이블코인 입금을 처리합니다.
+func (app *PoliticianApp) handleDepositStablecoin(txData *ptypes.TxData) *types.ExecTxResult {
+	app.logger.Info("Processing stablecoin deposit", "user_id", txData.UserID, "tx_id", txData.TxID)
 	
 	// 입금 데이터 파싱 (Politicians 필드에서 데이터 추출)
 	if len(txData.Politicians) < 3 {
 		return &types.ExecTxResult{Code: 1, Log: "입금 데이터가 부족합니다"}
 	}
 	
-	// amount:1000000, tx_hash:0x123, from_address:T123 형태로 파싱
+	// amount:1000000, token_type:USDT, tx_hash:0x123, from_address:0x123 형태로 파싱
 	var amount int64
-	var txHash, fromAddress string
+	var tokenType, txHash, fromAddress string
 	
 	for _, data := range txData.Politicians {
 		if strings.HasPrefix(data, "amount:") {
 			if a, err := strconv.ParseInt(data[7:], 10, 64); err == nil {
 				amount = a
 			}
+		} else if strings.HasPrefix(data, "token_type:") {
+			tokenType = data[11:]
 		} else if strings.HasPrefix(data, "tx_hash:") {
 			txHash = data[8:]
 		} else if strings.HasPrefix(data, "from_address:") {
@@ -643,7 +648,7 @@ func (app *PoliticianApp) handleDepositTether(txData *ptypes.TxData) *types.Exec
 		}
 	}
 	
-	if amount <= 0 || txHash == "" || fromAddress == "" {
+	if amount <= 0 || tokenType == "" || txHash == "" || fromAddress == "" {
 		return &types.ExecTxResult{Code: 2, Log: "입금 데이터 파싱 실패"}
 	}
 	
@@ -656,43 +661,56 @@ func (app *PoliticianApp) handleDepositTether(txData *ptypes.TxData) *types.Exec
 	// 실제로는 블록체인에서 트랜잭션을 검증해야 함
 	// 여기서는 데모용으로 바로 처리
 	
-	// 테더코인 잔액 증가
-	account.TetherBalance += amount
-	
-	app.logger.Info("Tether deposit successful", 
-		"user_id", txData.UserID, 
-		"amount", amount, 
-		"tx_hash", txHash,
-		"from_address", fromAddress,
-		"new_balance", account.TetherBalance)
+	// 토큰별 잔액 증가
+	if tokenType == "USDT" {
+		account.USDTBalance += amount
+		app.logger.Info("USDT deposit successful", 
+			"user_id", txData.UserID, 
+			"amount", amount, 
+			"tx_hash", txHash,
+			"from_address", fromAddress,
+			"new_usdt_balance", account.USDTBalance)
+	} else if tokenType == "USDC" {
+		account.USDCBalance += amount
+		app.logger.Info("USDC deposit successful", 
+			"user_id", txData.UserID, 
+			"amount", amount, 
+			"tx_hash", txHash,
+			"from_address", fromAddress,
+			"new_usdc_balance", account.USDCBalance)
+	} else {
+		return &types.ExecTxResult{Code: 3, Log: "지원하지 않는 토큰 타입"}
+	}
 	
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }
 
-// handleWithdrawTether는 테더코인 출금을 처리합니다.
-func (app *PoliticianApp) handleWithdrawTether(txData *ptypes.TxData) *types.ExecTxResult {
-	app.logger.Info("Processing tether withdrawal", "user_id", txData.UserID, "tx_id", txData.TxID)
+// handleWithdrawStablecoin는 스테이블코인 출금을 처리합니다.
+func (app *PoliticianApp) handleWithdrawStablecoin(txData *ptypes.TxData) *types.ExecTxResult {
+	app.logger.Info("Processing stablecoin withdrawal", "user_id", txData.UserID, "tx_id", txData.TxID)
 	
 	// 출금 데이터 파싱 (Politicians 필드에서 데이터 추출)
 	if len(txData.Politicians) < 2 {
 		return &types.ExecTxResult{Code: 1, Log: "출금 데이터가 부족합니다"}
 	}
 	
-	// amount:1000000, to_address:T123 형태로 파싱
+	// amount:1000000, token_type:USDT, to_address:0x123 형태로 파싱
 	var amount int64
-	var toAddress string
+	var tokenType, toAddress string
 	
 	for _, data := range txData.Politicians {
 		if strings.HasPrefix(data, "amount:") {
 			if a, err := strconv.ParseInt(data[7:], 10, 64); err == nil {
 				amount = a
 			}
+		} else if strings.HasPrefix(data, "token_type:") {
+			tokenType = data[11:]
 		} else if strings.HasPrefix(data, "to_address:") {
 			toAddress = data[11:]
 		}
 	}
 	
-	if amount <= 0 || toAddress == "" {
+	if amount <= 0 || tokenType == "" || toAddress == "" {
 		return &types.ExecTxResult{Code: 2, Log: "출금 데이터 파싱 실패"}
 	}
 	
@@ -702,23 +720,38 @@ func (app *PoliticianApp) handleWithdrawTether(txData *ptypes.TxData) *types.Exe
 		return &types.ExecTxResult{Code: 3, Log: "계정을 찾을 수 없습니다"}
 	}
 	
-	// 사용 가능한 잔액 확인
-	availableBalance := account.TetherBalance - account.EscrowAccount.FrozenTetherBalance
-	if availableBalance < amount {
-		return &types.ExecTxResult{Code: 4, Log: "사용 가능한 잔액이 부족합니다"}
+	// 토큰별 잔액 확인 및 차감
+	if tokenType == "USDT" {
+		availableBalance := account.USDTBalance - account.EscrowAccount.FrozenUSDTBalance
+		if availableBalance < amount {
+			return &types.ExecTxResult{Code: 4, Log: "사용 가능한 USDT 잔액이 부족합니다"}
+		}
+		account.USDTBalance -= amount
+		
+		app.logger.Info("USDT withdrawal successful", 
+			"user_id", txData.UserID, 
+			"amount", amount, 
+			"to_address", toAddress,
+			"new_usdt_balance", account.USDTBalance)
+			
+	} else if tokenType == "USDC" {
+		availableBalance := account.USDCBalance - account.EscrowAccount.FrozenUSDCBalance
+		if availableBalance < amount {
+			return &types.ExecTxResult{Code: 4, Log: "사용 가능한 USDC 잔액이 부족합니다"}
+		}
+		account.USDCBalance -= amount
+		
+		app.logger.Info("USDC withdrawal successful", 
+			"user_id", txData.UserID, 
+			"amount", amount, 
+			"to_address", toAddress,
+			"new_usdc_balance", account.USDCBalance)
+	} else {
+		return &types.ExecTxResult{Code: 3, Log: "지원하지 않는 토큰 타입"}
 	}
 	
-	// 테더코인 잔액 차감
-	account.TetherBalance -= amount
-	
-	// 실제로는 여기서 블록체인으로 USDT를 전송해야 함
+	// 실제로는 여기서 Polygon으로 토큰을 전송해야 함
 	// 데모용으로는 로그만 출력
-	
-	app.logger.Info("Tether withdrawal successful", 
-		"user_id", txData.UserID, 
-		"amount", amount, 
-		"to_address", toAddress,
-		"new_balance", account.TetherBalance)
 	
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
 }

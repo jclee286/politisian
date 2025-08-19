@@ -86,7 +86,7 @@ func handleUserProfile(w http.ResponseWriter, r *http.Request) {
 		ReferralCredits: account.ReferralCredits,
 		PoliticianCoins: account.PoliticianCoins,   // 정치인별 코인 보유량
 		TotalCoins:      totalCoins,                // 총 코인 수 (편의용)
-		TetherBalance:   account.TetherBalance,     // 테더코인 잔액
+		USDTBalance:   account.USDTBalance,     // 테더코인 잔액
 	}
 	
 	log.Printf("Successfully fetched and sending profile for user %s (total coins: %d)", userID, totalCoins)
@@ -123,7 +123,7 @@ func handleUserProfileFromSession(w http.ResponseWriter, r *http.Request, userID
 		ReferralCredits: 0,                             // 세션에는 크레딧 정보가 없음
 		PoliticianCoins: make(map[string]int64),        // 빈 맵
 		TotalCoins:      0,                             // 0개
-		TetherBalance:   0,                             // 테더코인 잔액 (기본값 0)
+		USDTBalance:   0,                             // 테더코인 잔액 (기본값 0)
 	}
 
 	log.Printf("Successfully returning session-based profile for user %s", userID)

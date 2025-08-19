@@ -30,7 +30,9 @@ type ProfileInfoResponse struct {
 	ReferralCredits int                 `json:"referral_credits"`
 	PoliticianCoins map[string]int64    `json:"politician_coins"`     // 정치인별 코인 보유량
 	TotalCoins      int64               `json:"total_coins"`          // 총 코인 수 (편의용)
-	TetherBalance   int64               `json:"tether_balance"`       // 테더코인 잔액
+	USDTBalance     int64               `json:"usdt_balance"`         // USDT 잔액
+	USDCBalance     int64               `json:"usdc_balance"`         // USDC 잔액
+	MATICBalance    int64               `json:"matic_balance"`        // MATIC 잔액
 }
 
 // ProfileSaveRequest는 프로필 저장 요청 시 받는 데이터 구조입니다.
@@ -54,8 +56,10 @@ type Account struct {
 	PoliticianCoins   map[string]int64    `json:"politician_coins"`   // "정치인명": 코인 보유량
 	ReceivedCoins     map[string]bool     `json:"received_coins"`     // "정치인명": 코인 받았는지 여부
 	InitialSelection  bool                `json:"initial_selection"`  // 초기 3명 선택 완료 여부
-	TetherBalance     int64               `json:"tether_balance"`     // 테더코인 잔액 (USDT 단위)
-	TetherWalletAddress string            `json:"tether_wallet_address"` // 테더코인 입금용 지갑 주소
+	USDTBalance       int64               `json:"usdt_balance"`       // USDT 잔액 (6 decimal places)
+	USDCBalance       int64               `json:"usdc_balance"`       // USDC 잔액 (6 decimal places)
+	MATICBalance      int64               `json:"matic_balance"`      // MATIC 잔액 (18 decimal places, 수수료용)
+	PolygonWalletAddress string           `json:"polygon_wallet_address"` // Polygon 입금용 지갑 주소
 	ActiveOrders      []TradeOrder        `json:"active_orders"`      // 활성 거래 주문들
 	EscrowAccount     EscrowAccount       `json:"escrow_account"`     // 에스크로 계정
 }
@@ -146,7 +150,8 @@ type TradeOrder struct {
 // EscrowAccount는 에스크로 계정을 나타냅니다.
 type EscrowAccount struct {
 	UserID              string            `json:"user_id"`              // 사용자 ID
-	FrozenTetherBalance int64            `json:"frozen_tether_balance"` // 동결된 테더코인
+	FrozenUSDTBalance   int64            `json:"frozen_usdt_balance"`   // 동결된 USDT
+	FrozenUSDCBalance   int64            `json:"frozen_usdc_balance"`   // 동결된 USDC
 	FrozenPoliticianCoins map[string]int64 `json:"frozen_politician_coins"` // 동결된 정치인 코인들
 	ActiveOrders        []string         `json:"active_orders"`        // 활성 주문 ID 목록
 }
@@ -184,17 +189,19 @@ type TradeRequest struct {
 	PIN           string `json:"pin"`            // 거래 승인용 PIN
 }
 
-// DepositRequest는 테더코인 입금 요청을 나타냅니다.
+// DepositRequest는 스테이블코인 입금 요청을 나타냅니다.
 type DepositRequest struct {
-	Amount     int64  `json:"amount"`      // 입금 금액 (USDT)
-	TxHash     string `json:"tx_hash"`     // 블록체인 트랜잭션 해시
+	Amount      int64  `json:"amount"`       // 입금 금액
+	TokenType   string `json:"token_type"`   // "USDT" 또는 "USDC"
+	TxHash      string `json:"tx_hash"`      // 블록체인 트랜잭션 해시
 	FromAddress string `json:"from_address"` // 송금한 주소
-	PIN        string `json:"pin"`         // 입금 승인용 PIN
+	PIN         string `json:"pin"`          // 입금 승인용 PIN
 }
 
-// WithdrawRequest는 테더코인 출금 요청을 나타냅니다.
+// WithdrawRequest는 스테이블코인 출금 요청을 나타냅니다.
 type WithdrawRequest struct {
-	Amount    int64  `json:"amount"`     // 출금 금액 (USDT)
+	Amount    int64  `json:"amount"`     // 출금 금액
+	TokenType string `json:"token_type"` // "USDT" 또는 "USDC"
 	ToAddress string `json:"to_address"` // 받을 주소
 	PIN       string `json:"pin"`        // 출금 승인용 PIN
 }

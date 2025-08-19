@@ -340,7 +340,7 @@ func placeTradeOrder(userID string, req ptypes.TradeRequest) (string, error) {
 	if req.OrderType == "buy" {
 		// 매수: 테더코인 동결
 		escrowAmount = req.Quantity * req.Price
-		availableBalance = account.TetherBalance - account.EscrowAccount.FrozenTetherBalance
+		availableBalance = account.USDTBalance - account.EscrowAccount.FrozenUSDTBalance
 		
 		if availableBalance < escrowAmount {
 			return "", fmt.Errorf("사용 가능한 테더코인이 부족합니다 (필요: %d, 사용가능: %d)", escrowAmount, availableBalance)
@@ -731,29 +731,31 @@ func handleGetDepositAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 입금 주소가 없으면 새로 생성
-	if account.TetherWalletAddress == "" {
-		// 실제 TRON 지갑 주소 생성
-		wallet, err := generateTronWallet()
+	if account.PolygonWalletAddress == "" {
+		// 실제 Polygon 지갑 주소 생성
+		wallet, err := generatePolygonWallet()
 		if err != nil {
-			log.Printf("TRON 지갑 생성 실패: %v", err)
+			log.Printf("Polygon 지갑 생성 실패: %v", err)
 			http.Error(w, "지갑 주소 생성에 실패했습니다", http.StatusInternalServerError)
 			return
 		}
 		
-		account.TetherWalletAddress = wallet.Address
+		account.PolygonWalletAddress = wallet.Address
 		
 		// 블록체인에 업데이트 (실제로는 update_account 액션 필요)
-		log.Printf("Generated TRON deposit address for user %s: %s", userID, account.TetherWalletAddress)
+		log.Printf("Generated Polygon deposit address for user %s: %s", userID, account.PolygonWalletAddress)
 		
 		// TODO: 실제로는 개인키를 안전하게 저장해야 함 (암호화된 형태로)
 		// 현재는 입금용 주소만 생성하고 개인키는 저장하지 않음
 	}
 
 	response := map[string]interface{}{
-		"deposit_address": account.TetherWalletAddress,
-		"network":        "TRON(TRC20)",
-		"currency":       "USDT",
-		"notice":         "이 주소로 USDT(TRC20)만 보내주세요. 다른 토큰을 보내면 자산을 잃을 수 있습니다.",
+		"deposit_address": account.PolygonWalletAddress,
+		"network":         "Polygon",
+		"supported_tokens": []string{"USDT", "USDC", "MATIC"},
+		"usdt_contract":   POLYGON_USDT_ADDRESS,
+		"usdc_contract":   POLYGON_USDC_ADDRESS,
+		"notice":          "이 주소로 USDT, USDC (Polygon 네트워크)만 보내주세요. 다른 토큰이나 네트워크를 사용하면 자산을 잃을 수 있습니다.",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
