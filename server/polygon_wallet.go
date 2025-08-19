@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -106,9 +107,12 @@ func generateEthereumAddress(publicKeyBytes []byte) (string, error) {
 
 // getPolygonAPIKey returns Polygon API key from environment
 func getPolygonAPIKey() string {
-	// For demo purposes, using free RPC
-	// In production, get API key from Polygon/Alchemy/Infura
-	return "free-rpc"
+	// Etherscan API V2 key for Polygon network
+	if key := os.Getenv("ETHERSCAN_API_KEY"); key != "" {
+		return key
+	}
+	// Fallback to hardcoded key (for production, use environment variable)
+	return "RTKWX1EIEXG3V59WFU9MKTNHQIRKKCNS2U"
 }
 
 // verifyPolygonTransaction verifies a Polygon transaction
@@ -131,12 +135,10 @@ func verifyPolygonTransaction(txHash, toAddress string, expectedAmount int64, to
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
 
-	// Add API key if available
-	if apiKey != "free-rpc" {
-		q := req.URL.Query()
-		q.Add("apikey", apiKey)
-		req.URL.RawQuery = q.Encode()
-	}
+	// Add API key to request
+	q := req.URL.Query()
+	q.Add("apikey", apiKey)
+	req.URL.RawQuery = q.Encode()
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
