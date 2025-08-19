@@ -208,6 +208,33 @@
             const formMessage = document.getElementById('form-message');
             const selectedCountSpan = document.getElementById('selected-count');
             let selectedPoliticians = [];
+            
+            // URL에서 추천인 정보 확인 및 저장
+            const urlParams = new URLSearchParams(window.location.search);
+            const referrer = urlParams.get('ref');
+            
+            if (referrer) {
+                console.log('추천인 정보 발견:', referrer);
+                sessionStorage.setItem('referrer', referrer);
+                
+                // 추천인 정보 표시
+                const referralNotice = document.createElement('div');
+                referralNotice.style.cssText = `
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;
+                    text-align: center; font-size: 14px;
+                `;
+                referralNotice.innerHTML = `
+                    🎉 <strong>친구의 초대로 가입하시는군요!</strong><br>
+                    <small style="opacity: 0.9;">추천인: ${referrer.substring(0, 20)}...</small><br>
+                    <small style="opacity: 0.8;">가입 완료 후 특별 혜택이 제공됩니다!</small>
+                `;
+                
+                // 폼 앞에 알림 삽입
+                const signupContainer = document.querySelector('.signup-container');
+                const titleDiv = signupContainer.firstElementChild;
+                signupContainer.insertBefore(referralNotice, titleDiv.nextSibling);
+            }
 
             // PIN 입력 자동 포커스 이동
             const pinInputs = document.querySelectorAll('.pin-digit');
@@ -358,12 +385,16 @@
                     return;
                 }
 
+                // 추천인 정보 가져오기
+                const referrerInfo = sessionStorage.getItem('referrer');
+                
                 const formData = {
                     email: document.getElementById('email').value,
                     password: document.getElementById('password').value,
                     nickname: document.getElementById('nickname').value,
                     pin: getPinValue(),
-                    politicians: selectedPoliticians
+                    politicians: selectedPoliticians,
+                    referrer: referrerInfo || null
                 };
 
                 submitBtn.disabled = true;
@@ -386,7 +417,16 @@
                     return response.json();
                 })
                 .then(data => {
-                    formMessage.innerHTML = '<div class="success-message">✅ 회원가입이 완료되었습니다! 로그인 페이지로 이동합니다...</div>';
+                    // 추천인 정보가 있었다면 성공 메시지에 포함
+                    let successMessage = '✅ 회원가입이 완료되었습니다!';
+                    if (referrerInfo) {
+                        successMessage += '<br>🎁 추천인 등록도 완료되었어요!';
+                        // 추천인 정보 정리
+                        sessionStorage.removeItem('referrer');
+                    }
+                    successMessage += '<br>로그인 페이지로 이동합니다...';
+                    
+                    formMessage.innerHTML = `<div class="success-message">${successMessage}</div>`;
                     setTimeout(() => {
                         window.location.href = '/login.html';
                     }, 2000);

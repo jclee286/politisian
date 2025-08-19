@@ -138,8 +138,9 @@ type TradeOrder struct {
 	UserID        string    `json:"user_id"`        // 주문한 사용자 ID
 	PoliticianID  string    `json:"politician_id"`  // 거래할 정치인 ID
 	OrderType     string    `json:"order_type"`     // "buy" 또는 "sell"
+	Currency      string    `json:"currency"`       // "USDT" 또는 "USDC"
 	Quantity      int64     `json:"quantity"`       // 수량
-	Price         int64     `json:"price"`          // 가격 (테더코인 단위)
+	Price         int64     `json:"price"`          // 가격 (스테이블코인 단위)
 	Status        string    `json:"status"`         // "active", "filled", "cancelled", "partial"
 	FilledQuantity int64    `json:"filled_quantity"` // 체결된 수량
 	EscrowAmount   int64    `json:"escrow_amount"`   // 에스크로 동결 금액
@@ -184,8 +185,9 @@ type OrderBook struct {
 type TradeRequest struct {
 	PoliticianID  string `json:"politician_id"`  // 거래할 정치인 ID
 	OrderType     string `json:"order_type"`     // "buy" 또는 "sell"
+	Currency      string `json:"currency"`       // "USDT" 또는 "USDC"
 	Quantity      int64  `json:"quantity"`       // 수량
-	Price         int64  `json:"price"`          // 가격 (테더코인 단위)
+	Price         int64  `json:"price"`          // 가격 (스테이블코인 단위)
 	PIN           string `json:"pin"`            // 거래 승인용 PIN
 }
 

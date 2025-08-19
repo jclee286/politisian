@@ -98,6 +98,16 @@ func handlePlaceOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Currency 기본값 설정
+	if req.Currency == "" {
+		req.Currency = "USDT" // 기본값을 USDT로 설정
+	}
+	
+	if req.Currency != "USDT" && req.Currency != "USDC" {
+		http.Error(w, "통화는 USDT 또는 USDC여야 합니다", http.StatusBadRequest)
+		return
+	}
+
 	// PIN 검증
 	if err := verifyUserPIN(userID, req.PIN); err != nil {
 		http.Error(w, "PIN이 올바르지 않습니다", http.StatusUnauthorized)
@@ -338,12 +348,16 @@ func placeTradeOrder(userID string, req ptypes.TradeRequest) (string, error) {
 	var availableBalance int64
 	
 	if req.OrderType == "buy" {
-		// 매수: 테더코인 동결
+		// 매수: 스테이블코인 동결
 		escrowAmount = req.Quantity * req.Price
-		availableBalance = account.USDTBalance - account.EscrowAccount.FrozenUSDTBalance
+		if req.Currency == "USDT" {
+			availableBalance = account.USDTBalance - account.EscrowAccount.FrozenUSDTBalance
+		} else {
+			availableBalance = account.USDCBalance - account.EscrowAccount.FrozenUSDCBalance
+		}
 		
 		if availableBalance < escrowAmount {
-			return "", fmt.Errorf("사용 가능한 테더코인이 부족합니다 (필요: %d, 사용가능: %d)", escrowAmount, availableBalance)
+			return "", fmt.Errorf("사용 가능한 %s이 부족합니다 (필요: %d, 사용가능: %d)", req.Currency, escrowAmount, availableBalance)
 		}
 	} else {
 		// 매도: 정치인 코인 동결
@@ -365,6 +379,7 @@ func placeTradeOrder(userID string, req ptypes.TradeRequest) (string, error) {
 		UserID:         userID,
 		PoliticianID:   req.PoliticianID,
 		OrderType:      req.OrderType,
+		Currency:       req.Currency,
 		Quantity:       req.Quantity,
 		Price:          req.Price,
 		Status:         "active",

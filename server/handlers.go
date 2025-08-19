@@ -333,6 +333,22 @@ func createBasicAccount(userID string, r *http.Request) error {
 		walletStr = walletAddress.(string)
 	}
 	
+	// 기존 사용자 정보에서 정치인 목록 가져오기
+	var selectedPoliticians []string
+	userQueryPath := fmt.Sprintf("/user?id=%s", userID)
+	res, err := blockchainClient.ABCIQuery(context.Background(), userQueryPath, nil)
+	if err == nil && res.Response.Code == 0 {
+		var user ptypes.User
+		if err := json.Unmarshal(res.Response.Value, &user); err == nil {
+			log.Printf("Found existing user data for %s", userID)
+			// User 구조체에는 정치인 정보가 없으므로 기본 정치인들로 설정
+			selectedPoliticians = []string{"이재명", "윤석열", "이낙연"} // 기본 정치인들
+		}
+	} else {
+		log.Printf("No existing user data found for %s, using default politicians", userID)
+		selectedPoliticians = []string{"이재명", "윤석열", "이낙연"} // 기본 정치인들
+	}
+	
 	// 고유한 트랜잭션 ID 생성
 	randBytes := make([]byte, 4)
 	rand.Read(randBytes)
@@ -344,7 +360,7 @@ func createBasicAccount(userID string, r *http.Request) error {
 		UserID:        userID,
 		Email:         emailStr,
 		WalletAddress: walletStr,
-		Politicians:   []string{}, // 빈 정치인 목록으로 시작
+		Politicians:   selectedPoliticians, // 기존 사용자의 정치인 목록 또는 기본값
 	}
 	
 	txBytes, err := json.Marshal(txData)

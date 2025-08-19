@@ -156,12 +156,12 @@
                 </div>
             </div>
 
-            <!-- 테더코인 입금 모달 -->
+            <!-- 스테이블코인 입금 모달 -->
             <div id="deposit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
                 <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px; margin: 20px;">
-                    <h3 style="color: #333; margin-bottom: 20px;">💳 USDT 입금</h3>
+                    <h3 style="color: #333; margin-bottom: 20px;">💳 스테이블코인 입금</h3>
                     <div id="deposit-address-section">
-                        <p style="color: #666; margin-bottom: 15px;">아래 주소로 USDT(TRC20)를 보내주세요:</p>
+                        <p style="color: #666; margin-bottom: 15px;">아래 주소로 USDT 또는 USDC(Polygon 네트워크)를 보내주세요:</p>
                         <div id="deposit-address" style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-family: monospace; word-break: break-all; margin-bottom: 15px; border: 1px solid #e9ecef;">
                             주소를 불러오는 중...
                         </div>
@@ -170,12 +170,19 @@
                     
                     <form id="deposit-form" style="text-align: left;">
                         <div style="margin-bottom: 15px;">
-                            <label>입금 금액 (USDT):</label>
+                            <label>토큰 종류:</label>
+                            <select id="deposit-token-type" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                                <option value="USDT">💰 USDT</option>
+                                <option value="USDC">💎 USDC</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label>입금 금액:</label>
                             <input type="number" id="deposit-amount" min="1" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
                         </div>
                         <div style="margin-bottom: 15px;">
                             <label>트랜잭션 해시:</label>
-                            <input type="text" id="deposit-txhash" placeholder="블록체인 트랜잭션 해시를 입력하세요" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <input type="text" id="deposit-txhash" placeholder="Polygon 네트워크 트랜잭션 해시" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
                         </div>
                         <div style="margin-bottom: 15px;">
                             <label>PIN (6자리):</label>
@@ -190,19 +197,26 @@
                 </div>
             </div>
 
-            <!-- 테더코인 출금 모달 -->
+            <!-- 스테이블코인 출금 모달 -->
             <div id="withdraw-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
                 <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px; margin: 20px;">
-                    <h3 style="color: #333; margin-bottom: 20px;">💸 USDT 출금</h3>
+                    <h3 style="color: #333; margin-bottom: 20px;">💸 스테이블코인 출금</h3>
                     <form id="withdraw-form" style="text-align: left;">
                         <div style="margin-bottom: 15px;">
-                            <label>출금 금액 (USDT):</label>
-                            <input type="number" id="withdraw-amount" min="1" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
-                            <small style="color: #666;">사용 가능한 잔액: <span id="available-balance-display">0 USDT</span></small>
+                            <label>토큰 종류:</label>
+                            <select id="withdraw-token-type" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                                <option value="USDT">💰 USDT</option>
+                                <option value="USDC">💎 USDC</option>
+                            </select>
                         </div>
                         <div style="margin-bottom: 15px;">
-                            <label>받을 주소 (TRON TRC20):</label>
-                            <input type="text" id="withdraw-address" placeholder="T로 시작하는 TRON 주소를 입력하세요" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <label>출금 금액:</label>
+                            <input type="number" id="withdraw-amount" min="1" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <small style="color: #666;">사용 가능한 잔액: <span id="available-balance-display">0</span></small>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label>받을 주소 (Polygon 네트워크):</label>
+                            <input type="text" id="withdraw-address" placeholder="0x로 시작하는 이더리움 호환 주소" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
                         </div>
                         <div style="margin-bottom: 15px;">
                             <label>PIN (6자리):</label>
@@ -214,6 +228,43 @@
                         </div>
                     </form>
                     <div id="withdraw-status" style="margin-top: 15px; font-size: 14px;"></div>
+                </div>
+            </div>
+
+            <!-- 크레딧 사용 모달 -->
+            <div id="credit-usage-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px; margin: 20px;">
+                    <h3 style="color: #333; margin-bottom: 20px;">✨ 추천 크레딧 사용하기</h3>
+                    <p style="color: #666; margin-bottom: 20px;">크레딧 1개당 정치인 1명을 추가 선택하고 코인 100개를 받을 수 있습니다.</p>
+                    
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="font-size: 18px; font-weight: bold; color: #28a745;">
+                            보유 크레딧: <span id="modal-credits">0</span>개
+                        </div>
+                    </div>
+                    
+                    <form id="credit-usage-form" style="text-align: left;">
+                        <div style="margin-bottom: 15px;">
+                            <label>추가 선택할 정치인:</label>
+                            <select id="credit-politician-select" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                                <option value="">정치인을 선택하세요...</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label>사용할 크레딧 수:</label>
+                            <input type="number" id="credit-amount" min="1" max="1" value="1" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required readonly>
+                            <small style="color: #666;">현재는 정치인 1명당 크레딧 1개가 필요합니다</small>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label>PIN (6자리):</label>
+                            <input type="password" id="credit-pin" maxlength="6" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                        </div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button type="submit" style="background: #f39c12; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-right: 10px;">✨ 크레딧 사용하기</button>
+                            <button type="button" onclick="closeCreditUsageModal()" style="background: #6c757d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">취소</button>
+                        </div>
+                    </form>
+                    <div id="credit-usage-status" style="margin-top: 15px; font-size: 14px;"></div>
                 </div>
             </div>
 
@@ -242,16 +293,62 @@
                 
                 <div style="margin-bottom: 20px;">
                     <p><strong>총 보유 코인:</strong> <span id="total-coins" style="font-size: 1.3em; font-weight: bold; color: #2c3e50;">0개</span></p>
-                    <p><strong>테더코인 잔액:</strong> <span id="tether-balance" style="font-size: 1.2em; font-weight: bold; color: #f39c12;">0 USDT</span></p>
-                    <p><strong>사용 가능한 테더:</strong> <span id="available-tether" style="font-size: 1.1em; color: #28a745;">0 USDT</span> <small style="color: #6c757d;">(동결 제외)</small></p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">
+                        <div style="background: #fff3cd; padding: 10px; border-radius: 6px; border: 1px solid #f39c12;">
+                            <p style="margin: 0; font-weight: bold; color: #f39c12;">💰 USDT</p>
+                            <p style="margin: 5px 0 0 0; font-size: 1.2em; font-weight: bold;" id="tether-balance">0</p>
+                            <small style="color: #666;">사용가능: <span id="available-tether" style="color: #28a745;">0</span></small>
+                        </div>
+                        <div style="background: #d1ecf1; padding: 10px; border-radius: 6px; border: 1px solid #17a2b8;">
+                            <p style="margin: 0; font-weight: bold; color: #17a2b8;">💎 USDC</p>
+                            <p style="margin: 5px 0 0 0; font-size: 1.2em; font-weight: bold;" id="usdc-balance">0</p>
+                            <small style="color: #666;">사용가능: <span id="available-usdc" style="color: #28a745;">0</span></small>
+                        </div>
+                    </div>
                 </div>
                 
                 <hr style="margin: 20px 0;">
                 
-                <h3 style="margin-bottom: 15px;">⭐ 내가 선택한 정치인</h3>
-                <ul id="selected-politicians-list" class="politisian-list">
-                    <li class="loading">목록을 불러오는 중...</li>
-                </ul>
+                <h3 style="margin-bottom: 15px;">🎁 추천 크레딧</h3>
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #28a745; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #28a745; margin-bottom: 5px;">
+                        <span id="referral-credits">0</span> 크레딧
+                    </div>
+                    <small style="color: #666;">가입시킨 친구 수에 따른 보상</small>
+                </div>
+                
+                <!-- 추천 링크 공유 섹션 -->
+                <div style="margin-top: 15px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white; text-align: center;">
+                    <h4 style="margin: 0 0 10px 0; color: white;">🔗 친구 초대하기</h4>
+                    <p style="margin: 0 0 15px 0; font-size: 14px; opacity: 0.9;">친구가 이 링크로 가입하면 크레딧 1개씩 받아요!</p>
+                    
+                    <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 6px; margin-bottom: 15px; position: relative;">
+                        <input type="text" id="referral-link" readonly 
+                               style="width: 100%; background: transparent; border: none; color: white; font-size: 14px; font-family: monospace; text-align: center; outline: none;" 
+                               value="링크를 생성하는 중...">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="copyReferralLink()" 
+                                style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            📋 복사
+                        </button>
+                        <button onclick="shareReferralLink()" 
+                                style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            📱 공유
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 크레딧 사용 섹션 -->
+                <div id="credit-usage-section" style="margin-top: 15px; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; display: none;">
+                    <h4 style="margin: 0 0 10px 0; color: #d68910;">✨ 크레딧 사용하기</h4>
+                    <p style="margin: 0 0 15px 0; font-size: 14px; color: #856404;">크레딧 1개당 정치인 1명을 추가 선택하고 코인 100개를 받을 수 있어요!</p>
+                    <button onclick="showCreditUsageModal()" 
+                            style="background: #f39c12; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                        🎯 크레딧 사용하기
+                    </button>
+                </div>
                 
                 <hr style="margin: 20px 0;">
                 
@@ -261,8 +358,8 @@
                 </ul>
                 
                 <div style="margin-top: 20px; text-align: center;">
-                    <button onclick="showDepositModal()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-right: 10px;">💳 테더 입금</button>
-                    <button onclick="showWithdrawModal()" style="background: #ffc107; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-right: 10px;">💸 테더 출금</button>
+                    <button onclick="showDepositModal()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-right: 10px;">💳 입금</button>
+                    <button onclick="showWithdrawModal()" style="background: #ffc107; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-right: 10px;">💸 출금</button>
                     <button onclick="lockWallet()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px;">🔒 보안 잠금</button>
                 </div>
             </div>
@@ -300,12 +397,21 @@
                     <select id="politician-select" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         <option value="">정치인 선택...</option>
                     </select>
-                    <select id="trade-type" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        <option value="buy">매수 (USDT로 구매)</option>
-                        <option value="sell">매도 (코인 판매)</option>
-                    </select>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <select id="trade-type" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="buy">매수 (구매)</option>
+                            <option value="sell">매도 (판매)</option>
+                        </select>
+                        <select id="currency-type" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="USDT">💰 USDT</option>
+                            <option value="USDC">💎 USDC</option>
+                        </select>
+                    </div>
                     <input type="number" id="trade-quantity" placeholder="수량" min="1" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                    <input type="number" id="trade-price" placeholder="가격 (USDT)" min="1" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="number" id="trade-price" placeholder="가격" min="1" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 14px; color: #666;">
+                        <span id="trade-summary">정치인과 수량을 선택하세요</span>
+                    </div>
                     <button type="submit" style="padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
                         📊 주문 등록
                     </button>
@@ -592,20 +698,16 @@
                         totalCoinsElem.textContent = `${totalCoins}개`;
                     }
                     
-                    // 테더코인 잔액 업데이트
+                    // USDT 잔액 업데이트
                     const tetherBalanceElem = document.getElementById('tether-balance');
-                    if (tetherBalanceElem) {
-                        const tetherBalance = data.tether_balance || 0;
-                        tetherBalanceElem.textContent = `${tetherBalance} USDT`;
-                    }
-                    
-                    // 사용 가능한 테더코인 잔액 업데이트
                     const availableTetherElem = document.getElementById('available-tether');
-                    if (availableTetherElem) {
-                        const tetherBalance = data.tether_balance || 0;
-                        const frozenTether = (data.escrow_account && data.escrow_account.frozen_tether_balance) || 0;
+                    if (tetherBalanceElem && availableTetherElem) {
+                        const tetherBalance = data.usdt_balance || 0;
+                        const frozenTether = (data.escrow_account && data.escrow_account.frozen_usdt_balance) || 0;
                         const availableTether = tetherBalance - frozenTether;
-                        availableTetherElem.textContent = `${availableTether} USDT`;
+                        
+                        tetherBalanceElem.textContent = `${tetherBalance}`;
+                        availableTetherElem.textContent = `${availableTether}`;
                         
                         // 동결된 금액이 있으면 색상 변경
                         if (frozenTether > 0) {
@@ -616,6 +718,47 @@
                             availableTetherElem.title = '';
                         }
                     }
+                    
+                    // USDC 잔액 업데이트
+                    const usdcBalanceElem = document.getElementById('usdc-balance');
+                    const availableUsdcElem = document.getElementById('available-usdc');
+                    if (usdcBalanceElem && availableUsdcElem) {
+                        const usdcBalance = data.usdc_balance || 0;
+                        const frozenUsdc = (data.escrow_account && data.escrow_account.frozen_usdc_balance) || 0;
+                        const availableUsdc = usdcBalance - frozenUsdc;
+                        
+                        usdcBalanceElem.textContent = `${usdcBalance}`;
+                        availableUsdcElem.textContent = `${availableUsdc}`;
+                        
+                        // 동결된 금액이 있으면 색상 변경
+                        if (frozenUsdc > 0) {
+                            availableUsdcElem.style.color = '#ffc107';
+                            availableUsdcElem.title = `총 ${usdcBalance} USDC 중 ${frozenUsdc} USDC 동결됨`;
+                        } else {
+                            availableUsdcElem.style.color = '#28a745';
+                            availableUsdcElem.title = '';
+                        }
+                    }
+
+                    // 추천 크레딧 표시
+                    const referralCreditsElem = document.getElementById('referral-credits');
+                    if (referralCreditsElem) {
+                        const credits = data.referral_credits || 0;
+                        referralCreditsElem.textContent = credits;
+                        console.log('추천 크레딧 업데이트:', credits);
+                        
+                        // 크레딧에 따른 색상 변경
+                        if (credits > 0) {
+                            referralCreditsElem.parentElement.style.backgroundColor = '#d4edda';
+                            referralCreditsElem.parentElement.style.borderColor = '#c3e6cb';
+                            
+                            // 크레딧이 있으면 사용 섹션 표시
+                            document.getElementById('credit-usage-section').style.display = 'block';
+                        }
+                    }
+                    
+                    // 추천 링크 생성
+                    generateReferralLink(data.wallet);
 
                     // 정치인별 코인 보유량 표시
                     if (politicianCoinsListElem && data.politician_coins) {
@@ -984,6 +1127,29 @@
                     event.preventDefault();
                     placeTradeOrder();
                 });
+                
+                // 거래 요약 업데이트 이벤트 리스너들
+                const politicianSelect = document.getElementById('politician-select');
+                const tradeTypeSelect = document.getElementById('trade-type');
+                const currencyTypeSelect = document.getElementById('currency-type');
+                const quantityInput = document.getElementById('trade-quantity');
+                const priceInput = document.getElementById('trade-price');
+                
+                [politicianSelect, tradeTypeSelect, currencyTypeSelect, quantityInput, priceInput].forEach(element => {
+                    if (element) {
+                        element.addEventListener('change', updateTradeSummary);
+                        element.addEventListener('input', updateTradeSummary);
+                    }
+                });
+            }
+
+            // 크레딧 사용 폼 이벤트 리스너
+            const creditUsageForm = document.getElementById('credit-usage-form');
+            if (creditUsageForm) {
+                creditUsageForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    processCreditUsage();
+                });
             }
 
             // 안전한 데이터 로드 시작 (즉시 로드)
@@ -1104,6 +1270,9 @@
             orders.forEach(order => {
                 const div = document.createElement('div');
                 div.style.cssText = 'padding: 10px; border: 1px solid #e0e0e0; border-radius: 4px; margin-bottom: 8px; background: #f9f9f9;';
+                const currency = order.currency || 'USDT';
+                const currencyIcon = currency === 'USDT' ? '💰' : '💎';
+                
                 div.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
@@ -1112,8 +1281,8 @@
                                 ${order.order_type === 'buy' ? '매수' : '매도'}
                             </span>
                             <br>
-                            <small>${order.quantity}개 @ ${order.price} USDT</small>
-                            ${order.escrow_amount ? `<br><small style="color: #ffc107;">🔒 ${order.escrow_amount} ${order.order_type === 'buy' ? 'USDT' : '코인'} 동결됨</small>` : ''}
+                            <small>${order.quantity}개 @ ${currencyIcon} ${order.price} ${currency}</small>
+                            ${order.escrow_amount ? `<br><small style="color: #ffc107;">🔒 ${order.escrow_amount} ${order.order_type === 'buy' ? currency : '코인'} 동결됨</small>` : ''}
                         </div>
                         <button onclick="cancelOrder('${order.id}')" 
                                 style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
@@ -1125,9 +1294,45 @@
             });
         }
 
+        // 거래 요약 업데이트 함수
+        function updateTradeSummary() {
+            const politicianSelect = document.getElementById('politician-select');
+            const tradeTypeSelect = document.getElementById('trade-type');
+            const currencyTypeSelect = document.getElementById('currency-type');
+            const quantityInput = document.getElementById('trade-quantity');
+            const priceInput = document.getElementById('trade-price');
+            const summaryElem = document.getElementById('trade-summary');
+            
+            if (!politicianSelect || !tradeTypeSelect || !currencyTypeSelect || !quantityInput || !priceInput || !summaryElem) {
+                return;
+            }
+            
+            const politician = politicianSelect.options[politicianSelect.selectedIndex]?.text || '';
+            const tradeType = tradeTypeSelect.value;
+            const currency = currencyTypeSelect.value;
+            const quantity = parseInt(quantityInput.value) || 0;
+            const price = parseInt(priceInput.value) || 0;
+            
+            if (!politician || politician === '정치인 선택...' || !quantity || !price) {
+                summaryElem.textContent = '정치인과 수량을 선택하세요';
+                return;
+            }
+            
+            const totalCost = quantity * price;
+            const action = tradeType === 'buy' ? '구매' : '판매';
+            const currencyIcon = currency === 'USDT' ? '💰' : '💎';
+            
+            if (tradeType === 'buy') {
+                summaryElem.innerHTML = `${politician} 코인 ${quantity}개를 ${currencyIcon} ${totalCost} ${currency}로 ${action}`;
+            } else {
+                summaryElem.innerHTML = `${politician} 코인 ${quantity}개를 ${currencyIcon} ${totalCost} ${currency}에 ${action}`;
+            }
+        }
+
         function placeTradeOrder() {
             const politicianId = document.getElementById('politician-select').value;
             const orderType = document.getElementById('trade-type').value;
+            const currency = document.getElementById('currency-type').value;
             const quantity = parseInt(document.getElementById('trade-quantity').value);
             const price = parseInt(document.getElementById('trade-price').value);
             const statusElem = document.getElementById('trade-status');
@@ -1148,12 +1353,22 @@
 
             // 잔액 확인
             if (orderType === 'buy') {
-                const availableTetherText = document.getElementById('available-tether').textContent;
-                const availableTether = parseInt(availableTetherText.replace(' USDT', '').replace(',', ''));
                 const totalCost = quantity * price;
+                let availableBalance = 0;
+                let balanceText = '';
                 
-                if (totalCost > availableTether) {
-                    statusElem.innerHTML = `<span style="color: #e74c3c;">사용 가능한 테더코인이 부족합니다. (필요: ${totalCost} USDT, 사용가능: ${availableTether} USDT)</span>`;
+                if (currency === 'USDT') {
+                    const availableTetherText = document.getElementById('available-tether').textContent;
+                    availableBalance = parseInt(availableTetherText.replace(',', ''));
+                    balanceText = `${totalCost} USDT`;
+                } else {
+                    const availableUsdcText = document.getElementById('available-usdc').textContent;
+                    availableBalance = parseInt(availableUsdcText.replace(',', ''));
+                    balanceText = `${totalCost} USDC`;
+                }
+                
+                if (totalCost > availableBalance) {
+                    statusElem.innerHTML = `<span style="color: #e74c3c;">사용 가능한 ${currency}이 부족합니다. (필요: ${balanceText}, 사용가능: ${availableBalance} ${currency})</span>`;
                     return;
                 }
             }
@@ -1170,6 +1385,7 @@
             const orderData = {
                 politician_id: politicianId,
                 order_type: orderType,
+                currency: currency,
                 quantity: quantity,
                 price: price,
                 pin: pin
@@ -1325,9 +1541,25 @@
             document.getElementById('withdraw-form').reset();
             document.getElementById('withdraw-status').innerHTML = '';
             
-            // 사용 가능한 잔액 표시
-            const availableTetherText = document.getElementById('available-tether').textContent;
-            document.getElementById('available-balance-display').textContent = availableTetherText;
+            // 토큰 타입 변경 이벤트 리스너 추가
+            const tokenTypeSelect = document.getElementById('withdraw-token-type');
+            if (tokenTypeSelect) {
+                updateAvailableBalance();
+                tokenTypeSelect.addEventListener('change', updateAvailableBalance);
+            }
+        }
+        
+        function updateAvailableBalance() {
+            const tokenType = document.getElementById('withdraw-token-type').value;
+            const balanceDisplay = document.getElementById('available-balance-display');
+            
+            if (tokenType === 'USDT') {
+                const availableTetherText = document.getElementById('available-tether').textContent;
+                balanceDisplay.textContent = `${availableTetherText} USDT`;
+            } else {
+                const availableUsdcText = document.getElementById('available-usdc').textContent;
+                balanceDisplay.textContent = `${availableUsdcText} USDC`;
+            }
         }
 
         function closeWithdrawModal() {
@@ -1387,10 +1619,16 @@
         });
 
         function processDeposit() {
+            const tokenType = document.getElementById('deposit-token-type').value;
             const amount = parseInt(document.getElementById('deposit-amount').value);
             const txHash = document.getElementById('deposit-txhash').value;
             const pin = document.getElementById('deposit-pin').value;
             const statusElem = document.getElementById('deposit-status');
+
+            if (!tokenType) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">토큰 종류를 선택하세요.</span>';
+                return;
+            }
 
             if (!amount || amount <= 0) {
                 statusElem.innerHTML = '<span style="color: #e74c3c;">올바른 금액을 입력하세요.</span>';
@@ -1407,10 +1645,11 @@
                 return;
             }
 
-            statusElem.innerHTML = '<span style="color: #f39c12;">입금 처리 중...</span>';
+            statusElem.innerHTML = `<span style="color: #f39c12;">${tokenType} 입금 처리 중...</span>`;
 
             const depositData = {
                 amount: amount,
+                token_type: tokenType,
                 tx_hash: txHash,
                 from_address: document.getElementById('deposit-address').textContent,
                 pin: pin
@@ -1450,10 +1689,16 @@
         }
 
         function processWithdraw() {
+            const tokenType = document.getElementById('withdraw-token-type').value;
             const amount = parseInt(document.getElementById('withdraw-amount').value);
             const toAddress = document.getElementById('withdraw-address').value;
             const pin = document.getElementById('withdraw-pin').value;
             const statusElem = document.getElementById('withdraw-status');
+
+            if (!tokenType) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">토큰 종류를 선택하세요.</span>';
+                return;
+            }
 
             if (!amount || amount <= 0) {
                 statusElem.innerHTML = '<span style="color: #e74c3c;">올바른 금액을 입력하세요.</span>';
@@ -1471,18 +1716,25 @@
             }
 
             // 잔액 확인
-            const availableTetherText = document.getElementById('available-tether').textContent;
-            const availableTether = parseInt(availableTetherText.replace(' USDT', '').replace(',', ''));
+            let availableBalance = 0;
+            if (tokenType === 'USDT') {
+                const availableTetherText = document.getElementById('available-tether').textContent;
+                availableBalance = parseInt(availableTetherText.replace(',', ''));
+            } else {
+                const availableUsdcText = document.getElementById('available-usdc').textContent;
+                availableBalance = parseInt(availableUsdcText.replace(',', ''));
+            }
             
-            if (amount > availableTether) {
-                statusElem.innerHTML = `<span style="color: #e74c3c;">사용 가능한 잔액이 부족합니다. (요청: ${amount} USDT, 사용가능: ${availableTether} USDT)</span>`;
+            if (amount > availableBalance) {
+                statusElem.innerHTML = `<span style="color: #e74c3c;">사용 가능한 잔액이 부족합니다. (요청: ${amount} ${tokenType}, 사용가능: ${availableBalance} ${tokenType})</span>`;
                 return;
             }
 
-            statusElem.innerHTML = '<span style="color: #f39c12;">출금 처리 중...</span>';
+            statusElem.innerHTML = `<span style="color: #f39c12;">${tokenType} 출금 처리 중...</span>`;
 
             const withdrawData = {
                 amount: amount,
+                token_type: tokenType,
                 to_address: toAddress,
                 pin: pin
             };
@@ -1518,6 +1770,250 @@
                 console.error('❌ 출금 실패:', error);
                 statusElem.innerHTML = `<span style="color: #e74c3c;">출금 실패: ${error.message}</span>`;
             });
+        }
+
+        // 추천 링크 관련 함수들
+        function generateReferralLink(walletAddress) {
+            if (!walletAddress) {
+                console.log('지갑 주소가 없어서 추천 링크를 생성할 수 없습니다');
+                return;
+            }
+            
+            const baseUrl = window.location.origin;
+            const referralLink = `${baseUrl}/signup.html?ref=${walletAddress}`;
+            
+            const linkInput = document.getElementById('referral-link');
+            if (linkInput) {
+                linkInput.value = referralLink;
+            }
+            
+            console.log('추천 링크 생성됨:', referralLink);
+        }
+
+        function copyReferralLink() {
+            const linkInput = document.getElementById('referral-link');
+            const link = linkInput.value;
+            
+            if (link === '링크를 생성하는 중...') {
+                alert('잠시 후 다시 시도해주세요.');
+                return;
+            }
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(link).then(() => {
+                    showToast('추천 링크가 복사되었습니다! 📋');
+                }).catch(err => {
+                    console.error('클립보드 복사 실패:', err);
+                    fallbackCopy(link);
+                });
+            } else {
+                fallbackCopy(link);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast('추천 링크가 복사되었습니다! 📋');
+            } catch (err) {
+                console.error('복사 실패:', err);
+                alert('복사에 실패했습니다. 링크를 직접 선택해서 복사해주세요.');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function shareReferralLink() {
+            const linkInput = document.getElementById('referral-link');
+            const link = linkInput.value;
+            
+            if (link === '링크를 생성하는 중...') {
+                alert('잠시 후 다시 시도해주세요.');
+                return;
+            }
+            
+            const shareText = `🏛️ 나의 공화국에서 정치인 코인을 받아보세요!\n\n정치인을 선택하고 무료 코인을 받을 수 있어요.\n\n${link}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: '🏛️ 나의 공화국 - 친구 초대',
+                    text: shareText,
+                    url: link
+                }).then(() => {
+                    console.log('공유 성공');
+                }).catch(err => {
+                    console.log('공유 취소 또는 실패:', err);
+                });
+            } else {
+                // Web Share API가 지원되지 않으면 클립보드에 복사
+                copyReferralLink();
+                alert('공유 기능이 지원되지 않아 링크를 복사했습니다.\nSNS에 붙여넣기 해주세요!');
+            }
+        }
+
+        function showCreditUsageModal() {
+            // 현재 크레딧 정보 가져오기
+            const credits = parseInt(document.getElementById('referral-credits').textContent);
+            if (credits <= 0) {
+                alert('사용 가능한 크레딧이 없습니다.');
+                return;
+            }
+            
+            // 모달 표시
+            document.getElementById('credit-usage-modal').style.display = 'flex';
+            document.getElementById('modal-credits').textContent = credits;
+            
+            // 정치인 목록 로드
+            loadAvailablePoliticiansForCredit();
+            
+            // 폼 리셋
+            document.getElementById('credit-usage-form').reset();
+            document.getElementById('credit-usage-status').innerHTML = '';
+        }
+
+        function closeCreditUsageModal() {
+            document.getElementById('credit-usage-modal').style.display = 'none';
+        }
+
+        function loadAvailablePoliticiansForCredit() {
+            const select = document.getElementById('credit-politician-select');
+            select.innerHTML = '<option value="">정치인 목록을 불러오는 중...</option>';
+            
+            // 등록된 정치인 목록 가져오기
+            fetch('/api/politicians/registered')
+                .then(response => response.json())
+                .then(data => {
+                    select.innerHTML = '<option value="">정치인을 선택하세요...</option>';
+                    
+                    // 현재 사용자가 이미 선택한 정치인들 제외
+                    const userProfile = getCurrentUserProfile();
+                    const alreadySelected = userProfile ? userProfile.politicians : [];
+                    
+                    data.politicians.forEach(politician => {
+                        if (!alreadySelected.includes(politician.name)) {
+                            const option = document.createElement('option');
+                            option.value = politician.name;
+                            option.textContent = politician.name;
+                            select.appendChild(option);
+                        }
+                    });
+                    
+                    if (select.children.length <= 1) {
+                        select.innerHTML = '<option value="">선택 가능한 정치인이 없습니다</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('정치인 목록 로드 실패:', error);
+                    select.innerHTML = '<option value="">목록 로드 실패</option>';
+                });
+        }
+
+        function getCurrentUserProfile() {
+            // 현재 로드된 사용자 프로필 정보 반환 (전역 변수나 캐시에서)
+            // 임시로 null 반환 - 실제로는 사용자 프로필 데이터를 반환해야 함
+            return null;
+        }
+
+        function processCreditUsage() {
+            const politician = document.getElementById('credit-politician-select').value;
+            const creditAmount = parseInt(document.getElementById('credit-amount').value);
+            const pin = document.getElementById('credit-pin').value;
+            const statusElem = document.getElementById('credit-usage-status');
+
+            // 입력값 검증
+            if (!politician) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">정치인을 선택하세요.</span>';
+                return;
+            }
+
+            if (!pin || pin.length !== 6) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">6자리 PIN을 입력하세요.</span>';
+                return;
+            }
+
+            statusElem.innerHTML = '<span style="color: #f39c12;">크레딧 사용 처리 중...</span>';
+
+            const usageData = {
+                politician: politician,
+                credit_amount: creditAmount,
+                pin: pin
+            };
+
+            fetch('/api/user/use-credit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(usageData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                statusElem.innerHTML = '<span style="color: #28a745;">✅ 크레딧 사용 완료! 정치인이 추가되고 코인 100개를 받았습니다.</span>';
+                
+                // 3초 후 모달 닫기 및 데이터 새로고침
+                setTimeout(() => {
+                    closeCreditUsageModal();
+                    loadUserProfile(); // 프로필 데이터 새로고침
+                    showToast(`🎉 ${politician} 정치인이 추가되었습니다! 코인 100개를 받았어요!`);
+                }, 3000);
+            })
+            .catch(error => {
+                console.error('크레딧 사용 실패:', error);
+                statusElem.innerHTML = `<span style="color: #e74c3c;">크레딧 사용 실패: ${error.message}</span>`;
+            });
+        }
+
+        function showToast(message) {
+            // 토스트 메시지 생성
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed; top: 20px; right: 20px; 
+                background: #28a745; color: white; 
+                padding: 15px 20px; border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000; font-size: 14px; font-weight: 500;
+                animation: slideIn 0.3s ease-out;
+            `;
+            toast.textContent = message;
+            
+            // 애니메이션 CSS 추가
+            if (!document.getElementById('toast-styles')) {
+                const style = document.createElement('style');
+                style.id = 'toast-styles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(toast);
+            
+            // 3초 후 제거
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-in forwards';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
         }
 
     </script>
