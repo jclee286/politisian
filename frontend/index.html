@@ -156,6 +156,67 @@
                 </div>
             </div>
 
+            <!-- 테더코인 입금 모달 -->
+            <div id="deposit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px; margin: 20px;">
+                    <h3 style="color: #333; margin-bottom: 20px;">💳 USDT 입금</h3>
+                    <div id="deposit-address-section">
+                        <p style="color: #666; margin-bottom: 15px;">아래 주소로 USDT(TRC20)를 보내주세요:</p>
+                        <div id="deposit-address" style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-family: monospace; word-break: break-all; margin-bottom: 15px; border: 1px solid #e9ecef;">
+                            주소를 불러오는 중...
+                        </div>
+                        <button onclick="copyDepositAddress()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-bottom: 20px;">📋 주소 복사</button>
+                    </div>
+                    
+                    <form id="deposit-form" style="text-align: left;">
+                        <div style="margin-bottom: 15px;">
+                            <label>입금 금액 (USDT):</label>
+                            <input type="number" id="deposit-amount" min="1" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label>트랜잭션 해시:</label>
+                            <input type="text" id="deposit-txhash" placeholder="블록체인 트랜잭션 해시를 입력하세요" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label>PIN (6자리):</label>
+                            <input type="password" id="deposit-pin" maxlength="6" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                        </div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button type="submit" style="background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-right: 10px;">✅ 입금 확인</button>
+                            <button type="button" onclick="closeDepositModal()" style="background: #6c757d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">취소</button>
+                        </div>
+                    </form>
+                    <div id="deposit-status" style="margin-top: 15px; font-size: 14px;"></div>
+                </div>
+            </div>
+
+            <!-- 테더코인 출금 모달 -->
+            <div id="withdraw-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px; margin: 20px;">
+                    <h3 style="color: #333; margin-bottom: 20px;">💸 USDT 출금</h3>
+                    <form id="withdraw-form" style="text-align: left;">
+                        <div style="margin-bottom: 15px;">
+                            <label>출금 금액 (USDT):</label>
+                            <input type="number" id="withdraw-amount" min="1" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <small style="color: #666;">사용 가능한 잔액: <span id="available-balance-display">0 USDT</span></small>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label>받을 주소 (TRON TRC20):</label>
+                            <input type="text" id="withdraw-address" placeholder="T로 시작하는 TRON 주소를 입력하세요" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label>PIN (6자리):</label>
+                            <input type="password" id="withdraw-pin" maxlength="6" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                        </div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button type="submit" style="background: #ffc107; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-right: 10px;">💸 출금 신청</button>
+                            <button type="button" onclick="closeWithdrawModal()" style="background: #6c757d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">취소</button>
+                        </div>
+                    </form>
+                    <div id="withdraw-status" style="margin-top: 15px; font-size: 14px;"></div>
+                </div>
+            </div>
+
             <!-- 지갑이 잠겨있을 때 표시 -->
             <div id="wallet-locked" style="display: none; text-align: center; padding: 40px;">
                 <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
@@ -200,6 +261,8 @@
                 </ul>
                 
                 <div style="margin-top: 20px; text-align: center;">
+                    <button onclick="showDepositModal()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-right: 10px;">💳 테더 입금</button>
+                    <button onclick="showWithdrawModal()" style="background: #ffc107; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-right: 10px;">💸 테더 출금</button>
                     <button onclick="lockWallet()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px;">🔒 보안 잠금</button>
                 </div>
             </div>
@@ -1243,6 +1306,218 @@
         function loadWalletData() {
             // 기존의 프로필 로드 함수 재사용
             loadUserProfile();
+        }
+
+        // 입금/출금 관련 함수들
+        function showDepositModal() {
+            document.getElementById('deposit-modal').style.display = 'flex';
+            loadDepositAddress();
+            document.getElementById('deposit-form').reset();
+            document.getElementById('deposit-status').innerHTML = '';
+        }
+
+        function closeDepositModal() {
+            document.getElementById('deposit-modal').style.display = 'none';
+        }
+
+        function showWithdrawModal() {
+            document.getElementById('withdraw-modal').style.display = 'flex';
+            document.getElementById('withdraw-form').reset();
+            document.getElementById('withdraw-status').innerHTML = '';
+            
+            // 사용 가능한 잔액 표시
+            const availableTetherText = document.getElementById('available-tether').textContent;
+            document.getElementById('available-balance-display').textContent = availableTetherText;
+        }
+
+        function closeWithdrawModal() {
+            document.getElementById('withdraw-modal').style.display = 'none';
+        }
+
+        function loadDepositAddress() {
+            fetch('/api/wallet/address')
+                .then(response => {
+                    if (!response.ok) throw new Error('입금 주소 조회 실패');
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('deposit-address').textContent = data.deposit_address;
+                })
+                .catch(error => {
+                    console.error('입금 주소 로드 실패:', error);
+                    document.getElementById('deposit-address').textContent = '주소 로드 실패';
+                });
+        }
+
+        function copyDepositAddress() {
+            const address = document.getElementById('deposit-address').textContent;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(address).then(() => {
+                    alert('입금 주소가 복사되었습니다!');
+                });
+            } else {
+                // 구형 브라우저 대응
+                const textArea = document.createElement('textarea');
+                textArea.value = address;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('입금 주소가 복사되었습니다!');
+            }
+        }
+
+        // 입금 폼 이벤트 리스너
+        document.addEventListener('DOMContentLoaded', function() {
+            const depositForm = document.getElementById('deposit-form');
+            if (depositForm) {
+                depositForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    processDeposit();
+                });
+            }
+
+            const withdrawForm = document.getElementById('withdraw-form');
+            if (withdrawForm) {
+                withdrawForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    processWithdraw();
+                });
+            }
+        });
+
+        function processDeposit() {
+            const amount = parseInt(document.getElementById('deposit-amount').value);
+            const txHash = document.getElementById('deposit-txhash').value;
+            const pin = document.getElementById('deposit-pin').value;
+            const statusElem = document.getElementById('deposit-status');
+
+            if (!amount || amount <= 0) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">올바른 금액을 입력하세요.</span>';
+                return;
+            }
+
+            if (!txHash) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">트랜잭션 해시를 입력하세요.</span>';
+                return;
+            }
+
+            if (!pin || pin.length !== 6) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">6자리 PIN을 입력하세요.</span>';
+                return;
+            }
+
+            statusElem.innerHTML = '<span style="color: #f39c12;">입금 처리 중...</span>';
+
+            const depositData = {
+                amount: amount,
+                tx_hash: txHash,
+                from_address: document.getElementById('deposit-address').textContent,
+                pin: pin
+            };
+
+            fetch('/api/wallet/deposit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(depositData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+                return response.json();
+            })
+            .then(result => {
+                console.log('✅ 입금 성공:', result);
+                statusElem.innerHTML = '<span style="color: #28a745;">입금이 성공적으로 처리되었습니다!</span>';
+                
+                // 폼 초기화
+                document.getElementById('deposit-form').reset();
+                
+                // 잔액 업데이트
+                loadUserProfile();
+                
+                setTimeout(() => {
+                    closeDepositModal();
+                }, 2000);
+            })
+            .catch(error => {
+                console.error('❌ 입금 실패:', error);
+                statusElem.innerHTML = `<span style="color: #e74c3c;">입금 실패: ${error.message}</span>`;
+            });
+        }
+
+        function processWithdraw() {
+            const amount = parseInt(document.getElementById('withdraw-amount').value);
+            const toAddress = document.getElementById('withdraw-address').value;
+            const pin = document.getElementById('withdraw-pin').value;
+            const statusElem = document.getElementById('withdraw-status');
+
+            if (!amount || amount <= 0) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">올바른 금액을 입력하세요.</span>';
+                return;
+            }
+
+            if (!toAddress) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">출금 주소를 입력하세요.</span>';
+                return;
+            }
+
+            if (!pin || pin.length !== 6) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">6자리 PIN을 입력하세요.</span>';
+                return;
+            }
+
+            // 잔액 확인
+            const availableTetherText = document.getElementById('available-tether').textContent;
+            const availableTether = parseInt(availableTetherText.replace(' USDT', '').replace(',', ''));
+            
+            if (amount > availableTether) {
+                statusElem.innerHTML = `<span style="color: #e74c3c;">사용 가능한 잔액이 부족합니다. (요청: ${amount} USDT, 사용가능: ${availableTether} USDT)</span>`;
+                return;
+            }
+
+            statusElem.innerHTML = '<span style="color: #f39c12;">출금 처리 중...</span>';
+
+            const withdrawData = {
+                amount: amount,
+                to_address: toAddress,
+                pin: pin
+            };
+
+            fetch('/api/wallet/withdraw', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(withdrawData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+                return response.json();
+            })
+            .then(result => {
+                console.log('✅ 출금 성공:', result);
+                statusElem.innerHTML = '<span style="color: #28a745;">출금이 성공적으로 처리되었습니다!</span>';
+                
+                // 폼 초기화
+                document.getElementById('withdraw-form').reset();
+                
+                // 잔액 업데이트
+                loadUserProfile();
+                
+                setTimeout(() => {
+                    closeWithdrawModal();
+                }, 2000);
+            })
+            .catch(error => {
+                console.error('❌ 출금 실패:', error);
+                statusElem.innerHTML = `<span style="color: #e74c3c;">출금 실패: ${error.message}</span>`;
+            });
         }
 
     </script>

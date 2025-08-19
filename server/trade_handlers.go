@@ -710,3 +710,210 @@ func getAvailableBalance(userID string) (*ptypes.Account, error) {
 	
 	return account, nil
 }
+
+// handleGetDepositAddress는 사용자의 테더코인 입금 주소를 반환합니다.
+func handleGetDepositAddress(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok {
+		http.Error(w, "인증이 필요합니다", http.StatusUnauthorized)
+		return
+	}
+
+	account, err := getUserAccount(userID)
+	if err != nil {
+		http.Error(w, "계정을 찾을 수 없습니다", http.StatusNotFound)
+		return
+	}
+
+	// 입금 주소가 없으면 새로 생성
+	if account.TetherWalletAddress == "" {
+		// 실제로는 USDT 지갑 주소를 생성해야 하지만, 데모용으로 고정 주소 사용
+		account.TetherWalletAddress = fmt.Sprintf("TDemo%s", userID[:8]) // 데모용 주소
+		
+		// 블록체인에 업데이트 (실제로는 update_account 액션 필요)
+		log.Printf("Generated deposit address for user %s: %s", userID, account.TetherWalletAddress)
+	}
+
+	response := map[string]interface{}{
+		"deposit_address": account.TetherWalletAddress,
+		"network":        "TRON(TRC20)",
+		"currency":       "USDT",
+		"notice":         "이 주소로 USDT(TRC20)만 보내주세요. 다른 토큰을 보내면 자산을 잃을 수 있습니다.",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleTetherDeposit는 테더코인 입금을 처리합니다.
+func handleTetherDeposit(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok {
+		http.Error(w, "인증이 필요합니다", http.StatusUnauthorized)
+		return
+	}
+
+	var req ptypes.DepositRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "잘못된 요청 형식", http.StatusBadRequest)
+		return
+	}
+
+	// 입력값 검증
+	if req.Amount <= 0 {
+		http.Error(w, "올바른 금액을 입력하세요", http.StatusBadRequest)
+		return
+	}
+
+	if req.TxHash == "" {
+		http.Error(w, "트랜잭션 해시가 필요합니다", http.StatusBadRequest)
+		return
+	}
+
+	// PIN 검증
+	if err := verifyUserPIN(userID, req.PIN); err != nil {
+		http.Error(w, "PIN이 올바르지 않습니다", http.StatusUnauthorized)
+		return
+	}
+
+	// 실제로는 블록체인에서 트랜잭션을 검증해야 함
+	// 여기서는 데모용으로 바로 처리
+	log.Printf("Processing deposit for user %s: %d USDT, tx: %s", userID, req.Amount, req.TxHash)
+
+	// 블록체인에 입금 트랜잭션 전송
+	txData := ptypes.TxData{
+		Action: "deposit_tether",
+		UserID: userID,
+		TxID:   fmt.Sprintf("deposit_%s_%d", userID, time.Now().UnixNano()),
+	}
+
+	// 입금 정보를 JSON으로 직렬화
+	depositBytes, err := json.Marshal(req)
+	if err != nil {
+		http.Error(w, "데이터 처리 실패", http.StatusInternalServerError)
+		return
+	}
+
+	txData.Politicians = []string{string(depositBytes)}
+
+	txBytes, err := json.Marshal(txData)
+	if err != nil {
+		http.Error(w, "트랜잭션 생성 실패", http.StatusInternalServerError)
+		return
+	}
+
+	if err := broadcastAndCheckTx(context.Background(), txBytes); err != nil {
+		log.Printf("입금 트랜잭션 실패: %v", err)
+		http.Error(w, "입금 처리 실패", http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "입금이 성공적으로 처리되었습니다",
+		"amount":  req.Amount,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleTetherWithdraw는 테더코인 출금을 처리합니다.
+func handleTetherWithdraw(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok {
+		http.Error(w, "인증이 필요합니다", http.StatusUnauthorized)
+		return
+	}
+
+	var req ptypes.WithdrawRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "잘못된 요청 형식", http.StatusBadRequest)
+		return
+	}
+
+	// 입력값 검증
+	if req.Amount <= 0 {
+		http.Error(w, "올바른 금액을 입력하세요", http.StatusBadRequest)
+		return
+	}
+
+	if req.ToAddress == "" {
+		http.Error(w, "출금 주소가 필요합니다", http.StatusBadRequest)
+		return
+	}
+
+	// PIN 검증
+	if err := verifyUserPIN(userID, req.PIN); err != nil {
+		http.Error(w, "PIN이 올바르지 않습니다", http.StatusUnauthorized)
+		return
+	}
+
+	// 잔액 확인
+	account, err := getAvailableBalance(userID)
+	if err != nil {
+		http.Error(w, "계정을 찾을 수 없습니다", http.StatusNotFound)
+		return
+	}
+
+	availableBalance := account.TetherBalance - account.EscrowAccount.FrozenTetherBalance
+	if availableBalance < req.Amount {
+		http.Error(w, fmt.Sprintf("사용 가능한 잔액이 부족합니다 (요청: %d, 사용가능: %d)", req.Amount, availableBalance), http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Processing withdrawal for user %s: %d USDT to %s", userID, req.Amount, req.ToAddress)
+
+	// 블록체인에 출금 트랜잭션 전송
+	txData := ptypes.TxData{
+		Action: "withdraw_tether",
+		UserID: userID,
+		TxID:   fmt.Sprintf("withdraw_%s_%d", userID, time.Now().UnixNano()),
+	}
+
+	// 출금 정보를 JSON으로 직렬화
+	withdrawBytes, err := json.Marshal(req)
+	if err != nil {
+		http.Error(w, "데이터 처리 실패", http.StatusInternalServerError)
+		return
+	}
+
+	txData.Politicians = []string{string(withdrawBytes)}
+
+	txBytes, err := json.Marshal(txData)
+	if err != nil {
+		http.Error(w, "트랜잭션 생성 실패", http.StatusInternalServerError)
+		return
+	}
+
+	if err := broadcastAndCheckTx(context.Background(), txBytes); err != nil {
+		log.Printf("출금 트랜잭션 실패: %v", err)
+		http.Error(w, "출금 처리 실패", http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "출금이 성공적으로 처리되었습니다",
+		"amount":  req.Amount,
+		"to_address": req.ToAddress,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}

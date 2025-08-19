@@ -55,6 +55,7 @@ type Account struct {
 	ReceivedCoins     map[string]bool     `json:"received_coins"`     // "정치인명": 코인 받았는지 여부
 	InitialSelection  bool                `json:"initial_selection"`  // 초기 3명 선택 완료 여부
 	TetherBalance     int64               `json:"tether_balance"`     // 테더코인 잔액 (USDT 단위)
+	TetherWalletAddress string            `json:"tether_wallet_address"` // 테더코인 입금용 지갑 주소
 	ActiveOrders      []TradeOrder        `json:"active_orders"`      // 활성 거래 주문들
 	EscrowAccount     EscrowAccount       `json:"escrow_account"`     // 에스크로 계정
 }
@@ -181,6 +182,21 @@ type TradeRequest struct {
 	Quantity      int64  `json:"quantity"`       // 수량
 	Price         int64  `json:"price"`          // 가격 (테더코인 단위)
 	PIN           string `json:"pin"`            // 거래 승인용 PIN
+}
+
+// DepositRequest는 테더코인 입금 요청을 나타냅니다.
+type DepositRequest struct {
+	Amount     int64  `json:"amount"`      // 입금 금액 (USDT)
+	TxHash     string `json:"tx_hash"`     // 블록체인 트랜잭션 해시
+	FromAddress string `json:"from_address"` // 송금한 주소
+	PIN        string `json:"pin"`         // 입금 승인용 PIN
+}
+
+// WithdrawRequest는 테더코인 출금 요청을 나타냅니다.
+type WithdrawRequest struct {
+	Amount    int64  `json:"amount"`     // 출금 금액 (USDT)
+	ToAddress string `json:"to_address"` // 받을 주소
+	PIN       string `json:"pin"`        // 출금 승인용 PIN
 }
 
 // PoliticianPrice는 정치인 코인의 가격 정보를 나타냅니다.

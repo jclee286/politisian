@@ -63,6 +63,11 @@ func StartServer(node *node.Node) {
 	mux.Handle("/api/trading/place-order", corsMiddleware(authMiddleware(http.HandlerFunc(handlePlaceOrder))))
 	mux.Handle("/api/trading/cancel-order/", corsMiddleware(authMiddleware(http.HandlerFunc(handleCancelOrder))))
 	mux.Handle("/api/trading/my-orders", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetUserOrders))))
+	
+	// 테더코인 입출금 API
+	mux.Handle("/api/wallet/deposit", corsMiddleware(authMiddleware(http.HandlerFunc(handleTetherDeposit))))
+	mux.Handle("/api/wallet/withdraw", corsMiddleware(authMiddleware(http.HandlerFunc(handleTetherWithdraw))))
+	mux.Handle("/api/wallet/address", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetDepositAddress))))
 
 	// 2. 정적 파일 핸들러 (CSS, JS 등)를 등록합니다. 이 요청들은 인증을 거치지 않습니다.
 	// ./frontend/js/ 디렉토리를 /js/ URL 경로에 매핑합니다.
