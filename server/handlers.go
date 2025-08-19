@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	ptypes "politisian/pkg/types"
+	ptypes "github.com/jclee286/politisian/pkg/types"
 
 	"github.com/cometbft/cometbft/abci/types"
 )
@@ -132,7 +132,7 @@ func handleUserProfileFromSession(w http.ResponseWriter, r *http.Request, userID
 }
 
 func handleGetPolitisians(w http.ResponseWriter, r *http.Request) {
-	log.Println("Attempting to handle /api/politisian/list request")
+	log.Println("Attempting to handle /api/github.com/jclee286/politisian/list request")
 	res, err := blockchainClient.ABCIQuery(context.Background(), "/proposals/list", nil)
 	if err != nil {
 		log.Printf("Error querying for proposals list: %v", err)
@@ -153,8 +153,8 @@ func handleGetPolitisians(w http.ResponseWriter, r *http.Request) {
 
 // handleGetRegisteredPoliticians는 등록된 정치인 목록을 조회합니다.
 func handleGetRegisteredPoliticians(w http.ResponseWriter, r *http.Request) {
-	log.Println("Attempting to handle /api/politisian/registered request")
-	res, err := blockchainClient.ABCIQuery(context.Background(), "/politisian/list", nil)
+	log.Println("Attempting to handle /api/github.com/jclee286/politisian/registered request")
+	res, err := blockchainClient.ABCIQuery(context.Background(), "/github.com/jclee286/politisian/list", nil)
 	if err != nil {
 		log.Printf("Error querying for politicians list: %v", err)
 		http.Error(w, fmt.Sprintf("블록체인 쿼리 실패: %v", err), http.StatusInternalServerError)
@@ -280,7 +280,7 @@ func handleProfileSave(w http.ResponseWriter, r *http.Request) {
 
 // handleProposePolitisian는 새로운 정치인을 등록 제안하는 요청을 처리합니다.
 func handleProposePolitician(w http.ResponseWriter, r *http.Request) {
-	log.Println("Attempting to handle /api/politisian/propose request")
+	log.Println("Attempting to handle /api/github.com/jclee286/politisian/propose request")
 	userID, _ := r.Context().Value("userID").(string)
 	var reqBody struct {
 		Name     string `json:"name"`

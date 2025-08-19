@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"politisian/app"
-	ptypes "politisian/pkg/types"
-	"politisian/server"
+	"github.com/jclee286/politisian/app"
+	ptypes "github.com/jclee286/politisian/pkg/types"
+	"github.com/jclee286/politisian/server"
 
 	"github.com/cometbft/cometbft/config"
 	dbm "github.com/cometbft/cometbft-db"

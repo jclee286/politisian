@@ -4,7 +4,7 @@ import (
 	"github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
-	ptypes "politisian/pkg/types"
+	ptypes "github.com/jclee286/politisian/pkg/types"
 )
 
 // PoliticianApp은 ABCI 애플리케이션의 상태를 저장합니다.

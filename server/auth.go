@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	ptypes "politisian/pkg/types"
+	ptypes "github.com/jclee286/politisian/pkg/types"
 
 	"golang.org/x/crypto/bcrypt"
 )

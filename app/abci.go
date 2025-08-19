@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/google/uuid"
-	ptypes "politisian/pkg/types"
+	ptypes "github.com/jclee286/politisian/pkg/types"
 )
 
 // Info is called by CometBFT to query the application's last state.
@@ -23,7 +25,7 @@ func (app *PoliticianApp) Info(_ context.Context, req *types.RequestInfo) (*type
 func (app *PoliticianApp) Query(_ context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
 	app.logger.Info("Received Query", "path", req.Path, "data", string(req.Data))
 	switch req.Path {
-	case "/politisian/list":
+	case "/github.com/jclee286/politisian/list":
 		res, err := json.Marshal(app.politicians)
 		if err != nil {
 			return &types.ResponseQuery{Code: 4, Log: "failed to marshal politicians list"}, nil
@@ -620,14 +622,28 @@ func (app *PoliticianApp) handleExecuteTrade(txData *ptypes.TxData) *types.ExecT
 func (app *PoliticianApp) handleDepositTether(txData *ptypes.TxData) *types.ExecTxResult {
 	app.logger.Info("Processing tether deposit", "user_id", txData.UserID, "tx_id", txData.TxID)
 	
-	// 입금 데이터 파싱
-	if len(txData.Politicians) == 0 {
-		return &types.ExecTxResult{Code: 1, Log: "입금 데이터가 없습니다"}
+	// 입금 데이터 파싱 (Politicians 필드에서 데이터 추출)
+	if len(txData.Politicians) < 3 {
+		return &types.ExecTxResult{Code: 1, Log: "입금 데이터가 부족합니다"}
 	}
 	
-	var deposit ptypes.DepositRequest
-	if err := json.Unmarshal([]byte(txData.Politicians[0]), &deposit); err != nil {
-		app.logger.Error("Failed to parse deposit data", "error", err)
+	// amount:1000000, tx_hash:0x123, from_address:T123 형태로 파싱
+	var amount int64
+	var txHash, fromAddress string
+	
+	for _, data := range txData.Politicians {
+		if strings.HasPrefix(data, "amount:") {
+			if a, err := strconv.ParseInt(data[7:], 10, 64); err == nil {
+				amount = a
+			}
+		} else if strings.HasPrefix(data, "tx_hash:") {
+			txHash = data[8:]
+		} else if strings.HasPrefix(data, "from_address:") {
+			fromAddress = data[13:]
+		}
+	}
+	
+	if amount <= 0 || txHash == "" || fromAddress == "" {
 		return &types.ExecTxResult{Code: 2, Log: "입금 데이터 파싱 실패"}
 	}
 	
@@ -641,12 +657,13 @@ func (app *PoliticianApp) handleDepositTether(txData *ptypes.TxData) *types.Exec
 	// 여기서는 데모용으로 바로 처리
 	
 	// 테더코인 잔액 증가
-	account.TetherBalance += deposit.Amount
+	account.TetherBalance += amount
 	
 	app.logger.Info("Tether deposit successful", 
 		"user_id", txData.UserID, 
-		"amount", deposit.Amount, 
-		"tx_hash", deposit.TxHash,
+		"amount", amount, 
+		"tx_hash", txHash,
+		"from_address", fromAddress,
 		"new_balance", account.TetherBalance)
 	
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
@@ -656,14 +673,26 @@ func (app *PoliticianApp) handleDepositTether(txData *ptypes.TxData) *types.Exec
 func (app *PoliticianApp) handleWithdrawTether(txData *ptypes.TxData) *types.ExecTxResult {
 	app.logger.Info("Processing tether withdrawal", "user_id", txData.UserID, "tx_id", txData.TxID)
 	
-	// 출금 데이터 파싱
-	if len(txData.Politicians) == 0 {
-		return &types.ExecTxResult{Code: 1, Log: "출금 데이터가 없습니다"}
+	// 출금 데이터 파싱 (Politicians 필드에서 데이터 추출)
+	if len(txData.Politicians) < 2 {
+		return &types.ExecTxResult{Code: 1, Log: "출금 데이터가 부족합니다"}
 	}
 	
-	var withdraw ptypes.WithdrawRequest
-	if err := json.Unmarshal([]byte(txData.Politicians[0]), &withdraw); err != nil {
-		app.logger.Error("Failed to parse withdrawal data", "error", err)
+	// amount:1000000, to_address:T123 형태로 파싱
+	var amount int64
+	var toAddress string
+	
+	for _, data := range txData.Politicians {
+		if strings.HasPrefix(data, "amount:") {
+			if a, err := strconv.ParseInt(data[7:], 10, 64); err == nil {
+				amount = a
+			}
+		} else if strings.HasPrefix(data, "to_address:") {
+			toAddress = data[11:]
+		}
+	}
+	
+	if amount <= 0 || toAddress == "" {
 		return &types.ExecTxResult{Code: 2, Log: "출금 데이터 파싱 실패"}
 	}
 	
@@ -675,20 +704,20 @@ func (app *PoliticianApp) handleWithdrawTether(txData *ptypes.TxData) *types.Exe
 	
 	// 사용 가능한 잔액 확인
 	availableBalance := account.TetherBalance - account.EscrowAccount.FrozenTetherBalance
-	if availableBalance < withdraw.Amount {
+	if availableBalance < amount {
 		return &types.ExecTxResult{Code: 4, Log: "사용 가능한 잔액이 부족합니다"}
 	}
 	
 	// 테더코인 잔액 차감
-	account.TetherBalance -= withdraw.Amount
+	account.TetherBalance -= amount
 	
 	// 실제로는 여기서 블록체인으로 USDT를 전송해야 함
 	// 데모용으로는 로그만 출력
 	
 	app.logger.Info("Tether withdrawal successful", 
 		"user_id", txData.UserID, 
-		"amount", withdraw.Amount, 
-		"to_address", withdraw.ToAddress,
+		"amount", amount, 
+		"to_address", toAddress,
 		"new_balance", account.TetherBalance)
 	
 	return &types.ExecTxResult{Code: types.CodeTypeOK}
