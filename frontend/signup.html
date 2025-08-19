@@ -62,10 +62,10 @@
             border-color: #667eea;
         }
         .politician-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            max-height: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 250px;
             overflow-y: auto;
             border: 2px solid #e1e5e9;
             border-radius: 10px;
@@ -74,12 +74,16 @@
         .politician-item {
             display: flex;
             align-items: center;
-            padding: 8px;
+            padding: 12px;
+            background: #f8f9fa;
             border-radius: 8px;
-            transition: background-color 0.2s;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
         .politician-item:hover {
-            background-color: #f8f9fa;
+            background: #e9ecef;
+            border-color: #667eea;
         }
         .politician-item input {
             width: auto;

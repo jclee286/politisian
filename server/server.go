@@ -50,9 +50,9 @@ func StartServer(node *node.Node) {
 	mux.Handle("/api/auth/social-login", corsMiddleware(http.HandlerFunc(handleSocialLogin))) // 이름 변경으로 구분
 	mux.Handle("/api/user/profile", corsMiddleware(authMiddleware(http.HandlerFunc(handleUserProfile))))
 	mux.Handle("/api/profile/save", corsMiddleware(authMiddleware(http.HandlerFunc(handleProfileSave))))
-	mux.Handle("/api/github.com/jclee286/politisian/list", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetPolitisians))))
-	mux.Handle("/api/github.com/jclee286/politisian/registered", corsMiddleware(http.HandlerFunc(handleGetRegisteredPoliticians)))
-	mux.Handle("/api/github.com/jclee286/politisian/propose", corsMiddleware(authMiddleware(http.HandlerFunc(handleProposePolitician))))
+	mux.Handle("/api/politisian/list", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetPolitisians))))
+	mux.Handle("/api/politisian/registered", corsMiddleware(http.HandlerFunc(handleGetRegisteredPoliticians)))
+	mux.Handle("/api/politisian/propose", corsMiddleware(authMiddleware(http.HandlerFunc(handleProposePolitician))))
 	mux.Handle("/api/proposals/", corsMiddleware(authMiddleware(http.HandlerFunc(handleVoteOnProposal))))
 	mux.Handle("/api/user/session-info", corsMiddleware(http.HandlerFunc(handleSessionInfo)))
 	mux.Handle("/api/auth/generate-wallet", corsMiddleware(authMiddleware(http.HandlerFunc(handleGenerateWallet))))
