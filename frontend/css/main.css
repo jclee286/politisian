@@ -1,0 +1,78 @@
+/* 기본 레이아웃 및 공통 스타일 */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 20px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+    display: none;
+}
+
+.header h1 {
+    color: #333;
+}
+
+.loading {
+    color: #888;
+}
+
+/* 폼 관련 스타일 */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+/* 버튼 스타일 */
+.button {
+    padding: 10px 15px;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.propose-button { 
+    background-color: #17a2b8; 
+}
+
+.propose-button:hover { 
+    background-color: #138496; 
+}
+
+.vote-button {
+    margin-left: 10px;
+    padding: 5px 10px;
+}
+
+.approve { 
+    background-color: #28a745; 
+}
+
+.reject { 
+    background-color: #dc3545; 
+}
+
+/* 메시지 스타일 */
+.error-message {
+    color: red;
+    margin: 10px 0;
+}
+
+.success-message {
+    color: green;
+    margin: 10px 0;
+}

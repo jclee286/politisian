@@ -7,123 +7,11 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>나의 공화국 - 대시보드</title>
-    <!-- 커스텀 스타일 (Tailwind 대체) -->
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 20px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            display: none;
-        }
-        .header h1 {
-            color: #333;
-        }
-        .dashboard-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .card {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-        }
-        .card h2 {
-            color: #333;
-            border-bottom: 2px solid #28a745;
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
-        .wallet-address {
-            font-family: monospace;
-            background-color: #e9ecef;
-            padding: 10px;
-            border-radius: 4px;
-            word-break: break-all;
-        }
-        .politisian-list {
-            list-style: none;
-            padding: 0;
-        }
-        .politisian-list li {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        .scrollable-politician-list {
-            max-height: 400px; /* 약 5명의 정치인이 보이는 높이 */
-            overflow-y: auto;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            padding: 5px;
-            background-color: #f9f9f9;
-        }
-        .scrollable-politician-list::-webkit-scrollbar {
-            width: 8px;
-        }
-        .scrollable-politician-list::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-        .scrollable-politician-list::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 4px;
-        }
-        .scrollable-politician-list::-webkit-scrollbar-thumb:hover {
-            background: #a1a1a1;
-        }
-        .loading {
-            color: #888;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-        .button {
-             padding: 10px 15px;
-             color: white;
-             border: none;
-             border-radius: 4px;
-             cursor: pointer;
-        }
-        .propose-button { background-color: #17a2b8; }
-        .propose-button:hover { background-color: #138496; }
-        .vote-button {
-            margin-left: 10px;
-            padding: 5px 10px;
-        }
-        .approve { background-color: #28a745; }
-        .reject { background-color: #dc3545; }
-        .error-message {
-            color: red;
-            margin: 10px 0;
-        }
-        .success-message {
-            color: green;
-            margin: 10px 0;
-        }
-    </style>
     
+    <!-- 분리된 CSS 파일들 -->
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/modal.css">
 </head>
 <body>
 
@@ -137,103 +25,105 @@
             <h2>💰 나의 지갑 & 보유 코인</h2>
             
             <!-- PIN 입력 모달 -->
-            <div id="pin-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; margin: 20px;">
-                    <h3 style="color: #333; margin-bottom: 20px;">🔐 지갑 잠금 해제</h3>
+            <div id="pin-modal" class="modal-overlay">
+                <div class="modal-content">
+                    <h3 class="modal-header">🔐 지갑 잠금 해제</h3>
                     <p style="color: #666; margin-bottom: 20px;">6자리 PIN을 입력하세요</p>
-                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
-                        <input type="number" class="pin-digit-unlock" maxlength="1" min="0" max="9" style="width: 40px; height: 40px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-size: 18px;">
-                        <input type="number" class="pin-digit-unlock" maxlength="1" min="0" max="9" style="width: 40px; height: 40px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-size: 18px;">
-                        <input type="number" class="pin-digit-unlock" maxlength="1" min="0" max="9" style="width: 40px; height: 40px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-size: 18px;">
-                        <input type="number" class="pin-digit-unlock" maxlength="1" min="0" max="9" style="width: 40px; height: 40px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-size: 18px;">
-                        <input type="number" class="pin-digit-unlock" maxlength="1" min="0" max="9" style="width: 40px; height: 40px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-size: 18px;">
-                        <input type="number" class="pin-digit-unlock" maxlength="1" min="0" max="9" style="width: 40px; height: 40px; text-align: center; border: 2px solid #ddd; border-radius: 8px; font-size: 18px;">
+                    <div class="pin-input-container">
+                        <input type="number" class="pin-digit pin-digit-unlock" maxlength="1" min="0" max="9">
+                        <input type="number" class="pin-digit pin-digit-unlock" maxlength="1" min="0" max="9">
+                        <input type="number" class="pin-digit pin-digit-unlock" maxlength="1" min="0" max="9">
+                        <input type="number" class="pin-digit pin-digit-unlock" maxlength="1" min="0" max="9">
+                        <input type="number" class="pin-digit pin-digit-unlock" maxlength="1" min="0" max="9">
+                        <input type="number" class="pin-digit pin-digit-unlock" maxlength="1" min="0" max="9">
                     </div>
-                    <div id="pin-error" style="color: #e74c3c; margin-bottom: 15px; font-size: 14px;"></div>
-                    <button id="unlock-wallet-btn" onclick="unlockWallet()" style="background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-right: 10px;">잠금 해제</button>
-                    <button onclick="closePinModal()" style="background: #6c757d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">취소</button>
+                    <div id="pin-error" class="modal-error"></div>
+                    <div class="modal-footer">
+                        <button id="unlock-wallet-btn" onclick="unlockWallet()" class="modal-button modal-button-primary">잠금 해제</button>
+                        <button onclick="closePinModal()" class="modal-button modal-button-secondary">취소</button>
+                    </div>
                 </div>
             </div>
 
             <!-- 스테이블코인 입금 모달 -->
-            <div id="deposit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px; margin: 20px;">
-                    <h3 style="color: #333; margin-bottom: 20px;">💳 스테이블코인 입금</h3>
+            <div id="deposit-modal" class="modal-overlay">
+                <div class="modal-content">
+                    <h3 class="modal-header">💳 스테이블코인 입금</h3>
                     <div id="deposit-address-section">
                         <p style="color: #666; margin-bottom: 15px;">아래 주소로 USDT 또는 USDC(Polygon 네트워크)를 보내주세요:</p>
                         <div id="deposit-address" style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-family: monospace; word-break: break-all; margin-bottom: 15px; border: 1px solid #e9ecef;">
                             주소를 불러오는 중...
                         </div>
-                        <button onclick="copyDepositAddress()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-bottom: 20px;">📋 주소 복사</button>
+                        <button id="copy-deposit-btn" onclick="copyDepositAddress()" class="modal-button modal-button-primary" style="display: none;">📋 주소 복사</button>
                     </div>
                     
                     <form id="deposit-form" style="text-align: left;">
-                        <div style="margin-bottom: 15px;">
+                        <div class="form-group">
                             <label>토큰 종류:</label>
-                            <select id="deposit-token-type" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <select id="deposit-token-type" required>
                                 <option value="USDT">💰 USDT</option>
                                 <option value="USDC">💎 USDC</option>
                             </select>
                         </div>
-                        <div style="margin-bottom: 15px;">
+                        <div class="form-group">
                             <label>입금 금액:</label>
-                            <input type="number" id="deposit-amount" min="1" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <input type="number" id="deposit-amount" min="1" required>
                         </div>
-                        <div style="margin-bottom: 15px;">
+                        <div class="form-group">
                             <label>트랜잭션 해시:</label>
-                            <input type="text" id="deposit-txhash" placeholder="Polygon 네트워크 트랜잭션 해시" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <input type="text" id="deposit-txhash" placeholder="Polygon 네트워크 트랜잭션 해시" required>
                         </div>
-                        <div style="margin-bottom: 15px;">
+                        <div class="form-group">
                             <label>PIN (6자리):</label>
-                            <input type="password" id="deposit-pin" maxlength="6" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <input type="password" id="deposit-pin" maxlength="6" required>
                         </div>
-                        <div style="text-align: center; margin-top: 20px;">
-                            <button type="submit" style="background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-right: 10px;">✅ 입금 확인</button>
-                            <button type="button" onclick="closeDepositModal()" style="background: #6c757d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">취소</button>
+                        <div class="modal-footer">
+                            <button type="submit" class="modal-button modal-button-primary">✅ 입금 확인</button>
+                            <button type="button" onclick="closeDepositModal()" class="modal-button modal-button-secondary">취소</button>
                         </div>
                     </form>
-                    <div id="deposit-status" style="margin-top: 15px; font-size: 14px;"></div>
+                    <div id="deposit-status" class="modal-body"></div>
                 </div>
             </div>
 
             <!-- 스테이블코인 출금 모달 -->
-            <div id="withdraw-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px; margin: 20px;">
-                    <h3 style="color: #333; margin-bottom: 20px;">💸 스테이블코인 출금</h3>
+            <div id="withdraw-modal" class="modal-overlay">
+                <div class="modal-content">
+                    <h3 class="modal-header">💸 스테이블코인 출금</h3>
                     <form id="withdraw-form" style="text-align: left;">
-                        <div style="margin-bottom: 15px;">
+                        <div class="form-group">
                             <label>토큰 종류:</label>
-                            <select id="withdraw-token-type" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <select id="withdraw-token-type" required>
                                 <option value="USDT">💰 USDT</option>
                                 <option value="USDC">💎 USDC</option>
                             </select>
                         </div>
-                        <div style="margin-bottom: 15px;">
+                        <div class="form-group">
                             <label>출금 금액:</label>
-                            <input type="number" id="withdraw-amount" min="1" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <input type="number" id="withdraw-amount" min="1" required>
                             <small style="color: #666;">사용 가능한 잔액: <span id="available-balance-display">0</span></small>
                         </div>
-                        <div style="margin-bottom: 15px;">
+                        <div class="form-group">
                             <label>받을 주소 (Polygon 네트워크):</label>
-                            <input type="text" id="withdraw-address" placeholder="0x로 시작하는 이더리움 호환 주소" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <input type="text" id="withdraw-address" placeholder="0x로 시작하는 이더리움 호환 주소" required>
                         </div>
-                        <div style="margin-bottom: 15px;">
+                        <div class="form-group">
                             <label>PIN (6자리):</label>
-                            <input type="password" id="withdraw-pin" maxlength="6" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <input type="password" id="withdraw-pin" maxlength="6" required>
                         </div>
-                        <div style="text-align: center; margin-top: 20px;">
-                            <button type="submit" style="background: #ffc107; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-right: 10px;">💸 출금 신청</button>
-                            <button type="button" onclick="closeWithdrawModal()" style="background: #6c757d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">취소</button>
+                        <div class="modal-footer">
+                            <button type="submit" class="modal-button modal-button-warning">💸 출금 신청</button>
+                            <button type="button" onclick="closeWithdrawModal()" class="modal-button modal-button-secondary">취소</button>
                         </div>
                     </form>
-                    <div id="withdraw-status" style="margin-top: 15px; font-size: 14px;"></div>
+                    <div id="withdraw-status" class="modal-body"></div>
                 </div>
             </div>
 
             <!-- 초기 코인 받기 모달 -->
-            <div id="claim-coins-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px; margin: 20px;">
-                    <h3 style="color: #333; margin-bottom: 20px;">🎁 초기 코인 받기</h3>
+            <div id="claim-coins-modal" class="modal-overlay">
+                <div class="modal-content">
+                    <h3 class="modal-header">🎁 초기 코인 받기</h3>
                     <p style="color: #666; margin-bottom: 20px;">회원가입 축하 코인을 받아보세요!</p>
                     
                     <div id="claim-coins-politicians-list" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -241,23 +131,23 @@
                     </div>
                     
                     <form id="claim-coins-form" style="text-align: left;">
-                        <div style="margin-bottom: 15px;">
+                        <div class="form-group">
                             <label>PIN (6자리):</label>
-                            <input type="password" id="claim-pin" maxlength="6" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <input type="password" id="claim-pin" maxlength="6" required>
                         </div>
-                        <div style="text-align: center; margin-top: 20px;">
-                            <button type="submit" style="background: #f39c12; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-right: 10px;">🎁 코인 받기</button>
-                            <button type="button" onclick="closeClaimCoinsModal()" style="background: #6c757d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">취소</button>
+                        <div class="modal-footer">
+                            <button type="submit" class="modal-button modal-button-warning">🎁 코인 받기</button>
+                            <button type="button" onclick="closeClaimCoinsModal()" class="modal-button modal-button-secondary">취소</button>
                         </div>
                     </form>
-                    <div id="claim-coins-status" style="margin-top: 15px; font-size: 14px;"></div>
+                    <div id="claim-coins-status" class="modal-body"></div>
                 </div>
             </div>
 
             <!-- 크레딧 사용 모달 -->
-            <div id="credit-usage-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px; margin: 20px;">
-                    <h3 style="color: #333; margin-bottom: 20px;">✨ 추천 크레딧 사용하기</h3>
+            <div id="credit-usage-modal" class="modal-overlay">
+                <div class="modal-content">
+                    <h3 class="modal-header">✨ 추천 크레딧 사용하기</h3>
                     <p style="color: #666; margin-bottom: 20px;">크레딧 1개당 정치인 1명을 추가 선택하고 코인 100개를 받을 수 있습니다.</p>
                     
                     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -267,36 +157,36 @@
                     </div>
                     
                     <form id="credit-usage-form" style="text-align: left;">
-                        <div style="margin-bottom: 15px;">
+                        <div class="form-group">
                             <label>추가 선택할 정치인:</label>
-                            <select id="credit-politician-select" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <select id="credit-politician-select" required>
                                 <option value="">정치인을 선택하세요...</option>
                             </select>
                         </div>
-                        <div style="margin-bottom: 15px;">
+                        <div class="form-group">
                             <label>사용할 크레딧 수:</label>
-                            <input type="number" id="credit-amount" min="1" max="1" value="1" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required readonly>
+                            <input type="number" id="credit-amount" min="1" max="1" value="1" required readonly>
                             <small style="color: #666;">현재는 정치인 1명당 크레딧 1개가 필요합니다</small>
                         </div>
-                        <div style="margin-bottom: 15px;">
+                        <div class="form-group">
                             <label>PIN (6자리):</label>
-                            <input type="password" id="credit-pin" maxlength="6" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                            <input type="password" id="credit-pin" maxlength="6" required>
                         </div>
-                        <div style="text-align: center; margin-top: 20px;">
-                            <button type="submit" style="background: #f39c12; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-right: 10px;">✨ 크레딧 사용하기</button>
-                            <button type="button" onclick="closeCreditUsageModal()" style="background: #6c757d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">취소</button>
+                        <div class="modal-footer">
+                            <button type="submit" class="modal-button modal-button-warning">✨ 크레딧 사용하기</button>
+                            <button type="button" onclick="closeCreditUsageModal()" class="modal-button modal-button-secondary">취소</button>
                         </div>
                     </form>
-                    <div id="credit-usage-status" style="margin-top: 15px; font-size: 14px;"></div>
+                    <div id="credit-usage-status" class="modal-body"></div>
                 </div>
             </div>
 
             <!-- 지갑이 잠겨있을 때 표시 -->
-            <div id="wallet-locked" style="display: none; text-align: center; padding: 40px;">
-                <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
+            <div id="wallet-locked" class="wallet-locked-screen" style="display: none;">
+                <div class="wallet-lock-icon">🔒</div>
                 <h3 style="color: #666; margin-bottom: 15px;">지갑이 잠겨있습니다</h3>
                 <p style="color: #999; margin-bottom: 20px;">중요한 거래를 위해 PIN을 입력하세요</p>
-                <button onclick="showPinModal()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-size: 16px;">🔑 지갑 잠금 해제</button>
+                <button onclick="showPinModal()" class="unlock-button">🔑 지갑 잠금 해제</button>
             </div>
 
             <!-- 지갑이 해제되었을 때 표시 -->
@@ -352,12 +242,12 @@
                     </div>
                     
                     <div style="display: flex; gap: 10px; justify-content: center;">
-                        <button onclick="copyReferralLink()" 
-                                style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        <button id="copy-referral-btn" onclick="copyReferralLink()" 
+                                style="display: none; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             📋 복사
                         </button>
-                        <button onclick="shareReferralLink()" 
-                                style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        <button id="share-referral-btn" onclick="shareReferralLink()" 
+                                style="display: none; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             📱 공유
                         </button>
                     </div>
@@ -387,6 +277,7 @@
                 </div>
             </div>
         </div>
+        
         <div class="card">
             <h2>등록된 정치인 목록</h2>
             <p>투표를 통해 승인된 모든 정치인들을 확인할 수 있습니다.</p>
@@ -409,7 +300,9 @@
             <div style="margin-bottom: 20px;">
                 <h3>🏆 인기 순위 (가격순)</h3>
                 <div id="price-rankings" style="max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 4px; padding: 10px;">
-                    <div class="loading">가격 정보를 불러오는 중...</div>
+                    <ul id="price-rankings-list" class="politisian-list" style="margin: 0;">
+                        <li class="loading">가격 정보를 불러오는 중...</li>
+                    </ul>
                 </div>
             </div>
             
@@ -417,18 +310,24 @@
             <div style="border-top: 1px solid #e0e0e0; padding-top: 20px;">
                 <h3>💱 빠른 거래</h3>
                 <form id="trade-form" style="display: grid; gap: 10px;">
-                    <select id="politician-select" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <select id="trade-politician" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         <option value="">정치인 선택...</option>
                     </select>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <select id="trade-type" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                            <option value="buy">매수 (구매)</option>
-                            <option value="sell">매도 (판매)</option>
-                        </select>
-                        <select id="currency-type" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                            <option value="USDT">💰 USDT</option>
-                            <option value="USDC">💎 USDC</option>
-                        </select>
+                        <div>
+                            <label style="font-size: 12px; color: #666;">주문 타입:</label>
+                            <div style="display: flex; gap: 10px;">
+                                <label><input type="radio" name="order-type" value="buy" checked> 매수</label>
+                                <label><input type="radio" name="order-type" value="sell"> 매도</label>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #666;">결제 통화:</label>
+                            <div style="display: flex; gap: 10px;">
+                                <label><input type="radio" name="currency" value="USDT" checked> USDT</label>
+                                <label><input type="radio" name="currency" value="USDC"> USDC</label>
+                            </div>
+                        </div>
                     </div>
                     <input type="number" id="trade-quantity" placeholder="수량" min="1" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     <input type="number" id="trade-price" placeholder="가격" min="1" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
@@ -486,1730 +385,13 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🏠 완전한 대시보드 페이지 로드됨 (v2.0)');
-            
-            // 완전히 안전한 요소 참조
-            const welcomeMessage = null; // 완전 제거
-            const walletAddressElem = document.getElementById('wallet-address');
-            const politicianCoinsListElem = document.getElementById('politician-coins-list');
-            const totalCoinsElem = document.getElementById('total-coins');
-            const loginButton = document.getElementById('login-button');
-            const copyStatus = document.getElementById('copy-status');
-            const proposalsListElem = document.getElementById('proposals-list');
-            const registeredPoliticiansListElem = document.getElementById('registered-politicians-list');
-            const searchPoliticiansInput = document.getElementById('search-politicians');
-            const proposeForm = document.getElementById('propose-form');
-            const proposeStatus = document.getElementById('propose-status');
-            
-            // 전역 정치인 데이터 저장
-            let allPoliticiansData = {};
-            
-            // 전역 사용자 프로필 데이터 저장
-            let currentUserProfileData = null;
+    <!-- 분리된 JavaScript 파일들 -->
+    <script src="/js/main.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/politician.js"></script>
+    <script src="/js/wallet.js"></script>
+    <script src="/js/trading.js"></script>
 
-            console.log('🍪 현재 쿠키:', document.cookie);
-
-            // 안전한 데이터 로드 함수 (무한 리다이렉트 방지)
-            function loadUserProfile() {
-                console.log('👤 사용자 프로필 로드 시작');
-                
-                fetch('/api/user/profile')
-                    .then(response => {
-                        console.log('📡 프로필 API 응답:', response.status);
-                        
-                        if (response.status === 401) {
-                            console.log('🔒 401 인증 오류 - 세션 정보로 대체');
-                            loadSessionInfo();
-                            return null;
-                        }
-                        
-                        if (!response.ok) {
-                            console.log('❌ 프로필 API 실패, 세션 정보로 대체');
-                            loadSessionInfo();
-                            return null;
-                        }
-                        
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data) {
-                            console.log('✅ 프로필 데이터 로드 성공:', data);
-                            
-                            // 전역 변수에 프로필 데이터 저장
-                            currentUserProfileData = data;
-                            
-                            setWalletAddress(data.wallet || data.walletAddress || '지갑 주소 없음');
-                            
-                            // 백업 데이터 저장
-                            saveBackupData(data.wallet || data.walletAddress, {
-                                email: data.email,
-                                address: data.address
-                            });
-                            
-                            updateDashboardUI(data);
-                            loadProposals(); // 프로필 로드 성공 후에만 제안 목록 로드
-                            loadRegisteredPoliticians(); // 등록된 정치인 목록 로드
-                            loadTradingData(); // 거래 관련 데이터 로드
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ 프로필 로드 실패:', error);
-                        loadSessionInfo(); // 실패 시 세션 정보로 대체
-                    });
-            }
-
-            // 세션 정보로 대체 로드
-            function loadSessionInfo() {
-                console.log('🔑 세션 정보로 대체 로드 시도');
-                
-                fetch('/api/user/session-info')
-                    .then(response => {
-                        console.log('📡 세션 API 응답 상태:', response.status);
-                        if (response.ok) {
-                            return response.json();
-                        }
-                        throw new Error(`세션 정보 로드 실패: ${response.status}`);
-                    })
-                    .then(sessionData => {
-                        console.log('✅ 세션 데이터 로드 성공:', sessionData);
-                        
-                        // 로딩 메시지 제거
-                        setWalletAddress(sessionData.walletAddress || '지갑 주소 없음');
-                        
-                        // 백업 데이터 저장
-                        saveBackupData(sessionData.walletAddress, {
-                            name: sessionData.name,
-                            email: sessionData.email,
-                            userId: sessionData.userId
-                        });
-                        
-                        // 세션 데이터를 기반으로 기본 UI 업데이트
-                        // welcomeMessage.textContent = `${sessionData.name}님, 환영합니다!`;
-                        if (politicianCoinsListElem) {
-                            politicianCoinsListElem.innerHTML = '<li>프로필 정보를 완전히 불러오지 못했습니다.</li>';
-                        }
-                        
-                        // 세션 정보로도 제안 목록 시도
-                        setTimeout(() => {
-                            loadProposals();
-                            loadRegisteredPoliticians();
-                        }, 2000);
-                    })
-                    .catch(error => {
-                        console.error('❌ 세션 정보도 로드 실패:', error);
-                        handleCompleteFailure();
-                    });
-            }
-
-            // 완전한 로드 실패 시 복구 전략
-            function handleCompleteFailure() {
-                console.log('🚨 완전한 데이터 로드 실패 - 복구 시도');
-                
-                // 1단계: 로컬 스토리지에서 백업 데이터 확인
-                const backupWallet = localStorage.getItem('backup_wallet_address');
-                const backupUserInfo = localStorage.getItem('backup_user_info');
-                
-                if (backupWallet) {
-                    console.log('💾 로컬 백업에서 지갑 주소 복구');
-                    setWalletAddress(backupWallet);
-                    
-                    if (backupUserInfo) {
-                        try {
-                            const userInfo = JSON.parse(backupUserInfo);
-                            // welcomeMessage.textContent = `${userInfo.name}님 (복구된 세션)`;
-                        } catch (e) {
-                            console.log('백업 사용자 정보 파싱 실패');
-                        }
-                    }
-                    
-                    showRecoveryMessage();
-                    return;
-                }
-                
-                // 2단계: 세션 만료로 판단하고 재로그인 유도
-                setWalletAddress('세션이 만료되었습니다');
-                if (politicianCoinsListElem) {
-                    politicianCoinsListElem.innerHTML = '<li style="color: #e74c3c;">로그인이 필요합니다</li>';
-                }
-                
-                // 재로그인 버튼 표시
-                showReloginPrompt();
-            }
-            
-            // 복구 메시지 표시
-            function showRecoveryMessage() {
-                const recoveryMsg = document.createElement('div');
-                recoveryMsg.style.cssText = `
-                    position: fixed; top: 20px; right: 20px; 
-                    background: #f39c12; color: white; 
-                    padding: 15px 20px; border-radius: 8px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                    z-index: 1000; font-size: 14px;
-                `;
-                recoveryMsg.innerHTML = `
-                    ⚠️ 백업 데이터에서 복구됨<br>
-                    <small>새로고침 후 다시 로그인을 권장합니다</small>
-                `;
-                document.body.appendChild(recoveryMsg);
-                
-                setTimeout(() => recoveryMsg.remove(), 10000);
-            }
-            
-            // 재로그인 프롬프트 표시
-            function showReloginPrompt() {
-                const reloginDiv = document.createElement('div');
-                reloginDiv.style.cssText = `
-                    position: fixed; top: 50%; left: 50%; 
-                    transform: translate(-50%, -50%);
-                    background: white; padding: 30px; 
-                    border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-                    text-align: center; z-index: 2000;
-                    border: 2px solid #e74c3c;
-                `;
-                reloginDiv.innerHTML = `
-                    <h3 style="color: #e74c3c; margin-top: 0;">🔒 세션 만료</h3>
-                    <p>안전을 위해 다시 로그인해 주세요</p>
-                    <button onclick="window.location.href='/login.html'" 
-                            style="background: #e74c3c; color: white; border: none; 
-                                   padding: 12px 24px; border-radius: 6px; 
-                                   cursor: pointer; font-size: 16px;">
-                        다시 로그인
-                    </button>
-                    <br><br>
-                    <button onclick="this.parentElement.remove()" 
-                            style="background: #95a5a6; color: white; border: none; 
-                                   padding: 8px 16px; border-radius: 4px; 
-                                   cursor: pointer; font-size: 14px;">
-                        나중에
-                    </button>
-                `;
-                
-                // 배경 오버레이
-                const overlay = document.createElement('div');
-                overlay.style.cssText = `
-                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                    background: rgba(0,0,0,0.5); z-index: 1500;
-                `;
-                
-                document.body.appendChild(overlay);
-                document.body.appendChild(reloginDiv);
-                
-                // 오버레이 클릭 시 닫기
-                overlay.onclick = () => {
-                    overlay.remove();
-                    reloginDiv.remove();
-                };
-            }
-            
-            // 백업 데이터 저장 (로그인 성공 시 호출)
-            function saveBackupData(walletAddress, userInfo) {
-                localStorage.setItem('backup_wallet_address', walletAddress);
-                localStorage.setItem('backup_user_info', JSON.stringify(userInfo));
-                localStorage.setItem('backup_timestamp', Date.now().toString());
-            }
-
-            // UI 업데이트 함수
-            function updateDashboardUI(data) {
-                try {
-                    console.log('🎨 UI 업데이트 시작');
-                    console.log('프로필 데이터 전체:', data);
-                    
-                    // 안전한 요소 접근
-                    if (walletAddressElem) {
-                        setWalletAddress(data.wallet || '주소 없음');
-                    }
-                    
-
-                    // 총 코인 표시 업데이트
-                    if (totalCoinsElem) {
-                        const totalCoins = data.total_coins || data.balance || 0;
-                        totalCoinsElem.textContent = `${totalCoins}개`;
-                    }
-                    
-                    // USDT 잔액 업데이트
-                    const tetherBalanceElem = document.getElementById('tether-balance');
-                    const availableTetherElem = document.getElementById('available-tether');
-                    if (tetherBalanceElem && availableTetherElem) {
-                        const tetherBalance = data.usdt_balance || 0;
-                        const frozenTether = (data.escrow_account && data.escrow_account.frozen_usdt_balance) || 0;
-                        const availableTether = tetherBalance - frozenTether;
-                        
-                        tetherBalanceElem.textContent = `${tetherBalance}`;
-                        availableTetherElem.textContent = `${availableTether}`;
-                        
-                        // 동결된 금액이 있으면 색상 변경
-                        if (frozenTether > 0) {
-                            availableTetherElem.style.color = '#ffc107';
-                            availableTetherElem.title = `총 ${tetherBalance} USDT 중 ${frozenTether} USDT 동결됨`;
-                        } else {
-                            availableTetherElem.style.color = '#28a745';
-                            availableTetherElem.title = '';
-                        }
-                    }
-                    
-                    // USDC 잔액 업데이트
-                    const usdcBalanceElem = document.getElementById('usdc-balance');
-                    const availableUsdcElem = document.getElementById('available-usdc');
-                    if (usdcBalanceElem && availableUsdcElem) {
-                        const usdcBalance = data.usdc_balance || 0;
-                        const frozenUsdc = (data.escrow_account && data.escrow_account.frozen_usdc_balance) || 0;
-                        const availableUsdc = usdcBalance - frozenUsdc;
-                        
-                        usdcBalanceElem.textContent = `${usdcBalance}`;
-                        availableUsdcElem.textContent = `${availableUsdc}`;
-                        
-                        // 동결된 금액이 있으면 색상 변경
-                        if (frozenUsdc > 0) {
-                            availableUsdcElem.style.color = '#ffc107';
-                            availableUsdcElem.title = `총 ${usdcBalance} USDC 중 ${frozenUsdc} USDC 동결됨`;
-                        } else {
-                            availableUsdcElem.style.color = '#28a745';
-                            availableUsdcElem.title = '';
-                        }
-                    }
-
-                    // 추천 크레딧 표시
-                    const referralCreditsElem = document.getElementById('referral-credits');
-                    if (referralCreditsElem) {
-                        const credits = data.referral_credits || 0;
-                        referralCreditsElem.textContent = credits;
-                        console.log('추천 크레딧 업데이트:', credits);
-                        
-                        // 크레딧에 따른 색상 변경
-                        if (credits > 0) {
-                            referralCreditsElem.parentElement.style.backgroundColor = '#d4edda';
-                            referralCreditsElem.parentElement.style.borderColor = '#c3e6cb';
-                            
-                            // 크레딧이 있으면 사용 섹션 표시
-                            document.getElementById('credit-usage-section').style.display = 'block';
-                        }
-                    }
-                    
-                    // 추천 링크 생성
-                    generateReferralLink(data.wallet);
-
-                    // 정치인별 코인 보유량 표시
-                    if (politicianCoinsListElem && data.politician_coins) {
-                        console.log('정치인별 코인 데이터:', data.politician_coins);
-                        
-                        const coinEntries = Object.entries(data.politician_coins);
-                        
-                        if (coinEntries.length > 0) {
-                            politicianCoinsListElem.innerHTML = '';
-                            coinEntries.forEach(([politicianId, coins]) => {
-                                const li = document.createElement('li');
-                                const politicianName = getPoliticianNameById(politicianId);
-                                li.innerHTML = `${politicianName} <span style="float: right; color: #28a745; font-weight: bold;">${coins} 코인</span>`;
-                                politicianCoinsListElem.appendChild(li);
-                            });
-                        } else {
-                            // 코인이 없는 경우 초기 코인 받기 버튼 표시
-                            politicianCoinsListElem.innerHTML = `
-                                <li style="text-align: center; padding: 20px;">
-                                    <div style="color: #666; margin-bottom: 15px;">보유 중인 정치인 코인이 없습니다.</div>
-                                    <button onclick="showClaimCoinsModal()" 
-                                            style="background: #f39c12; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold;">
-                                        🎁 초기 코인 받기
-                                    </button>
-                                    <div style="font-size: 12px; color: #999; margin-top: 10px;">
-                                        선택한 정치인별로 각각 100개씩 지급
-                                    </div>
-                                </li>
-                            `;
-                        }
-                    } else if (politicianCoinsListElem) {
-                        politicianCoinsListElem.innerHTML = '<li>코인 정보를 불러올 수 없습니다.</li>';
-                    }
-                    
-                    // 로그인 후 자동으로 지갑 해제
-                    console.log('🔓 로그인 후 자동 지갑 해제');
-                    document.getElementById('wallet-locked').style.display = 'none';
-                    document.getElementById('wallet-unlocked').style.display = 'block';
-                    
-                    console.log('✅ UI 업데이트 완료');
-                } catch (error) {
-                    console.error('❌ updateDashboardUI 오류:', error);
-                }
-            }
-
-            // 제안 목록 로드 (안전한 방식)
-            function loadProposals() {
-                console.log('📋 제안 목록 로드 시작');
-                
-                fetch('/api/politisian/list')
-                    .then(response => {
-                        if (response.status === 401) {
-                            console.log('🔒 제안 목록에서 401 오류 - 스킵');
-                            proposalsListElem.innerHTML = '<li>제안 목록을 불러오려면 다시 로그인해주세요.</li>';
-                            return null;
-                        }
-                        if (!response.ok) {
-                            throw new Error('제안 목록 로드 실패');
-                        }
-                        return response.json();
-                    })
-                    .then(proposals => {
-                        if (proposals) {
-                            console.log('✅ 제안 목록 로드 성공:', proposals);
-                            console.log('proposals 타입:', typeof proposals, 'keys:', Object.keys(proposals));
-                            proposalsListElem.innerHTML = '';
-                            
-                            // proposals가 객체인지 확인
-                            if (typeof proposals !== 'object' || proposals === null) {
-                                proposalsListElem.innerHTML = '<li>제안 데이터 형식 오류</li>';
-                                return;
-                            }
-                            
-                            if (Object.keys(proposals).length === 0) {
-                                proposalsListElem.innerHTML = '<li>진행중인 발의가 없습니다.</li>';
-                                return;
-                            }
-                            
-                            for (const id in proposals) {
-                                const p = proposals[id];
-                                console.log('제안 데이터:', id, p);
-                                
-                                // 안전한 데이터 검증
-                                if (!p || typeof p !== 'object') {
-                                    console.warn('Invalid proposal object:', p);
-                                    continue;
-                                }
-                                
-                                if (!p.politician || typeof p.politician !== 'object') {
-                                    console.warn('Invalid politician data:', p.politician);
-                                    continue;
-                                }
-                                
-                                const li = document.createElement('li');
-                                li.innerHTML = `
-                                    <strong>${p.politician.name || '이름 없음'}</strong> (지역: ${p.politician.region || '미지정'}, 정당: ${p.politician.party || '미지정'})
-                                    ${p.politician.intro_url ? '<br><a href="' + p.politician.intro_url + '" target="_blank">소개 페이지</a>' : ''}
-                                    <br>
-                                    <span>찬성: ${p.yes_votes || 0} / 반대: ${p.no_votes || 0}</span>
-                                    <button class="button vote-button approve" data-id="${p.id}" data-vote="true">찬성</button>
-                                    <button class="button vote-button reject" data-id="${p.id}" data-vote="false">반대</button>
-                                `;
-                                proposalsListElem.appendChild(li);
-                            }
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ 제안 목록 로드 실패:', error);
-                        proposalsListElem.innerHTML = `<li>제안 목록을 불러오는데 실패했습니다: ${error.message}</li>`;
-                    });
-            }
-
-            // 등록된 정치인 목록 로드
-            function loadRegisteredPoliticians() {
-                console.log('🏛️ 등록된 정치인 목록 로드 시작');
-                
-                fetch('/api/politisian/registered')
-                    .then(response => {
-                        if (response.status === 401) {
-                            console.log('🔒 등록된 정치인 목록에서 401 오류 - 스킵');
-                            registeredPoliticiansListElem.innerHTML = '<li>등록된 정치인 목록을 불러오려면 다시 로그인해주세요.</li>';
-                            return null;
-                        }
-                        if (!response.ok) {
-                            throw new Error('등록된 정치인 목록 로드 실패');
-                        }
-                        return response.json();
-                    })
-                    .then(politicians => {
-                        if (politicians) {
-                            console.log('✅ 등록된 정치인 목록 로드 성공:', politicians);
-                            
-                            // 전역 변수에 데이터 저장
-                            allPoliticiansData = politicians;
-                            
-                            // 목록 표시
-                            displayPoliticians(politicians);
-                            
-                            // 거래용 셀렉트 박스 옵션 업데이트
-                            loadPoliticianSelectOptions();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ 등록된 정치인 목록 로드 실패:', error);
-                        registeredPoliticiansListElem.innerHTML = `<li>등록된 정치인 목록을 불러오는데 실패했습니다: ${error.message}</li>`;
-                    });
-            }
-
-            // 정치인 목록 표시 함수
-            function displayPoliticians(politicians) {
-                registeredPoliticiansListElem.innerHTML = '';
-                
-                if (Object.keys(politicians).length === 0) {
-                    registeredPoliticiansListElem.innerHTML = '<li>등록된 정치인이 없습니다.</li>';
-                    return;
-                }
-                
-                for (const name in politicians) {
-                    const politician = politicians[name];
-                    const li = document.createElement('li');
-                    li.innerHTML = `
-                        <strong>${politician.name || name}</strong>
-                        <br>
-                        <span style="color: #666;">지역: ${politician.region || '미지정'} | 정당: ${politician.party || '미지정'}</span>
-                        ${politician.intro_url ? '<br><a href="' + politician.intro_url + '" target="_blank" style="color: #007bff;">소개 페이지 →</a>' : ''}
-                    `;
-                    registeredPoliticiansListElem.appendChild(li);
-                }
-            }
-
-            // 정치인 검색 함수
-            function searchPoliticians(searchTerm) {
-                if (typeof allPoliticiansData === 'undefined' || !allPoliticiansData) {
-                    console.log('정치인 데이터가 아직 로드되지 않았습니다.');
-                    return;
-                }
-                
-                if (!searchTerm.trim()) {
-                    displayPoliticians(allPoliticiansData);
-                    return;
-                }
-                
-                const filteredPoliticians = {};
-                searchTerm = searchTerm.toLowerCase();
-                
-                for (const name in allPoliticiansData) {
-                    const politician = allPoliticiansData[name];
-                    const searchableText = `${politician.name || name} ${politician.region || ''} ${politician.party || ''}`.toLowerCase();
-                    
-                    if (searchableText.includes(searchTerm)) {
-                        filteredPoliticians[name] = politician;
-                    }
-                }
-                
-                displayPoliticians(filteredPoliticians);
-            }
-
-            // 정치인 ID로 이름을 찾는 함수
-            function getPoliticianNameById(politicianId) {
-                if (typeof allPoliticiansData === 'undefined' || !allPoliticiansData || !politicianId) {
-                    return politicianId || '알 수 없는 정치인';
-                }
-                
-                // 등록된 정치인 데이터에서 찾기
-                if (allPoliticiansData[politicianId]) {
-                    return allPoliticiansData[politicianId].name || politicianId;
-                }
-                
-                // ID에서 이름 부분 추출 (예: "이재명-경기 계양구 갑" -> "이재명")
-                if (politicianId.includes('-')) {
-                    return politicianId.split('-')[0];
-                }
-                
-                return politicianId;
-            }
-
-            // 지갑 주소 설정 및 복사 버튼 표시 함수
-            function setWalletAddress(address) {
-                if (walletAddressElem) {
-                    walletAddressElem.textContent = address;
-                    // 유효한 지갑 주소일 때만 복사 버튼 표시
-                    const copyBtn = document.getElementById('copy-wallet-btn');
-                    if (copyBtn && address && address !== '불러오는 중...' && address !== '오류' && address !== '세션이 만료되었습니다' && address !== '지갑 주소 없음') {
-                        copyBtn.style.display = 'inline-block';
-                    }
-                }
-            }
-
-            // 지갑 주소 복사 함수
-            function copyWalletAddress() {
-                const address = walletAddressElem.textContent;
-                if (navigator.clipboard) {
-                    navigator.clipboard.writeText(address).then(() => {
-                        const btn = document.getElementById('copy-wallet-btn');
-                        const originalText = btn.textContent;
-                        btn.textContent = '✅ 복사됨!';
-                        btn.style.backgroundColor = '#28a745';
-                        setTimeout(() => {
-                            btn.textContent = originalText;
-                            btn.style.backgroundColor = '#007bff';
-                        }, 2000);
-                    });
-                } else {
-                    // 구형 브라우저 대응
-                    const textArea = document.createElement('textarea');
-                    textArea.value = address;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    alert('지갑 주소가 복사되었습니다!');
-                }
-            }
-
-            // 오류 표시 함수
-            function showError(message) {
-                console.error('🚨 오류:', message);
-                setWalletAddress('오류');
-                if (politicianCoinsListElem) {
-                    politicianCoinsListElem.innerHTML = `<li class="error-message">${message}</li>`;
-                }
-            }
-
-            // 이벤트 리스너들
-            loginButton.addEventListener('click', () => {
-                window.location.href = '/login.html';
-            });
-
-            // 정치인 검색 이벤트 리스너
-            searchPoliticiansInput.addEventListener('input', function(e) {
-                searchPoliticians(e.target.value);
-            });
-
-
-            proposeForm.addEventListener('submit', function(event) {
-                event.preventDefault();
-                proposeStatus.textContent = '발의 요청 중...';
-
-                const politisianData = {
-                    name: document.getElementById('name').value,
-                    region: document.getElementById('region').value,
-                    party: document.getElementById('party').value,
-                    introUrl: document.getElementById('intro-url').value,
-                };
-
-                fetch('/api/politisian/propose', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(politisianData)
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => { throw new Error(text || '발의 실패') });
-                    }
-                    return response.text();
-                })
-                .then(data => {
-                    proposeStatus.textContent = '발의 성공!';
-                    proposeForm.reset();
-                    
-                    // 즉시 목록 새로고침
-                    loadProposals();
-                    loadRegisteredPoliticians();
-                    
-                    // 1초 후 상태 메시지 지우기
-                    setTimeout(() => {
-                        proposeStatus.textContent = '';
-                    }, 1000);
-                })
-                .catch(error => {
-                    proposeStatus.textContent = `오류: ${error.message}`;
-                });
-            });
-
-            proposalsListElem.addEventListener('click', function(event) {
-                if (event.target.matches('.vote-button')) {
-                    const proposalId = event.target.dataset.id;
-                    const vote = event.target.dataset.vote === 'true';
-                    
-                    event.target.parentElement.querySelectorAll('.vote-button').forEach(btn => btn.disabled = true);
-
-                    fetch(`/api/proposals/${proposalId}/vote`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ vote: vote })
-                    })
-                    .then(response => {
-                         if (!response.ok) {
-                            return response.text().then(text => { throw new Error(text || '투표 실패') });
-                        }
-                        return response.text();
-                    })
-                    .then(data => {
-                        // 알림창 없이 바로 목록 새로고침
-                        loadProposals();
-                        loadRegisteredPoliticians();
-                        
-                        // 투표 버튼 비활성화 및 상태 표시
-                        const allVoteButtons = event.target.parentElement.querySelectorAll('.vote-button');
-                        allVoteButtons.forEach(btn => {
-                            btn.disabled = true;
-                            btn.style.opacity = '0.5';
-                        });
-                        
-                        // 투표 완료 표시
-                        const statusSpan = document.createElement('span');
-                        statusSpan.textContent = '투표 완료 ✓';
-                        statusSpan.style.color = '#28a745';
-                        statusSpan.style.fontWeight = 'bold';
-                        statusSpan.style.marginLeft = '10px';
-                        event.target.parentElement.appendChild(statusSpan);
-                    })
-                    .catch(error => {
-                        alert(`오류: ${error.message}`);
-                        event.target.parentElement.querySelectorAll('.vote-button').forEach(btn => btn.disabled = false);
-                    });
-                }
-            });
-
-            // PIN 입력 자동 포커스 이동 (잠금 해제용)
-            const pinInputsUnlock = document.querySelectorAll('.pin-digit-unlock');
-            pinInputsUnlock.forEach((input, index) => {
-                input.addEventListener('input', function(e) {
-                    if (e.target.value.length === 1 && index < pinInputsUnlock.length - 1) {
-                        pinInputsUnlock[index + 1].focus();
-                    }
-                });
-
-                input.addEventListener('keydown', function(e) {
-                    if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
-                        pinInputsUnlock[index - 1].focus();
-                    }
-                    if (e.key === 'Enter' && index === pinInputsUnlock.length - 1) {
-                        unlockWallet();
-                    }
-                });
-            });
-
-            // 거래 관련 이벤트 리스너
-            const tradeForm = document.getElementById('trade-form');
-            if (tradeForm) {
-                tradeForm.addEventListener('submit', function(event) {
-                    event.preventDefault();
-                    placeTradeOrder();
-                });
-                
-                // 거래 요약 업데이트 이벤트 리스너들
-                const politicianSelect = document.getElementById('politician-select');
-                const tradeTypeSelect = document.getElementById('trade-type');
-                const currencyTypeSelect = document.getElementById('currency-type');
-                const quantityInput = document.getElementById('trade-quantity');
-                const priceInput = document.getElementById('trade-price');
-                
-                [politicianSelect, tradeTypeSelect, currencyTypeSelect, quantityInput, priceInput].forEach(element => {
-                    if (element) {
-                        element.addEventListener('change', updateTradeSummary);
-                        element.addEventListener('input', updateTradeSummary);
-                    }
-                });
-            }
-
-            // 초기 코인 받기 폼 이벤트 리스너
-            const claimCoinsForm = document.getElementById('claim-coins-form');
-            if (claimCoinsForm) {
-                claimCoinsForm.addEventListener('submit', function(event) {
-                    event.preventDefault();
-                    processClaimCoins();
-                });
-            }
-
-            // 크레딧 사용 폼 이벤트 리스너
-            const creditUsageForm = document.getElementById('credit-usage-form');
-            if (creditUsageForm) {
-                creditUsageForm.addEventListener('submit', function(event) {
-                    event.preventDefault();
-                    processCreditUsage();
-                });
-            }
-
-            // 안전한 데이터 로드 시작 (즉시 로드)
-            console.log('🚀 즉시 데이터 로드 시작');
-            loadUserProfile();
-        });
-
-        // 거래 관련 함수들
-        function loadTradingData() {
-            console.log('📈 거래 데이터 로드 시작');
-            loadPoliticianPrices();
-            loadMyOrders();
-            loadPoliticianSelectOptions();
-        }
-
-        function loadPoliticianPrices() {
-            fetch('/api/trading/prices')
-                .then(response => {
-                    if (!response.ok) {
-                        // 500 에러인 경우 조용히 처리
-                        if (response.status === 500) {
-                            console.log('⚠️ 가격 정보 서비스 일시 불가 (500 오류)');
-                            return null;
-                        }
-                        throw new Error(`가격 정보 로드 실패 (${response.status})`);
-                    }
-                    return response.json();
-                })
-                .then(prices => {
-                    if (prices) {
-                        console.log('✅ 가격 정보 로드 성공:', prices);
-                        displayPriceRankings(prices);
-                    } else {
-                        console.log('📊 가격 정보 없음 - 기본 메시지 표시');
-                        const priceElement = document.getElementById('price-rankings');
-                        if (priceElement) {
-                            priceElement.innerHTML = '<div style="color: #6c757d;">가격 정보 준비 중...</div>';
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.log('⚠️ 가격 정보 로드 실패 (무시됨):', error.message);
-                    // 가격 정보는 선택적 기능이므로 에러를 조용히 처리
-                    const priceElement = document.getElementById('price-rankings');
-                    if (priceElement) {
-                        priceElement.innerHTML = '<div style="color: #6c757d;">가격 정보 일시 불가</div>';
-                    }
-                });
-        }
-
-        function displayPriceRankings(prices) {
-            const rankingsElem = document.getElementById('price-rankings');
-            if (!prices || prices.length === 0) {
-                rankingsElem.innerHTML = '<div>등록된 정치인이 없습니다.</div>';
-                return;
-            }
-
-            rankingsElem.innerHTML = '';
-            prices.forEach((price, index) => {
-                const div = document.createElement('div');
-                div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #f0f0f0; cursor: pointer;';
-                div.innerHTML = `
-                    <div>
-                        <span style="font-weight: bold; color: #333;">${index + 1}. ${price.name}</span>
-                        <br>
-                        <small style="color: #666;">24h 거래량: ${price.volume_24h || 0}</small>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-weight: bold; color: #2c3e50;">${price.current_price} USDT</div>
-                        <small style="color: ${price.change_24h >= 0 ? '#28a745' : '#dc3545'};">
-                            ${price.change_24h >= 0 ? '+' : ''}${price.change_24h || 0} (${((price.change_percent || 0) * 100).toFixed(2)}%)
-                        </small>
-                    </div>
-                `;
-                div.onclick = () => selectPoliticianForTrade(price.politician_id, price.name);
-                rankingsElem.appendChild(div);
-            });
-        }
-
-        function selectPoliticianForTrade(politicianId, name) {
-            const selectElem = document.getElementById('politician-select');
-            if (selectElem) {
-                selectElem.value = politicianId;
-                // 선택된 정치인의 현재 가격을 가격 입력란에 자동 입력
-                fetch(`/api/trading/prices`)
-                    .then(response => response.json())
-                    .then(prices => {
-                        const politician = prices.find(p => p.politician_id === politicianId);
-                        if (politician) {
-                            document.getElementById('trade-price').value = politician.current_price;
-                        }
-                    })
-                    .catch(error => console.error('가격 정보 조회 실패:', error));
-            }
-        }
-
-        function loadPoliticianSelectOptions() {
-            // 등록된 정치인 목록을 셀렉트 박스에 추가
-            if (typeof allPoliticiansData !== 'undefined' && allPoliticiansData && Object.keys(allPoliticiansData).length > 0) {
-                const selectElem = document.getElementById('politician-select');
-                selectElem.innerHTML = '<option value="">정치인 선택...</option>';
-                
-                for (const id in allPoliticiansData) {
-                    const politician = allPoliticiansData[id];
-                    const option = document.createElement('option');
-                    option.value = id;
-                    option.textContent = politician.name || id;
-                    selectElem.appendChild(option);
-                }
-            }
-        }
-
-        function loadMyOrders() {
-            fetch('/api/trading/my-orders')
-                .then(response => {
-                    if (!response.ok) throw new Error('주문 목록 로드 실패');
-                    return response.json();
-                })
-                .then(orders => {
-                    console.log('✅ 내 주문 목록 로드 성공:', orders);
-                    displayMyOrders(orders);
-                })
-                .catch(error => {
-                    console.error('❌ 내 주문 목록 로드 실패:', error);
-                    document.getElementById('my-orders').innerHTML = '<div style="color: #e74c3c;">주문 목록을 불러올 수 없습니다.</div>';
-                });
-        }
-
-        function displayMyOrders(orders) {
-            const ordersElem = document.getElementById('my-orders');
-            if (!orders || orders.length === 0) {
-                ordersElem.innerHTML = '<div>활성 주문이 없습니다.</div>';
-                return;
-            }
-
-            ordersElem.innerHTML = '';
-            orders.forEach(order => {
-                const div = document.createElement('div');
-                div.style.cssText = 'padding: 10px; border: 1px solid #e0e0e0; border-radius: 4px; margin-bottom: 8px; background: #f9f9f9;';
-                const currency = order.currency || 'USDT';
-                const currencyIcon = currency === 'USDT' ? '💰' : '💎';
-                
-                div.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <strong>${getPoliticianNameById(order.politician_id)}</strong>
-                            <span style="color: ${order.order_type === 'buy' ? '#28a745' : '#dc3545'}; font-weight: bold;">
-                                ${order.order_type === 'buy' ? '매수' : '매도'}
-                            </span>
-                            <br>
-                            <small>${order.quantity}개 @ ${currencyIcon} ${order.price} ${currency}</small>
-                            ${order.escrow_amount ? `<br><small style="color: #ffc107;">🔒 ${order.escrow_amount} ${order.order_type === 'buy' ? currency : '코인'} 동결됨</small>` : ''}
-                        </div>
-                        <button onclick="cancelOrder('${order.id}')" 
-                                style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                            취소
-                        </button>
-                    </div>
-                `;
-                ordersElem.appendChild(div);
-            });
-        }
-
-        // 거래 요약 업데이트 함수
-        function updateTradeSummary() {
-            const politicianSelect = document.getElementById('politician-select');
-            const tradeTypeSelect = document.getElementById('trade-type');
-            const currencyTypeSelect = document.getElementById('currency-type');
-            const quantityInput = document.getElementById('trade-quantity');
-            const priceInput = document.getElementById('trade-price');
-            const summaryElem = document.getElementById('trade-summary');
-            
-            if (!politicianSelect || !tradeTypeSelect || !currencyTypeSelect || !quantityInput || !priceInput || !summaryElem) {
-                return;
-            }
-            
-            const politician = politicianSelect.options[politicianSelect.selectedIndex]?.text || '';
-            const tradeType = tradeTypeSelect.value;
-            const currency = currencyTypeSelect.value;
-            const quantity = parseInt(quantityInput.value) || 0;
-            const price = parseInt(priceInput.value) || 0;
-            
-            if (!politician || politician === '정치인 선택...' || !quantity || !price) {
-                summaryElem.textContent = '정치인과 수량을 선택하세요';
-                return;
-            }
-            
-            const totalCost = quantity * price;
-            const action = tradeType === 'buy' ? '구매' : '판매';
-            const currencyIcon = currency === 'USDT' ? '💰' : '💎';
-            
-            if (tradeType === 'buy') {
-                summaryElem.innerHTML = `${politician} 코인 ${quantity}개를 ${currencyIcon} ${totalCost} ${currency}로 ${action}`;
-            } else {
-                summaryElem.innerHTML = `${politician} 코인 ${quantity}개를 ${currencyIcon} ${totalCost} ${currency}에 ${action}`;
-            }
-        }
-
-        function placeTradeOrder() {
-            const politicianId = document.getElementById('politician-select').value;
-            const orderType = document.getElementById('trade-type').value;
-            const currency = document.getElementById('currency-type').value;
-            const quantity = parseInt(document.getElementById('trade-quantity').value);
-            const price = parseInt(document.getElementById('trade-price').value);
-            const statusElem = document.getElementById('trade-status');
-
-            // 입력값 검증
-            if (!politicianId) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">정치인을 선택하세요.</span>';
-                return;
-            }
-            if (!quantity || quantity <= 0) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">올바른 수량을 입력하세요.</span>';
-                return;
-            }
-            if (!price || price <= 0) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">올바른 가격을 입력하세요.</span>';
-                return;
-            }
-
-            // 잔액 확인
-            if (orderType === 'buy') {
-                const totalCost = quantity * price;
-                let availableBalance = 0;
-                let balanceText = '';
-                
-                if (currency === 'USDT') {
-                    const availableTetherText = document.getElementById('available-tether').textContent;
-                    availableBalance = parseInt(availableTetherText.replace(',', ''));
-                    balanceText = `${totalCost} USDT`;
-                } else {
-                    const availableUsdcText = document.getElementById('available-usdc').textContent;
-                    availableBalance = parseInt(availableUsdcText.replace(',', ''));
-                    balanceText = `${totalCost} USDC`;
-                }
-                
-                if (totalCost > availableBalance) {
-                    statusElem.innerHTML = `<span style="color: #e74c3c;">사용 가능한 ${currency}이 부족합니다. (필요: ${balanceText}, 사용가능: ${availableBalance} ${currency})</span>`;
-                    return;
-                }
-            }
-
-            // PIN 입력 받기 (간단히 prompt 사용)
-            const pin = prompt('거래 승인을 위해 6자리 PIN을 입력하세요:');
-            if (!pin || pin.length !== 6) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">6자리 PIN을 입력해야 합니다.</span>';
-                return;
-            }
-
-            statusElem.innerHTML = '<span style="color: #f39c12;">주문 등록 중...</span>';
-
-            const orderData = {
-                politician_id: politicianId,
-                order_type: orderType,
-                currency: currency,
-                quantity: quantity,
-                price: price,
-                pin: pin
-            };
-
-            fetch('/api/trading/place-order', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(orderData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => { throw new Error(text) });
-                }
-                return response.json();
-            })
-            .then(result => {
-                console.log('✅ 주문 등록 성공:', result);
-                statusElem.innerHTML = '<span style="color: #28a745;">주문이 성공적으로 등록되었습니다!</span>';
-                
-                // 폼 초기화
-                document.getElementById('trade-form').reset();
-                
-                // 데이터 새로고침
-                loadTradingData();
-                loadUserProfile(); // 잔액 업데이트
-                
-                setTimeout(() => {
-                    statusElem.innerHTML = '';
-                }, 3000);
-            })
-            .catch(error => {
-                console.error('❌ 주문 등록 실패:', error);
-                statusElem.innerHTML = `<span style="color: #e74c3c;">주문 실패: ${error.message}</span>`;
-            });
-        }
-
-        function cancelOrder(orderId) {
-            if (!confirm('정말로 이 주문을 취소하시겠습니까?')) {
-                return;
-            }
-
-            fetch(`/api/trading/cancel-order/${orderId}`, {
-                method: 'POST'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => { throw new Error(text) });
-                }
-                return response.json();
-            })
-            .then(result => {
-                console.log('✅ 주문 취소 성공:', result);
-                
-                // 데이터 새로고침
-                loadMyOrders();
-                loadUserProfile(); // 잔액 업데이트
-            })
-            .catch(error => {
-                console.error('❌ 주문 취소 실패:', error);
-                alert(`주문 취소 실패: ${error.message}`);
-            });
-        }
-
-        // PIN 모달 관련 함수들
-        function showPinModal() {
-            document.getElementById('pin-modal').style.display = 'flex';
-            document.querySelectorAll('.pin-digit-unlock').forEach(input => input.value = '');
-            document.querySelectorAll('.pin-digit-unlock')[0].focus();
-            document.getElementById('pin-error').textContent = '';
-        }
-
-        function closePinModal() {
-            document.getElementById('pin-modal').style.display = 'none';
-        }
-
-        function unlockWallet() {
-            const pinInputs = document.querySelectorAll('.pin-digit-unlock');
-            let pin = '';
-            pinInputs.forEach(input => {
-                pin += input.value;
-            });
-
-            if (pin.length !== 6) {
-                document.getElementById('pin-error').textContent = '6자리 숫자를 모두 입력하세요.';
-                return;
-            }
-
-            const unlockBtn = document.getElementById('unlock-wallet-btn');
-            unlockBtn.disabled = true;
-            unlockBtn.textContent = '확인 중...';
-
-            // PIN 검증 API 호출 (여기서는 간단히 클라이언트에서 처리)
-            fetch('/api/auth/verify-pin', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ pin: pin })
-            })
-            .then(response => {
-                if (response.ok) {
-                    // PIN 검증 성공
-                    document.getElementById('wallet-locked').style.display = 'none';
-                    document.getElementById('wallet-unlocked').style.display = 'block';
-                    closePinModal();
-                    
-                    // 지갑 데이터 로드
-                    loadWalletData();
-                } else {
-                    throw new Error('잘못된 PIN입니다.');
-                }
-            })
-            .catch(error => {
-                console.error('PIN 검증 실패:', error);
-                document.getElementById('pin-error').textContent = error.message || '잘못된 PIN입니다.';
-                unlockBtn.disabled = false;
-                unlockBtn.textContent = '잠금 해제';
-            });
-        }
-
-        function lockWallet() {
-            document.getElementById('wallet-locked').style.display = 'block';
-            document.getElementById('wallet-unlocked').style.display = 'none';
-            
-            // 지갑 데이터 초기화
-            document.getElementById('wallet-address').textContent = '불러오는 중...';
-            document.getElementById('total-coins').textContent = '0개';
-            document.getElementById('politician-coins-list').innerHTML = '<li class="loading">목록을 불러오는 중...</li>';
-        }
-
-        function loadWalletData() {
-            // 기존의 프로필 로드 함수 재사용
-            loadUserProfile();
-        }
-
-        // 입금/출금 관련 함수들
-        function showDepositModal() {
-            document.getElementById('deposit-modal').style.display = 'flex';
-            loadDepositAddress();
-            document.getElementById('deposit-form').reset();
-            document.getElementById('deposit-status').innerHTML = '';
-        }
-
-        function closeDepositModal() {
-            document.getElementById('deposit-modal').style.display = 'none';
-        }
-
-        function showWithdrawModal() {
-            document.getElementById('withdraw-modal').style.display = 'flex';
-            document.getElementById('withdraw-form').reset();
-            document.getElementById('withdraw-status').innerHTML = '';
-            
-            // 토큰 타입 변경 이벤트 리스너 추가
-            const tokenTypeSelect = document.getElementById('withdraw-token-type');
-            if (tokenTypeSelect) {
-                updateAvailableBalance();
-                tokenTypeSelect.addEventListener('change', updateAvailableBalance);
-            }
-        }
-        
-        function updateAvailableBalance() {
-            const tokenType = document.getElementById('withdraw-token-type').value;
-            const balanceDisplay = document.getElementById('available-balance-display');
-            
-            if (tokenType === 'USDT') {
-                const availableTetherText = document.getElementById('available-tether').textContent;
-                balanceDisplay.textContent = `${availableTetherText} USDT`;
-            } else {
-                const availableUsdcText = document.getElementById('available-usdc').textContent;
-                balanceDisplay.textContent = `${availableUsdcText} USDC`;
-            }
-        }
-
-        function closeWithdrawModal() {
-            document.getElementById('withdraw-modal').style.display = 'none';
-        }
-
-        function loadDepositAddress() {
-            fetch('/api/wallet/address')
-                .then(response => {
-                    if (!response.ok) throw new Error('입금 주소 조회 실패');
-                    return response.json();
-                })
-                .then(data => {
-                    document.getElementById('deposit-address').textContent = data.deposit_address;
-                })
-                .catch(error => {
-                    console.error('입금 주소 로드 실패:', error);
-                    document.getElementById('deposit-address').textContent = '주소 로드 실패';
-                });
-        }
-
-        function copyDepositAddress() {
-            const address = document.getElementById('deposit-address').textContent;
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(address).then(() => {
-                    alert('입금 주소가 복사되었습니다!');
-                });
-            } else {
-                // 구형 브라우저 대응
-                const textArea = document.createElement('textarea');
-                textArea.value = address;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                alert('입금 주소가 복사되었습니다!');
-            }
-        }
-
-        // 입금 폼 이벤트 리스너
-        document.addEventListener('DOMContentLoaded', function() {
-            const depositForm = document.getElementById('deposit-form');
-            if (depositForm) {
-                depositForm.addEventListener('submit', function(event) {
-                    event.preventDefault();
-                    processDeposit();
-                });
-            }
-
-            const withdrawForm = document.getElementById('withdraw-form');
-            if (withdrawForm) {
-                withdrawForm.addEventListener('submit', function(event) {
-                    event.preventDefault();
-                    processWithdraw();
-                });
-            }
-        });
-
-        function processDeposit() {
-            const tokenType = document.getElementById('deposit-token-type').value;
-            const amount = parseInt(document.getElementById('deposit-amount').value);
-            const txHash = document.getElementById('deposit-txhash').value;
-            const pin = document.getElementById('deposit-pin').value;
-            const statusElem = document.getElementById('deposit-status');
-
-            if (!tokenType) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">토큰 종류를 선택하세요.</span>';
-                return;
-            }
-
-            if (!amount || amount <= 0) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">올바른 금액을 입력하세요.</span>';
-                return;
-            }
-
-            if (!txHash) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">트랜잭션 해시를 입력하세요.</span>';
-                return;
-            }
-
-            if (!pin || pin.length !== 6) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">6자리 PIN을 입력하세요.</span>';
-                return;
-            }
-
-            statusElem.innerHTML = `<span style="color: #f39c12;">${tokenType} 입금 처리 중...</span>`;
-
-            const depositData = {
-                amount: amount,
-                token_type: tokenType,
-                tx_hash: txHash,
-                from_address: document.getElementById('deposit-address').textContent,
-                pin: pin
-            };
-
-            fetch('/api/wallet/deposit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(depositData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => { throw new Error(text) });
-                }
-                return response.json();
-            })
-            .then(result => {
-                console.log('✅ 입금 성공:', result);
-                statusElem.innerHTML = '<span style="color: #28a745;">입금이 성공적으로 처리되었습니다!</span>';
-                
-                // 폼 초기화
-                document.getElementById('deposit-form').reset();
-                
-                // 잔액 업데이트
-                loadUserProfile();
-                
-                setTimeout(() => {
-                    closeDepositModal();
-                }, 2000);
-            })
-            .catch(error => {
-                console.error('❌ 입금 실패:', error);
-                statusElem.innerHTML = `<span style="color: #e74c3c;">입금 실패: ${error.message}</span>`;
-            });
-        }
-
-        function processWithdraw() {
-            const tokenType = document.getElementById('withdraw-token-type').value;
-            const amount = parseInt(document.getElementById('withdraw-amount').value);
-            const toAddress = document.getElementById('withdraw-address').value;
-            const pin = document.getElementById('withdraw-pin').value;
-            const statusElem = document.getElementById('withdraw-status');
-
-            if (!tokenType) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">토큰 종류를 선택하세요.</span>';
-                return;
-            }
-
-            if (!amount || amount <= 0) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">올바른 금액을 입력하세요.</span>';
-                return;
-            }
-
-            if (!toAddress) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">출금 주소를 입력하세요.</span>';
-                return;
-            }
-
-            if (!pin || pin.length !== 6) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">6자리 PIN을 입력하세요.</span>';
-                return;
-            }
-
-            // 잔액 확인
-            let availableBalance = 0;
-            if (tokenType === 'USDT') {
-                const availableTetherText = document.getElementById('available-tether').textContent;
-                availableBalance = parseInt(availableTetherText.replace(',', ''));
-            } else {
-                const availableUsdcText = document.getElementById('available-usdc').textContent;
-                availableBalance = parseInt(availableUsdcText.replace(',', ''));
-            }
-            
-            if (amount > availableBalance) {
-                statusElem.innerHTML = `<span style="color: #e74c3c;">사용 가능한 잔액이 부족합니다. (요청: ${amount} ${tokenType}, 사용가능: ${availableBalance} ${tokenType})</span>`;
-                return;
-            }
-
-            statusElem.innerHTML = `<span style="color: #f39c12;">${tokenType} 출금 처리 중...</span>`;
-
-            const withdrawData = {
-                amount: amount,
-                token_type: tokenType,
-                to_address: toAddress,
-                pin: pin
-            };
-
-            fetch('/api/wallet/withdraw', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(withdrawData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => { throw new Error(text) });
-                }
-                return response.json();
-            })
-            .then(result => {
-                console.log('✅ 출금 성공:', result);
-                statusElem.innerHTML = '<span style="color: #28a745;">출금이 성공적으로 처리되었습니다!</span>';
-                
-                // 폼 초기화
-                document.getElementById('withdraw-form').reset();
-                
-                // 잔액 업데이트
-                loadUserProfile();
-                
-                setTimeout(() => {
-                    closeWithdrawModal();
-                }, 2000);
-            })
-            .catch(error => {
-                console.error('❌ 출금 실패:', error);
-                statusElem.innerHTML = `<span style="color: #e74c3c;">출금 실패: ${error.message}</span>`;
-            });
-        }
-
-        // 추천 링크 관련 함수들
-        function generateReferralLink(walletAddress) {
-            if (!walletAddress) {
-                console.log('지갑 주소가 없어서 추천 링크를 생성할 수 없습니다');
-                return;
-            }
-            
-            const baseUrl = window.location.origin;
-            const referralLink = `${baseUrl}/signup.html?ref=${walletAddress}`;
-            
-            const linkInput = document.getElementById('referral-link');
-            if (linkInput) {
-                linkInput.value = referralLink;
-            }
-            
-            console.log('추천 링크 생성됨:', referralLink);
-        }
-
-        function copyReferralLink() {
-            const linkInput = document.getElementById('referral-link');
-            const link = linkInput.value;
-            
-            if (link === '링크를 생성하는 중...') {
-                alert('잠시 후 다시 시도해주세요.');
-                return;
-            }
-            
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(link).then(() => {
-                    showToast('추천 링크가 복사되었습니다! 📋');
-                }).catch(err => {
-                    console.error('클립보드 복사 실패:', err);
-                    fallbackCopy(link);
-                });
-            } else {
-                fallbackCopy(link);
-            }
-        }
-
-        function fallbackCopy(text) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                showToast('추천 링크가 복사되었습니다! 📋');
-            } catch (err) {
-                console.error('복사 실패:', err);
-                alert('복사에 실패했습니다. 링크를 직접 선택해서 복사해주세요.');
-            }
-            document.body.removeChild(textArea);
-        }
-
-        function shareReferralLink() {
-            const linkInput = document.getElementById('referral-link');
-            const link = linkInput.value;
-            
-            if (link === '링크를 생성하는 중...') {
-                alert('잠시 후 다시 시도해주세요.');
-                return;
-            }
-            
-            const shareText = `🏛️ 나의 공화국에서 정치인 코인을 받아보세요!\n\n정치인을 선택하고 무료 코인을 받을 수 있어요.\n\n${link}`;
-            
-            if (navigator.share) {
-                navigator.share({
-                    title: '🏛️ 나의 공화국 - 친구 초대',
-                    text: shareText,
-                    url: link
-                }).then(() => {
-                    console.log('공유 성공');
-                }).catch(err => {
-                    console.log('공유 취소 또는 실패:', err);
-                });
-            } else {
-                // Web Share API가 지원되지 않으면 클립보드에 복사
-                copyReferralLink();
-                alert('공유 기능이 지원되지 않아 링크를 복사했습니다.\nSNS에 붙여넣기 해주세요!');
-            }
-        }
-
-        function showCreditUsageModal() {
-            // 현재 크레딧 정보 가져오기
-            const credits = parseInt(document.getElementById('referral-credits').textContent);
-            if (credits <= 0) {
-                alert('사용 가능한 크레딧이 없습니다.');
-                return;
-            }
-            
-            // 모달 표시
-            document.getElementById('credit-usage-modal').style.display = 'flex';
-            document.getElementById('modal-credits').textContent = credits;
-            
-            // 정치인 목록 로드
-            loadAvailablePoliticiansForCredit();
-            
-            // 폼 리셋
-            document.getElementById('credit-usage-form').reset();
-            document.getElementById('credit-usage-status').innerHTML = '';
-        }
-
-        function closeCreditUsageModal() {
-            document.getElementById('credit-usage-modal').style.display = 'none';
-        }
-
-        function loadAvailablePoliticiansForCredit() {
-            const select = document.getElementById('credit-politician-select');
-            select.innerHTML = '<option value="">정치인 목록을 불러오는 중...</option>';
-            
-            // 등록된 정치인 목록 가져오기
-            fetch('/api/politicians/registered')
-                .then(response => response.json())
-                .then(data => {
-                    select.innerHTML = '<option value="">정치인을 선택하세요...</option>';
-                    
-                    // 현재 사용자가 이미 선택한 정치인들 제외
-                    const userProfile = getCurrentUserProfile();
-                    const alreadySelected = userProfile ? userProfile.politicians : [];
-                    
-                    data.politicians.forEach(politician => {
-                        if (!alreadySelected.includes(politician.name)) {
-                            const option = document.createElement('option');
-                            option.value = politician.name;
-                            option.textContent = politician.name;
-                            select.appendChild(option);
-                        }
-                    });
-                    
-                    if (select.children.length <= 1) {
-                        select.innerHTML = '<option value="">선택 가능한 정치인이 없습니다</option>';
-                    }
-                })
-                .catch(error => {
-                    console.error('정치인 목록 로드 실패:', error);
-                    select.innerHTML = '<option value="">목록 로드 실패</option>';
-                });
-        }
-
-        function getCurrentUserProfile() {
-            // 현재 로드된 사용자 프로필 정보 반환 (전역 변수에서)
-            return currentUserProfileData;
-        }
-
-        // 초기 코인 받기 관련 함수들
-        function showClaimCoinsModal() {
-            document.getElementById('claim-coins-modal').style.display = 'flex';
-            document.getElementById('claim-coins-form').reset();
-            document.getElementById('claim-coins-status').innerHTML = '';
-            
-            // 사용자가 선택한 정치인들을 동적으로 표시
-            updateClaimCoinsPoliticiansList();
-        }
-        
-        function updateClaimCoinsPoliticiansList() {
-            const listElem = document.getElementById('claim-coins-politicians-list');
-            const userProfile = getCurrentUserProfile();
-            
-            if (!listElem) return;
-            
-            let politicians = [];
-            let totalCoins = 0;
-            
-            if (userProfile && userProfile.politisians && userProfile.politisians.length > 0) {
-                // 사용자가 선택한 정치인들 사용
-                politicians = userProfile.politisians;
-                totalCoins = politicians.length * 100;
-            } else {
-                // 기본 정치인들 사용
-                politicians = ['이재명', '윤석열', '이낙연'];
-                totalCoins = 300;
-            }
-            
-            // 정치인 목록 HTML 생성
-            let html = '';
-            politicians.forEach(politician => {
-                html += `
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                        <span>${politician}</span>
-                        <span style="color: #28a745; font-weight: bold;">100 코인</span>
-                    </div>
-                `;
-            });
-            
-            html += `
-                <hr style="margin: 15px 0;">
-                <div style="display: flex; justify-content: space-between; font-weight: bold;">
-                    <span>총합</span>
-                    <span style="color: #f39c12; font-size: 18px;">${totalCoins} 코인</span>
-                </div>
-            `;
-            
-            listElem.innerHTML = html;
-        }
-
-        function closeClaimCoinsModal() {
-            document.getElementById('claim-coins-modal').style.display = 'none';
-        }
-
-        function processClaimCoins() {
-            const pin = document.getElementById('claim-pin').value;
-            const statusElem = document.getElementById('claim-coins-status');
-
-            if (!pin || pin.length !== 6) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">6자리 PIN을 입력하세요.</span>';
-                return;
-            }
-
-            statusElem.innerHTML = '<span style="color: #f39c12;">초기 코인 요청 중...</span>';
-
-            const claimData = {
-                pin: pin
-            };
-
-            fetch('/api/user/claim-initial-coins', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(claimData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(text);
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                statusElem.innerHTML = '<span style="color: #28a745;">✅ 초기 코인을 성공적으로 받았습니다!</span>';
-                
-                console.log('초기 코인 지급 응답 데이터:', data);
-                
-                // 즉시 프로필 새로고침 시도
-                loadUserProfile();
-                
-                // 3초 후 모달 닫기 및 추가 새로고침
-                setTimeout(() => {
-                    closeClaimCoinsModal();
-                    loadUserProfile(); // 추가 프로필 데이터 새로고침
-                    
-                    // 동적으로 코인 개수 계산
-                    const userProfile = getCurrentUserProfile();
-                    let coinCount = 300; // 기본값
-                    if (userProfile && userProfile.politisians) {
-                        coinCount = userProfile.politisians.length * 100;
-                    }
-                    
-                    showToast(`🎉 축하합니다! 초기 코인 ${coinCount}개를 받았어요!`);
-                }, 3000);
-                
-                // 5초 후 한 번 더 새로고침 (블록체인 동기화 대기)
-                setTimeout(() => {
-                    console.log('블록체인 동기화 대기 후 추가 새로고침');
-                    loadUserProfile();
-                }, 5000);
-            })
-            .catch(error => {
-                console.error('초기 코인 요청 실패:', error);
-                statusElem.innerHTML = `<span style="color: #e74c3c;">요청 실패: ${error.message}</span>`;
-            });
-        }
-
-        function processCreditUsage() {
-            const politician = document.getElementById('credit-politician-select').value;
-            const creditAmount = parseInt(document.getElementById('credit-amount').value);
-            const pin = document.getElementById('credit-pin').value;
-            const statusElem = document.getElementById('credit-usage-status');
-
-            // 입력값 검증
-            if (!politician) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">정치인을 선택하세요.</span>';
-                return;
-            }
-
-            if (!pin || pin.length !== 6) {
-                statusElem.innerHTML = '<span style="color: #e74c3c;">6자리 PIN을 입력하세요.</span>';
-                return;
-            }
-
-            statusElem.innerHTML = '<span style="color: #f39c12;">크레딧 사용 처리 중...</span>';
-
-            const usageData = {
-                politician: politician,
-                credit_amount: creditAmount,
-                pin: pin
-            };
-
-            fetch('/api/user/use-credit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(usageData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(text);
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                statusElem.innerHTML = '<span style="color: #28a745;">✅ 크레딧 사용 완료! 정치인이 추가되고 코인 100개를 받았습니다.</span>';
-                
-                // 3초 후 모달 닫기 및 데이터 새로고침
-                setTimeout(() => {
-                    closeCreditUsageModal();
-                    loadUserProfile(); // 프로필 데이터 새로고침
-                    showToast(`🎉 ${politician} 정치인이 추가되었습니다! 코인 100개를 받았어요!`);
-                }, 3000);
-            })
-            .catch(error => {
-                console.error('크레딧 사용 실패:', error);
-                statusElem.innerHTML = `<span style="color: #e74c3c;">크레딧 사용 실패: ${error.message}</span>`;
-            });
-        }
-
-        function showToast(message) {
-            // 토스트 메시지 생성
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed; top: 20px; right: 20px; 
-                background: #28a745; color: white; 
-                padding: 15px 20px; border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                z-index: 10000; font-size: 14px; font-weight: 500;
-                animation: slideIn 0.3s ease-out;
-            `;
-            toast.textContent = message;
-            
-            // 애니메이션 CSS 추가
-            if (!document.getElementById('toast-styles')) {
-                const style = document.createElement('style');
-                style.id = 'toast-styles';
-                style.textContent = `
-                    @keyframes slideIn {
-                        from { transform: translateX(100%); opacity: 0; }
-                        to { transform: translateX(0); opacity: 1; }
-                    }
-                    @keyframes slideOut {
-                        from { transform: translateX(0); opacity: 1; }
-                        to { transform: translateX(100%); opacity: 0; }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
-            document.body.appendChild(toast);
-            
-            // 3초 후 제거
-            setTimeout(() => {
-                toast.style.animation = 'slideOut 0.3s ease-in forwards';
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
-                }, 300);
-            }, 3000);
-        }
-
-    </script>
 </body>
 </html>

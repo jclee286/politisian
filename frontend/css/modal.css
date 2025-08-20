@@ -1,0 +1,130 @@
+/* 모달 기본 스타일 */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    max-width: 500px;
+    margin: 20px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.modal-body {
+    margin-bottom: 20px;
+}
+
+.modal-footer {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* PIN 입력 모달 전용 */
+.pin-input-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.pin-digit {
+    width: 40px;
+    height: 40px;
+    text-align: center;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 18px;
+}
+
+.pin-digit:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+/* 지갑 잠금 화면 */
+.wallet-locked-screen {
+    text-align: center;
+    padding: 40px;
+}
+
+.wallet-lock-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.unlock-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* 버튼 스타일 */
+.modal-button {
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 0 5px;
+    font-size: 14px;
+}
+
+.modal-button-primary {
+    background: #28a745;
+    color: white;
+}
+
+.modal-button-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.modal-button-warning {
+    background: #f39c12;
+    color: white;
+}
+
+.modal-button-danger {
+    background: #dc3545;
+    color: white;
+}
+
+/* 에러 및 상태 메시지 */
+.modal-error {
+    color: #e74c3c;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.modal-success {
+    color: #28a745;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.modal-warning {
+    color: #f39c12;
+    margin-bottom: 15px;
+    font-size: 14px;
+}

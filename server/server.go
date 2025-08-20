@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/rpc/client/local"
@@ -98,9 +99,10 @@ func rootFileHandler(fs http.Handler) http.HandlerFunc {
 		
 		// API 요청은 이미 위에서 처리되었으므로 여기로 오지 않습니다.
 		
-		// login.html, signup.html, index.html, favicon.ico 등 인증이 필요 없는 파일들은 그냥 보여줍니다.
+		// login.html, signup.html, index.html, favicon.ico, CSS, JS 등 인증이 필요 없는 파일들은 그냥 보여줍니다.
 		// 쿼리 파라미터가 있어도 동일하게 처리합니다 (예: /login.html?ref=...)
-		if r.URL.Path == "/login.html" || r.URL.Path == "/signup.html" || r.URL.Path == "/index.html" || r.URL.Path == "/" || r.URL.Path == "/favicon.ico" {
+		if r.URL.Path == "/login.html" || r.URL.Path == "/signup.html" || r.URL.Path == "/index.html" || r.URL.Path == "/" || r.URL.Path == "/favicon.ico" ||
+		   strings.HasPrefix(r.URL.Path, "/css/") || strings.HasPrefix(r.URL.Path, "/js/") {
 			fs.ServeHTTP(w, r)
 			return
 		}
