@@ -1,6 +1,6 @@
-// 전역 변수
-let allPoliticiansData = {};
-let currentUserProfileData = null;
+// 전역 변수 (window 객체에 등록하여 모든 스크립트에서 접근 가능)
+window.allPoliticiansData = {};
+window.currentUserProfileData = null;
 
 // DOM 요소 참조
 let walletAddressElem, politicianCoinsListElem, totalCoinsElem, loginButton;
@@ -141,12 +141,12 @@ function saveBackupData(walletAddress, userInfo) {
 }
 
 function getCurrentUserProfile() {
-    return currentUserProfileData;
+    return window.currentUserProfileData;
 }
 
 function getPoliticianNameById(politicianId) {
-    if (typeof allPoliticiansData === 'object' && allPoliticiansData[politicianId]) {
-        return allPoliticiansData[politicianId].name || politicianId;
+    if (typeof window.allPoliticiansData === 'object' && window.allPoliticiansData[politicianId]) {
+        return window.allPoliticiansData[politicianId].name || politicianId;
     }
     return politicianId;
 }

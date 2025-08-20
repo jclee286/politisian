@@ -27,7 +27,7 @@ function loadUserProfile() {
                 console.log('✅ 프로필 데이터 로드 성공:', data);
                 
                 // 전역 변수에 프로필 데이터 저장
-                currentUserProfileData = data;
+                window.currentUserProfileData = data;
                 
                 setWalletAddress(data.wallet || data.walletAddress || '지갑 주소 없음');
                 

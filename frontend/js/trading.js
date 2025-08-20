@@ -100,8 +100,8 @@ function loadPoliticianSelectOptions() {
     
     select.innerHTML = '<option value="">정치인을 선택하세요...</option>';
     
-    if (typeof allPoliticiansData === 'object') {
-        Object.entries(allPoliticiansData).forEach(([id, politician]) => {
+    if (typeof window.allPoliticiansData === 'object') {
+        Object.entries(window.allPoliticiansData).forEach(([id, politician]) => {
             const option = document.createElement('option');
             option.value = id;
             option.textContent = `${politician.name} (${politician.party || '무소속'})`;

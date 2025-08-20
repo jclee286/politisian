@@ -75,10 +75,10 @@ function loadRegisteredPoliticians() {
             }
             
             // 전역 데이터에 저장 (검색용)
-            allPoliticiansData = {};
+            window.allPoliticiansData = {};
             if (politicians && Array.isArray(politicians)) {
                 politicians.forEach(politician => {
-                    allPoliticiansData[politician.name] = politician;
+                    window.allPoliticiansData[politician.name] = politician;
                 });
             }
             
@@ -126,14 +126,14 @@ function displayPoliticians(politicians) {
 
 // 정치인 검색
 function searchPoliticians(searchTerm) {
-    if (!searchTerm || !allPoliticiansData) {
+    if (!searchTerm || !window.allPoliticiansData) {
         // 검색어가 없으면 전체 목록 표시
-        const allPoliticians = Object.values(allPoliticiansData);
+        const allPoliticians = Object.values(window.allPoliticiansData);
         displayPoliticians(allPoliticians);
         return;
     }
     
-    const filteredPoliticians = Object.values(allPoliticiansData).filter(politician => {
+    const filteredPoliticians = Object.values(window.allPoliticiansData).filter(politician => {
         const nameMatch = politician.name.toLowerCase().includes(searchTerm.toLowerCase());
         const regionMatch = politician.region && politician.region.toLowerCase().includes(searchTerm.toLowerCase());
         const partyMatch = politician.party && politician.party.toLowerCase().includes(searchTerm.toLowerCase());
