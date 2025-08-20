@@ -236,24 +236,8 @@
                     <h3 style="color: #333; margin-bottom: 20px;">🎁 초기 코인 받기</h3>
                     <p style="color: #666; margin-bottom: 20px;">회원가입 축하 코인을 받아보세요!</p>
                     
-                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span>이재명</span>
-                            <span style="color: #28a745; font-weight: bold;">100 코인</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span>윤석열</span>
-                            <span style="color: #28a745; font-weight: bold;">100 코인</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span>이낙연</span>
-                            <span style="color: #28a745; font-weight: bold;">100 코인</span>
-                        </div>
-                        <hr style="margin: 15px 0;">
-                        <div style="display: flex; justify-content: space-between; font-weight: bold;">
-                            <span>총합</span>
-                            <span style="color: #f39c12; font-size: 18px;">300 코인</span>
-                        </div>
+                    <div id="claim-coins-politicians-list" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <!-- 동적으로 생성되는 정치인 목록 -->
                     </div>
                     
                     <form id="claim-coins-form" style="text-align: left;">
@@ -521,6 +505,9 @@
             
             // 전역 정치인 데이터 저장
             let allPoliticiansData = {};
+            
+            // 전역 사용자 프로필 데이터 저장
+            let currentUserProfileData = null;
 
             console.log('🍪 현재 쿠키:', document.cookie);
 
@@ -549,6 +536,10 @@
                     .then(data => {
                         if (data) {
                             console.log('✅ 프로필 데이터 로드 성공:', data);
+                            
+                            // 전역 변수에 프로필 데이터 저장
+                            currentUserProfileData = data;
+                            
                             setWalletAddress(data.wallet || data.walletAddress || '지갑 주소 없음');
                             
                             // 백업 데이터 저장
@@ -823,7 +814,7 @@
                                         🎁 초기 코인 받기
                                     </button>
                                     <div style="font-size: 12px; color: #999; margin-top: 10px;">
-                                        이재명, 윤석열, 이낙연 각각 100개씩 총 300개
+                                        선택한 정치인별로 각각 100개씩 지급
                                     </div>
                                 </li>
                             `;
@@ -1996,9 +1987,8 @@
         }
 
         function getCurrentUserProfile() {
-            // 현재 로드된 사용자 프로필 정보 반환 (전역 변수나 캐시에서)
-            // 임시로 null 반환 - 실제로는 사용자 프로필 데이터를 반환해야 함
-            return null;
+            // 현재 로드된 사용자 프로필 정보 반환 (전역 변수에서)
+            return currentUserProfileData;
         }
 
         // 초기 코인 받기 관련 함수들
@@ -2006,6 +1996,50 @@
             document.getElementById('claim-coins-modal').style.display = 'flex';
             document.getElementById('claim-coins-form').reset();
             document.getElementById('claim-coins-status').innerHTML = '';
+            
+            // 사용자가 선택한 정치인들을 동적으로 표시
+            updateClaimCoinsPoliticiansList();
+        }
+        
+        function updateClaimCoinsPoliticiansList() {
+            const listElem = document.getElementById('claim-coins-politicians-list');
+            const userProfile = getCurrentUserProfile();
+            
+            if (!listElem) return;
+            
+            let politicians = [];
+            let totalCoins = 0;
+            
+            if (userProfile && userProfile.politisians && userProfile.politisians.length > 0) {
+                // 사용자가 선택한 정치인들 사용
+                politicians = userProfile.politisians;
+                totalCoins = politicians.length * 100;
+            } else {
+                // 기본 정치인들 사용
+                politicians = ['이재명', '윤석열', '이낙연'];
+                totalCoins = 300;
+            }
+            
+            // 정치인 목록 HTML 생성
+            let html = '';
+            politicians.forEach(politician => {
+                html += `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>${politician}</span>
+                        <span style="color: #28a745; font-weight: bold;">100 코인</span>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <hr style="margin: 15px 0;">
+                <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                    <span>총합</span>
+                    <span style="color: #f39c12; font-size: 18px;">${totalCoins} 코인</span>
+                </div>
+            `;
+            
+            listElem.innerHTML = html;
         }
 
         function closeClaimCoinsModal() {
@@ -2045,12 +2079,31 @@
             .then(data => {
                 statusElem.innerHTML = '<span style="color: #28a745;">✅ 초기 코인을 성공적으로 받았습니다!</span>';
                 
-                // 3초 후 모달 닫기 및 데이터 새로고침
+                console.log('초기 코인 지급 응답 데이터:', data);
+                
+                // 즉시 프로필 새로고침 시도
+                loadUserProfile();
+                
+                // 3초 후 모달 닫기 및 추가 새로고침
                 setTimeout(() => {
                     closeClaimCoinsModal();
-                    loadUserProfile(); // 프로필 데이터 새로고침
-                    showToast('🎉 축하합니다! 초기 코인 300개를 받았어요!');
+                    loadUserProfile(); // 추가 프로필 데이터 새로고침
+                    
+                    // 동적으로 코인 개수 계산
+                    const userProfile = getCurrentUserProfile();
+                    let coinCount = 300; // 기본값
+                    if (userProfile && userProfile.politisians) {
+                        coinCount = userProfile.politisians.length * 100;
+                    }
+                    
+                    showToast(`🎉 축하합니다! 초기 코인 ${coinCount}개를 받았어요!`);
                 }, 3000);
+                
+                // 5초 후 한 번 더 새로고침 (블록체인 동기화 대기)
+                setTimeout(() => {
+                    console.log('블록체인 동기화 대기 후 추가 새로고침');
+                    loadUserProfile();
+                }, 5000);
             })
             .catch(error => {
                 console.error('초기 코인 요청 실패:', error);

@@ -380,11 +380,16 @@ func createBasicAccount(userID string, r *http.Request) error {
 
 // handleClaimInitialCoins는 기존 사용자가 초기 코인을 수동으로 받을 수 있게 해주는 핸들러입니다.
 func handleClaimInitialCoins(w http.ResponseWriter, r *http.Request) {
+	log.Printf("🎁 초기 코인 지급 요청 시작")
+	
 	userID, ok := r.Context().Value("userID").(string)
 	if !ok || userID == "" {
+		log.Printf("❌ 사용자 ID를 찾을 수 없음")
 		http.Error(w, "사용자 ID를 찾을 수 없습니다.", http.StatusInternalServerError)
 		return
 	}
+	
+	log.Printf("📋 초기 코인 지급 요청 - 사용자: %s", userID)
 
 	// PIN 검증을 위한 요청 바디 파싱
 	var reqBody struct {
@@ -396,32 +401,56 @@ func handleClaimInitialCoins(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// PIN 검증
+	log.Printf("🔐 PIN 검증 시작 - 사용자: %s", userID)
 	if err := verifyUserPIN(userID, reqBody.PIN); err != nil {
+		log.Printf("❌ PIN 검증 실패 - 사용자: %s, 오류: %v", userID, err)
 		http.Error(w, "PIN이 올바르지 않습니다", http.StatusUnauthorized)
 		return
 	}
+	log.Printf("✅ PIN 검증 성공 - 사용자: %s", userID)
 
 	// 사용자 계정 조회
+	log.Printf("🔍 사용자 계정 조회 시작 - 사용자: %s", userID)
 	queryPath := fmt.Sprintf("/account?address=%s", userID)
 	res, err := blockchainClient.ABCIQuery(context.Background(), queryPath, nil)
-	if err != nil || res.Response.Code != 0 {
+	if err != nil {
+		log.Printf("❌ ABCI 조회 오류 - 사용자: %s, 오류: %v", userID, err)
 		http.Error(w, "계정을 찾을 수 없습니다", http.StatusNotFound)
 		return
 	}
+	if res.Response.Code != 0 {
+		log.Printf("❌ 계정이 블록체인에 없음 - 사용자: %s, 코드: %d, 로그: %s", userID, res.Response.Code, res.Response.Log)
+		http.Error(w, "계정을 찾을 수 없습니다", http.StatusNotFound)
+		return
+	}
+	log.Printf("✅ 사용자 계정 조회 성공 - 사용자: %s", userID)
 
 	var account ptypes.Account
 	if err := json.Unmarshal(res.Response.Value, &account); err != nil {
+		log.Printf("❌ 계정 정보 파싱 실패 - 사용자: %s, 오류: %v", userID, err)
 		http.Error(w, "계정 정보 파싱 실패", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("📋 계정 정보 파싱 성공 - 사용자: %s, InitialSelection: %v, Politicians: %v", userID, account.InitialSelection, account.Politicians)
 
 	// 이미 초기 코인을 받았는지 확인
 	if account.InitialSelection {
+		log.Printf("❌ 이미 초기 코인을 받은 사용자 - 사용자: %s", userID)
 		http.Error(w, "이미 초기 코인을 받으셨습니다", http.StatusBadRequest)
 		return
 	}
+	log.Printf("✅ 초기 코인 지급 가능 - 사용자: %s", userID)
 
-	// 기본 정치인 3명으로 초기 코인 지급 트랜잭션 생성
+	// 사용자가 선택한 정치인들로 초기 코인 지급 트랜잭션 생성
+	userPoliticians := account.Politicians
+	if len(userPoliticians) == 0 {
+		// 정치인 정보가 없으면 기본 3명 사용
+		userPoliticians = []string{"이재명", "윤석열", "이낙연"}
+		log.Printf("No politicians found for user %s, using default politicians", userID)
+	} else {
+		log.Printf("Using user's selected politicians for %s: %v", userID, userPoliticians)
+	}
+
 	randBytes := make([]byte, 4)
 	rand.Read(randBytes)
 	txID := fmt.Sprintf("%s-claim-%d-%x", userID, time.Now().UnixNano(), randBytes)
@@ -430,7 +459,7 @@ func handleClaimInitialCoins(w http.ResponseWriter, r *http.Request) {
 		TxID:        txID,
 		Action:      "update_supporters",
 		UserID:      userID,
-		Politicians: []string{"이재명", "윤석열", "이낙연"}, // 기본 3명
+		Politicians: userPoliticians, // 사용자가 선택한 정치인들
 	}
 
 	txBytes, err := json.Marshal(txData)
@@ -440,18 +469,22 @@ func handleClaimInitialCoins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("📡 블록체인 트랜잭션 브로드캐스트 시작 - TxID: %s", txID)
 	if err := broadcastAndCheckTx(context.Background(), txBytes); err != nil {
-		log.Printf("Error broadcasting claim transaction: %v", err)
+		log.Printf("❌ 초기 코인 브로드캐스트 실패 - 사용자: %s, TxID: %s, 오류: %v", userID, txID, err)
 		http.Error(w, "초기 코인 지급 실패: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("✅ 블록체인 트랜잭션 성공 - 사용자: %s, TxID: %s", userID, txID)
 
-	log.Printf("Initial coins claimed successfully for user %s", userID)
+	totalCoins := len(userPoliticians) * 100
+	log.Printf("🎉 초기 코인 지급 성공 - 사용자: %s, 정치인: %v, 총 코인: %d", userID, userPoliticians, totalCoins)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
-		"message": "초기 코인이 성공적으로 지급되었습니다! 각 정치인마다 100개씩 총 300개의 코인을 받았습니다.",
-		"coins_given": 300,
+		"message": fmt.Sprintf("초기 코인이 성공적으로 지급되었습니다! 각 정치인마다 100개씩 총 %d개의 코인을 받았습니다.", totalCoins),
+		"coins_given": totalCoins,
+		"politicians": userPoliticians,
 	})
 }
 

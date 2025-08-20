@@ -206,6 +206,11 @@ func (app *PoliticianApp) handleCreateProfile(txData *ptypes.TxData) *types.Exec
 }
 
 func (app *PoliticianApp) updateSupporters(txData *ptypes.TxData) *types.ExecTxResult {
+	app.logger.Info("🎯 updateSupporters 시작", 
+		"user_id", txData.UserID,
+		"politicians", txData.Politicians,
+		"politician_count", len(txData.Politicians))
+	
 	account, exists := app.accounts[txData.UserID]
 	if !exists {
 		logMsg := "Account not found for update"
@@ -213,13 +218,23 @@ func (app *PoliticianApp) updateSupporters(txData *ptypes.TxData) *types.ExecTxR
 		return &types.ExecTxResult{Code: 30, Log: logMsg}
 	}
 	
-	// 초기 선택인지 확인 (처음 3명 선택)
-	if !account.InitialSelection && len(txData.Politicians) == 3 {
-		// 초기 3명 선택 시 각각 100개씩 코인 지급
+	app.logger.Info("🔍 사용자 계정 확인",
+		"user_id", txData.UserID,
+		"initial_selection", account.InitialSelection,
+		"existing_politicians", account.Politicians,
+		"request_politicians", txData.Politicians)
+	
+	// 초기 선택인지 확인 (InitialSelection이 false이고 정치인 목록이 있으면 초기 코인 지급)
+	if !account.InitialSelection && len(txData.Politicians) > 0 {
+		// 초기 선택 시 각 정치인마다 100개씩 코인 지급
 		totalCoinsGiven := int64(0)
 		
+		app.logger.Info("🎁 초기 코인 지급 시작",
+			"user_id", txData.UserID,
+			"politician_count", len(txData.Politicians))
+		
 		for _, politicianName := range txData.Politicians {
-			app.logger.Info("Processing politician", "name", politicianName, "user", txData.UserID)
+			app.logger.Info("🔄 정치인 처리 중", "name", politicianName, "user", txData.UserID)
 			
 			// 이미 받은 코인인지 확인
 			if !account.ReceivedCoins[politicianName] {
@@ -253,9 +268,10 @@ func (app *PoliticianApp) updateSupporters(txData *ptypes.TxData) *types.ExecTxR
 		}
 		
 		account.InitialSelection = true
-		app.logger.Info("Initial selection completed", 
+		app.logger.Info("🎉 초기 선택 완료", 
 			"user", txData.UserID, 
-			"total_coins_given", totalCoinsGiven)
+			"total_coins_given", totalCoinsGiven,
+			"politicians_processed", len(txData.Politicians))
 	}
 	
 	account.Politicians = txData.Politicians
