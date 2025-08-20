@@ -52,7 +52,7 @@ http://politisian.org/login.html
 
   http://politisian.org/login.html
 
-   사용 가능한 도구:
+   사용 가능한 도구:  Tailwind CSS를 사용
   - get_code: React + Tailwind 코드 생성
   - get_variable_defs: 디자인 토큰 추출 (색상,간격, 타이포그래피)
 
