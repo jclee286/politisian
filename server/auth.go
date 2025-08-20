@@ -153,6 +153,12 @@ func handleSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 초기 코인 지급을 위한 update_supporters 트랜잭션 추가 전송
+	if err := sendInitialCoinsTransaction(userID, req.Politicians); err != nil {
+		log.Printf("Warning: 초기 코인 지급 실패하지만 회원가입은 완료: %v", err)
+		// 초기 코인 지급이 실패해도 회원가입은 성공으로 처리
+	}
+
 	// 성공 응답
 	response := map[string]interface{}{
 		"success": true,
@@ -292,6 +298,28 @@ func createBlockchainAccount(userID, email, walletAddress string, politicians []
 	txBytes, err := json.Marshal(txData)
 	if err != nil {
 		return fmt.Errorf("transaction marshal error: %v", err)
+	}
+
+	return broadcastAndCheckTx(context.Background(), txBytes)
+}
+
+// sendInitialCoinsTransaction은 초기 코인 지급을 위한 update_supporters 트랜잭션을 전송합니다.
+func sendInitialCoinsTransaction(userID string, politicians []string) error {
+	// 고유한 트랜잭션 ID 생성
+	randBytes := make([]byte, 4)
+	rand.Read(randBytes)
+	txID := fmt.Sprintf("%s-initial-coins-%d-%x", userID, time.Now().UnixNano(), randBytes)
+
+	txData := ptypes.TxData{
+		TxID:        txID,
+		Action:      "update_supporters",
+		UserID:      userID,
+		Politicians: politicians,
+	}
+
+	txBytes, err := json.Marshal(txData)
+	if err != nil {
+		return fmt.Errorf("initial coins transaction marshal error: %v", err)
 	}
 
 	return broadcastAndCheckTx(context.Background(), txBytes)
