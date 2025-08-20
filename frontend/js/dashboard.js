@@ -90,17 +90,12 @@ function updateDashboardUI(data) {
                     politicianCoinsListElem.appendChild(li);
                 });
             } else {
-                // 코인이 없는 경우 초기 코인 받기 버튼 표시
+                // 코인이 없는 경우 안내 메시지만 표시
                 politicianCoinsListElem.innerHTML = `
-                    <li style="text-align: center; padding: 20px;">
-                        <div style="color: #666; margin-bottom: 15px;">보유 중인 정치인 코인이 없습니다.</div>
-                        <button onclick="showClaimCoinsModal()" 
-                                style="background: #f39c12; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold;">
-                            🎁 초기 코인 받기
-                        </button>
-                        <div style="font-size: 12px; color: #999; margin-top: 10px;">
-                            선택한 정치인별로 각각 100개씩 지급
-                        </div>
+                    <li class="text-center py-8 text-gray-500">
+                        <div class="text-6xl mb-4">💰</div>
+                        <div class="font-medium mb-2">보유 중인 정치인 코인이 없습니다</div>
+                        <div class="text-sm text-gray-400">거래를 통해 정치인 코인을 구매해보세요</div>
                     </li>
                 `;
             }

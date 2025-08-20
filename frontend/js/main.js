@@ -63,14 +63,6 @@ function setupEventListeners() {
 
 // 모달 이벤트 설정
 function setupModalEvents() {
-    // 초기 코인 받기 폼
-    const claimCoinsForm = document.getElementById('claim-coins-form');
-    if (claimCoinsForm) {
-        claimCoinsForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            processClaimCoins();
-        });
-    }
     
     // 크레딧 사용 폼
     const creditUsageForm = document.getElementById('credit-usage-form');
