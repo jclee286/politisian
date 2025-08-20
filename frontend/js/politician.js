@@ -19,13 +19,23 @@ function loadProposals() {
                 return;
             }
             
-            if (!proposals || proposals.length === 0) {
+            // proposals 데이터 처리 (배열 또는 객체)
+            let proposalsArray = [];
+            if (proposals) {
+                if (Array.isArray(proposals)) {
+                    proposalsArray = proposals;
+                } else if (typeof proposals === 'object') {
+                    proposalsArray = Object.values(proposals);
+                }
+            }
+            
+            if (proposalsArray.length === 0) {
                 proposalsListElem.innerHTML = '<li>진행 중인 제안이 없습니다.</li>';
                 return;
             }
             
             proposalsListElem.innerHTML = '';
-            proposals.forEach(proposal => {
+            proposalsArray.forEach(proposal => {
                 const li = document.createElement('li');
                 li.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -76,13 +86,22 @@ function loadRegisteredPoliticians() {
             
             // 전역 데이터에 저장 (검색용)
             window.allPoliticiansData = {};
-            if (politicians && Array.isArray(politicians)) {
-                politicians.forEach(politician => {
-                    window.allPoliticiansData[politician.name] = politician;
-                });
+            let politiciansArray = [];
+            
+            if (politicians) {
+                if (Array.isArray(politicians)) {
+                    politiciansArray = politicians;
+                    politicians.forEach(politician => {
+                        window.allPoliticiansData[politician.name] = politician;
+                    });
+                } else if (typeof politicians === 'object') {
+                    // 객체 형태로 받은 경우 배열로 변환
+                    politiciansArray = Object.values(politicians);
+                    window.allPoliticiansData = politicians; // 이미 객체 형태이므로 그대로 사용
+                }
             }
             
-            displayPoliticians(politicians);
+            displayPoliticians(politiciansArray);
         })
         .catch(error => {
             console.error('❌ 등록된 정치인 목록 로드 실패:', error);
