@@ -49,6 +49,7 @@ func StartServer(node *node.Node) {
 	mux.Handle("/api/auth/wallet/login", corsMiddleware(http.HandlerFunc(handleWalletLogin)))
 	mux.Handle("/api/auth/social-login", corsMiddleware(http.HandlerFunc(handleSocialLogin))) // 이름 변경으로 구분
 	mux.Handle("/api/user/profile", corsMiddleware(authMiddleware(http.HandlerFunc(handleUserProfile))))
+	mux.Handle("/api/user/claim-initial-coins", corsMiddleware(authMiddleware(http.HandlerFunc(handleClaimInitialCoins))))
 	mux.Handle("/api/profile/save", corsMiddleware(authMiddleware(http.HandlerFunc(handleProfileSave))))
 	mux.Handle("/api/politisian/list", corsMiddleware(authMiddleware(http.HandlerFunc(handleGetPolitisians))))
 	mux.Handle("/api/politisian/registered", corsMiddleware(http.HandlerFunc(handleGetRegisteredPoliticians)))

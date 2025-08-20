@@ -230,6 +230,46 @@
                 </div>
             </div>
 
+            <!-- 초기 코인 받기 모달 -->
+            <div id="claim-coins-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px; margin: 20px;">
+                    <h3 style="color: #333; margin-bottom: 20px;">🎁 초기 코인 받기</h3>
+                    <p style="color: #666; margin-bottom: 20px;">회원가입 축하 코인을 받아보세요!</p>
+                    
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span>이재명</span>
+                            <span style="color: #28a745; font-weight: bold;">100 코인</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span>윤석열</span>
+                            <span style="color: #28a745; font-weight: bold;">100 코인</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span>이낙연</span>
+                            <span style="color: #28a745; font-weight: bold;">100 코인</span>
+                        </div>
+                        <hr style="margin: 15px 0;">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                            <span>총합</span>
+                            <span style="color: #f39c12; font-size: 18px;">300 코인</span>
+                        </div>
+                    </div>
+                    
+                    <form id="claim-coins-form" style="text-align: left;">
+                        <div style="margin-bottom: 15px;">
+                            <label>PIN (6자리):</label>
+                            <input type="password" id="claim-pin" maxlength="6" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" required>
+                        </div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button type="submit" style="background: #f39c12; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-right: 10px;">🎁 코인 받기</button>
+                            <button type="button" onclick="closeClaimCoinsModal()" style="background: #6c757d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">취소</button>
+                        </div>
+                    </form>
+                    <div id="claim-coins-status" style="margin-top: 15px; font-size: 14px;"></div>
+                </div>
+            </div>
+
             <!-- 크레딧 사용 모달 -->
             <div id="credit-usage-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
                 <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px; margin: 20px;">
@@ -774,7 +814,19 @@
                                 politicianCoinsListElem.appendChild(li);
                             });
                         } else {
-                            politicianCoinsListElem.innerHTML = '<li>보유 중인 정치인 코인이 없습니다.</li>';
+                            // 코인이 없는 경우 초기 코인 받기 버튼 표시
+                            politicianCoinsListElem.innerHTML = `
+                                <li style="text-align: center; padding: 20px;">
+                                    <div style="color: #666; margin-bottom: 15px;">보유 중인 정치인 코인이 없습니다.</div>
+                                    <button onclick="showClaimCoinsModal()" 
+                                            style="background: #f39c12; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                                        🎁 초기 코인 받기
+                                    </button>
+                                    <div style="font-size: 12px; color: #999; margin-top: 10px;">
+                                        이재명, 윤석열, 이낙연 각각 100개씩 총 300개
+                                    </div>
+                                </li>
+                            `;
                         }
                     } else if (politicianCoinsListElem) {
                         politicianCoinsListElem.innerHTML = '<li>코인 정보를 불러올 수 없습니다.</li>';
@@ -1144,6 +1196,15 @@
                         element.addEventListener('change', updateTradeSummary);
                         element.addEventListener('input', updateTradeSummary);
                     }
+                });
+            }
+
+            // 초기 코인 받기 폼 이벤트 리스너
+            const claimCoinsForm = document.getElementById('claim-coins-form');
+            if (claimCoinsForm) {
+                claimCoinsForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    processClaimCoins();
                 });
             }
 
@@ -1938,6 +1999,63 @@
             // 현재 로드된 사용자 프로필 정보 반환 (전역 변수나 캐시에서)
             // 임시로 null 반환 - 실제로는 사용자 프로필 데이터를 반환해야 함
             return null;
+        }
+
+        // 초기 코인 받기 관련 함수들
+        function showClaimCoinsModal() {
+            document.getElementById('claim-coins-modal').style.display = 'flex';
+            document.getElementById('claim-coins-form').reset();
+            document.getElementById('claim-coins-status').innerHTML = '';
+        }
+
+        function closeClaimCoinsModal() {
+            document.getElementById('claim-coins-modal').style.display = 'none';
+        }
+
+        function processClaimCoins() {
+            const pin = document.getElementById('claim-pin').value;
+            const statusElem = document.getElementById('claim-coins-status');
+
+            if (!pin || pin.length !== 6) {
+                statusElem.innerHTML = '<span style="color: #e74c3c;">6자리 PIN을 입력하세요.</span>';
+                return;
+            }
+
+            statusElem.innerHTML = '<span style="color: #f39c12;">초기 코인 요청 중...</span>';
+
+            const claimData = {
+                pin: pin
+            };
+
+            fetch('/api/user/claim-initial-coins', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(claimData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                statusElem.innerHTML = '<span style="color: #28a745;">✅ 초기 코인을 성공적으로 받았습니다!</span>';
+                
+                // 3초 후 모달 닫기 및 데이터 새로고침
+                setTimeout(() => {
+                    closeClaimCoinsModal();
+                    loadUserProfile(); // 프로필 데이터 새로고침
+                    showToast('🎉 축하합니다! 초기 코인 300개를 받았어요!');
+                }, 3000);
+            })
+            .catch(error => {
+                console.error('초기 코인 요청 실패:', error);
+                statusElem.innerHTML = `<span style="color: #e74c3c;">요청 실패: ${error.message}</span>`;
+            });
         }
 
         function processCreditUsage() {

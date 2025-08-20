@@ -378,3 +378,80 @@ func createBasicAccount(userID string, r *http.Request) error {
 	return nil
 }
 
+// handleClaimInitialCoins는 기존 사용자가 초기 코인을 수동으로 받을 수 있게 해주는 핸들러입니다.
+func handleClaimInitialCoins(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("userID").(string)
+	if !ok || userID == "" {
+		http.Error(w, "사용자 ID를 찾을 수 없습니다.", http.StatusInternalServerError)
+		return
+	}
+
+	// PIN 검증을 위한 요청 바디 파싱
+	var reqBody struct {
+		PIN string `json:"pin"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		http.Error(w, "잘못된 요청 형식", http.StatusBadRequest)
+		return
+	}
+
+	// PIN 검증
+	if err := verifyUserPIN(userID, reqBody.PIN); err != nil {
+		http.Error(w, "PIN이 올바르지 않습니다", http.StatusUnauthorized)
+		return
+	}
+
+	// 사용자 계정 조회
+	queryPath := fmt.Sprintf("/account?address=%s", userID)
+	res, err := blockchainClient.ABCIQuery(context.Background(), queryPath, nil)
+	if err != nil || res.Response.Code != 0 {
+		http.Error(w, "계정을 찾을 수 없습니다", http.StatusNotFound)
+		return
+	}
+
+	var account ptypes.Account
+	if err := json.Unmarshal(res.Response.Value, &account); err != nil {
+		http.Error(w, "계정 정보 파싱 실패", http.StatusInternalServerError)
+		return
+	}
+
+	// 이미 초기 코인을 받았는지 확인
+	if account.InitialSelection {
+		http.Error(w, "이미 초기 코인을 받으셨습니다", http.StatusBadRequest)
+		return
+	}
+
+	// 기본 정치인 3명으로 초기 코인 지급 트랜잭션 생성
+	randBytes := make([]byte, 4)
+	rand.Read(randBytes)
+	txID := fmt.Sprintf("%s-claim-%d-%x", userID, time.Now().UnixNano(), randBytes)
+
+	txData := ptypes.TxData{
+		TxID:        txID,
+		Action:      "update_supporters",
+		UserID:      userID,
+		Politicians: []string{"이재명", "윤석열", "이낙연"}, // 기본 3명
+	}
+
+	txBytes, err := json.Marshal(txData)
+	if err != nil {
+		log.Printf("Error marshaling claim transaction: %v", err)
+		http.Error(w, "트랜잭션 생성 실패", http.StatusInternalServerError)
+		return
+	}
+
+	if err := broadcastAndCheckTx(context.Background(), txBytes); err != nil {
+		log.Printf("Error broadcasting claim transaction: %v", err)
+		http.Error(w, "초기 코인 지급 실패: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Initial coins claimed successfully for user %s", userID)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "초기 코인이 성공적으로 지급되었습니다! 각 정치인마다 100개씩 총 300개의 코인을 받았습니다.",
+		"coins_given": 300,
+	})
+}
+

@@ -214,11 +214,13 @@ func (app *PoliticianApp) updateSupporters(txData *ptypes.TxData) *types.ExecTxR
 	}
 	
 	// 초기 선택인지 확인 (처음 3명 선택)
-	if !account.InitialSelection && len(txData.Politicians) <= 3 {
+	if !account.InitialSelection && len(txData.Politicians) == 3 {
 		// 초기 3명 선택 시 각각 100개씩 코인 지급
 		totalCoinsGiven := int64(0)
 		
 		for _, politicianName := range txData.Politicians {
+			app.logger.Info("Processing politician", "name", politicianName, "user", txData.UserID)
+			
 			// 이미 받은 코인인지 확인
 			if !account.ReceivedCoins[politicianName] {
 				// 정치인이 존재하고 코인이 충분한지 확인
@@ -239,7 +241,13 @@ func (app *PoliticianApp) updateSupporters(txData *ptypes.TxData) *types.ExecTxR
 							"politician", politicianName,
 							"coins_given", 100,
 							"politician_remaining", politician.RemainingCoins)
+					} else {
+						app.logger.Info("Politician has insufficient coins", 
+							"politician", politicianName,
+							"remaining", politician.RemainingCoins)
 					}
+				} else {
+					app.logger.Info("Politician not found", "name", politicianName, "available_politicians", len(app.politicians))
 				}
 			}
 		}
