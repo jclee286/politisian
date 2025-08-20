@@ -7,8 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>나의 공화국 - 대시보드</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 커스텀 스타일 (Tailwind 대체) -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -919,6 +918,11 @@
 
             // 정치인 검색 함수
             function searchPoliticians(searchTerm) {
+                if (typeof allPoliticiansData === 'undefined' || !allPoliticiansData) {
+                    console.log('정치인 데이터가 아직 로드되지 않았습니다.');
+                    return;
+                }
+                
                 if (!searchTerm.trim()) {
                     displayPoliticians(allPoliticiansData);
                     return;
@@ -941,7 +945,7 @@
 
             // 정치인 ID로 이름을 찾는 함수
             function getPoliticianNameById(politicianId) {
-                if (!allPoliticiansData || !politicianId) {
+                if (typeof allPoliticiansData === 'undefined' || !allPoliticiansData || !politicianId) {
                     return politicianId || '알 수 없는 정치인';
                 }
                 
@@ -1168,16 +1172,35 @@
         function loadPoliticianPrices() {
             fetch('/api/trading/prices')
                 .then(response => {
-                    if (!response.ok) throw new Error('가격 정보 로드 실패');
+                    if (!response.ok) {
+                        // 500 에러인 경우 조용히 처리
+                        if (response.status === 500) {
+                            console.log('⚠️ 가격 정보 서비스 일시 불가 (500 오류)');
+                            return null;
+                        }
+                        throw new Error(`가격 정보 로드 실패 (${response.status})`);
+                    }
                     return response.json();
                 })
                 .then(prices => {
-                    console.log('✅ 가격 정보 로드 성공:', prices);
-                    displayPriceRankings(prices);
+                    if (prices) {
+                        console.log('✅ 가격 정보 로드 성공:', prices);
+                        displayPriceRankings(prices);
+                    } else {
+                        console.log('📊 가격 정보 없음 - 기본 메시지 표시');
+                        const priceElement = document.getElementById('price-rankings');
+                        if (priceElement) {
+                            priceElement.innerHTML = '<div style="color: #6c757d;">가격 정보 준비 중...</div>';
+                        }
+                    }
                 })
                 .catch(error => {
-                    console.error('❌ 가격 정보 로드 실패:', error);
-                    document.getElementById('price-rankings').innerHTML = '<div style="color: #e74c3c;">가격 정보를 불러올 수 없습니다.</div>';
+                    console.log('⚠️ 가격 정보 로드 실패 (무시됨):', error.message);
+                    // 가격 정보는 선택적 기능이므로 에러를 조용히 처리
+                    const priceElement = document.getElementById('price-rankings');
+                    if (priceElement) {
+                        priceElement.innerHTML = '<div style="color: #6c757d;">가격 정보 일시 불가</div>';
+                    }
                 });
         }
 
@@ -1229,7 +1252,7 @@
 
         function loadPoliticianSelectOptions() {
             // 등록된 정치인 목록을 셀렉트 박스에 추가
-            if (allPoliticiansData && Object.keys(allPoliticiansData).length > 0) {
+            if (typeof allPoliticiansData !== 'undefined' && allPoliticiansData && Object.keys(allPoliticiansData).length > 0) {
                 const selectElem = document.getElementById('politician-select');
                 selectElem.innerHTML = '<option value="">정치인 선택...</option>';
                 
