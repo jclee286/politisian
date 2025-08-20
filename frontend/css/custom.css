@@ -1,0 +1,53 @@
+/* 커스텀 스타일 - Tailwind로 표현하기 어려운 것들만 */
+
+/* 스크롤바 커스터마이징 */
+.scrollable-politician-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scrollable-politician-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.scrollable-politician-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.scrollable-politician-list::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* PIN 입력 필드 스타일 */
+.pin-digit::-webkit-outer-spin-button,
+.pin-digit::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.pin-digit[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* 지갑 잠금 화면 애니메이션 */
+.wallet-locked-screen {
+    min-height: 200px;
+}
+
+.wallet-lock-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+/* 로딩 상태 */
+.loading {
+    color: #888;
+    font-style: italic;
+}
+
+/* 모달 배경 블러 효과 */
+.modal-overlay {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
