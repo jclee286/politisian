@@ -25,18 +25,21 @@ function loadUserProfile() {
         .then(data => {
             if (data) {
                 console.log('✅ 프로필 데이터 로드 성공:', data);
-                
+
                 // 전역 변수에 프로필 데이터 저장
                 window.currentUserProfileData = data;
-                
+
                 setWalletAddress(data.wallet || data.walletAddress || '지갑 주소 없음');
-                
+
+                // 사용자 이메일 표시
+                displayUserEmail(data.email);
+
                 // 백업 데이터 저장
                 saveBackupData(data.wallet || data.walletAddress, {
                     email: data.email,
                     address: data.address
                 });
-                
+
                 updateDashboardUI(data);
                 loadProposals();
                 loadRegisteredPoliticians();
@@ -181,4 +184,34 @@ function showReloginPrompt() {
         overlay.remove();
         reloginDiv.remove();
     };
+}
+
+// 로그아웃 처리
+function handleLogout() {
+    console.log('🚪 로그아웃 시도');
+
+    // 쿠키 삭제
+    document.cookie = 'session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+
+    // 로컬 스토리지 정리
+    localStorage.removeItem('backup_wallet_address');
+    localStorage.removeItem('backup_user_info');
+    localStorage.removeItem('wallet_unlocked');
+
+    // 전역 변수 정리
+    window.currentUserProfileData = null;
+
+    console.log('✅ 로그아웃 완료');
+
+    // 로그인 페이지로 이동
+    window.location.href = '/login.html';
+}
+
+// 사용자 이메일 표시
+function displayUserEmail(email) {
+    const userEmailElem = document.getElementById('user-email');
+    if (userEmailElem && email) {
+        userEmailElem.textContent = email;
+        userEmailElem.classList.remove('hidden');
+    }
 }

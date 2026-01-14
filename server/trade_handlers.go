@@ -197,7 +197,7 @@ func handleGetUserOrders(w http.ResponseWriter, r *http.Request) {
 // getAllPoliticianPrices는 모든 정치인의 가격 정보를 수집합니다.
 func getAllPoliticianPrices() ([]ptypes.PoliticianPrice, error) {
 	// 등록된 정치인 목록 조회
-	queryPath := "/politicians"
+	queryPath := "/github.com/jclee286/politisian/list"
 	res, err := blockchainClient.ABCIQuery(context.Background(), queryPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("politicians query error: %v", err)

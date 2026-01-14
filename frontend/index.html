@@ -36,14 +36,31 @@
 </head>
 <body class="bg-gradient-to-br from-blue-50 via-white to-green-50 min-h-screen">
 
-    <!-- 헤더 (숨겨짐) -->
-    <div class="hidden">
-        <button id="login-button" class="hidden">로그인</button>
-    </div>
+    <!-- 헤더 네비게이션 -->
+    <header class="bg-white/90 backdrop-blur-sm shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 max-w-7xl">
+            <div class="flex items-center justify-between">
+                <!-- 로고 -->
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🏛️</span>
+                    <span class="text-xl font-bold text-gray-800">나의 공화국</span>
+                </div>
+
+                <!-- 사용자 정보 & 로그아웃 -->
+                <div class="flex items-center gap-4">
+                    <span id="user-email" class="text-sm text-gray-600 hidden"></span>
+                    <button id="logout-button" onclick="handleLogout()"
+                            class="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors duration-200 font-medium">
+                        로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
 
     <!-- 메인 컨테이너 -->
     <div class="container mx-auto px-4 py-8 max-w-7xl">
-        
+
         <!-- 헤더 타이틀 -->
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-gray-800 mb-2">🏛️ 나의 공화국</h1>
